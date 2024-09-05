@@ -5,7 +5,6 @@ Created on Wed Sep  4 13:53:34 2024
 @author: earne
 """
 
-import os
 import subprocess
 
 def run_dcm2niix(indir, outdir, name):

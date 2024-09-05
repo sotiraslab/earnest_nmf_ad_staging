@@ -5,20 +5,9 @@ Created on Wed Sep  4 14:24:36 2024
 @author: earne
 """
 
-import subprocess
-ANTS_PATH = '/Users/earne/MyTools/ants-2.5.3/bin'
+from execute import execute
 
-def execute(cmd):
-    popen = subprocess.Popen(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             universal_newlines=True)
-    for line in popen.stdout:
-        print(line, end='')
-    popen.stdout.close()
-    return_code = popen.wait()
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
+ANTS_PATH = '/export/ants/ants-2.4.0/bin'
 
 def run_N4_bias_correction(inpath, outpath):
     

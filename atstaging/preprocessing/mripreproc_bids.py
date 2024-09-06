@@ -9,7 +9,8 @@ from reorient import reorient_image
 from skullstrip import run_deepmrseg_dlicv
 
 from atstaging.config import report_configuration
-from atstaging.printing import timestamp_print as begin_command, end_command, tsp
+from atstaging.printing import timestamp_print as tsp
+from atstaging.printing import begin_command, end_command
 
 def mripreproc_bids(input_img, subject, session, output_directory,
                     overwrite=False):
@@ -60,7 +61,7 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         img_dir = os.path.dirname(starting_image)
         base = os.path.basename(starting_image).removesuffix('.nii.gz')
 
-        tsp()
+        print()
         tsp('Running DICOM to NIFTI conversion.')
         tsp(f'Source image: {input_img}')
         tsp(f'Destination image: {starting_image}')
@@ -71,7 +72,7 @@ def mripreproc_bids(input_img, subject, session, output_directory,
 
     else:
 
-        tsp()
+        print()
         tsp('Input image is NIFTI; no conversion.')
         starting_image = input_img
 
@@ -80,7 +81,7 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     preskullstrip = namer.get_path('preskullstrip')
     if not os.path.exists(preskullstrip) or overwrite:
 
-        tsp()
+        print()
         tsp('Running pre-skullstripping steps.')
         tsp(f'Source: {starting_image}')
         tsp(f'Destination (reoriented): {preskullstrip}')
@@ -103,12 +104,12 @@ def mripreproc_bids(input_img, subject, session, output_directory,
 
     if not os.path.exists(brain) or overwrite:
 
-        tsp()
+        print()
         tsp('Running skullstripping.')
         tsp(f'Source: {preskullstrip}')
         tsp(f'Destination (brain mask): {brainmask}')
 
-        end_command('skullstrip')
+        begin_command('skullstrip')
         run_deepmrseg_dlicv(preskullstrip, brainmask)
         end_command('skullstrip')
 
@@ -121,5 +122,6 @@ inpath = '/scratch/tom.earnest/preproc_testing/rawdata/Accelerated_Sagittal_MPRA
 subject = '002S0413'
 session = '20240905'
 output = '/scratch/tom.earnest/preproc_testing/output/'
+overwrite = True
 
-mripreproc_bids(input_img=inpath, subject=subject, session=session, output_directory=output)
+mripreproc_bids(input_img=inpath, subject=subject, session=session, output_directory=output, overwrite=overwrite)

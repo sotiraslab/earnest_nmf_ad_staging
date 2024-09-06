@@ -1,5 +1,5 @@
 {
-    "use": "true",
+    "use": true,
     "ants": "/path/to/ants/bin/",
     "deepmrseg_env": "DeepMRSeg",
     "mni152_1mm": "/path/to/mni152_1mm.nii.gz"

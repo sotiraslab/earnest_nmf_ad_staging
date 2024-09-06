@@ -7,12 +7,14 @@ Created on Wed Sep  4 14:24:36 2024
 
 from execute import execute
 
-ANTS_PATH = '/export/ants/ants-2.4.0/bin'
+from atstaging.config import get
 
 def run_N4_bias_correction(inpath, outpath):
     
+    ants = get('ants')
+    
     call = [
-        f'{ANTS_PATH}/N4BiasFieldCorrection',
+        f'{ants}/N4BiasFieldCorrection',
         '-d', '3',
         '-i', inpath,
         '-o', outpath,

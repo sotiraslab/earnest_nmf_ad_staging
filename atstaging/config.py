@@ -11,7 +11,7 @@ CONFIG_FILE = ''
 def get(*args):
     try:
         return functools.reduce(getitem, args, CONFIG)
-    except:
+    except KeyError:
         s = ''.join([f'["{a}"]' for a in args])
         raise KeyError(f'Cannot find configuration value for indexing operation: CONFIG{s}')
 
@@ -79,7 +79,7 @@ def set_config_on_init():
              'entries provided in "example.json". '
              'Find the project README for more information '
              'about using the configuration file.')
-        warnings.warn(warnings.RuntimeWarning(m))
+        warnings.warn(RuntimeWarning(m))
 
 def update_config(file):
 

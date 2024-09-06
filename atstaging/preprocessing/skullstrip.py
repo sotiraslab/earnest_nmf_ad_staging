@@ -1,14 +1,14 @@
 
 from execute import execute
 
-DEEPMRSEG_ENV = 'DeepMRSeg'
+from atstaging.config import get
 
 def run_deepmrseg_dlicv(inpath, outpath):
 
     command = [
         'conda',
         'run',
-        '--name', DEEPMRSEG_ENV,
+        '--name', get('deepmrseg_env'),
         '--live-stream',
         'deepmrseg_apply',
         '--task', 'dlicv',

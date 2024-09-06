@@ -3,6 +3,7 @@ import functools
 import json
 from operator import getitem
 import os
+import warnings
 
 CONFIG = {}
 CONFIG_FILE = ''
@@ -73,11 +74,12 @@ def set_config_on_init():
         update_config(file)
 
     if not CONFIG:
-        raise RuntimeError('No configuration file found; please add '
-                           'a file to atstaging/config, filling in the '
-                           'entries provided in "example.json". '
-                           'Find the project README for more information '
-                           'about using the configuration file.')
+        m = ('No configuration file found; please add '
+             'a file to atstaging/config, filling in the '
+             'entries provided in "example.json". '
+             'Find the project README for more information '
+             'about using the configuration file.')
+        warnings.warn(warnings.RuntimeWarning(m))
 
 def update_config(file):
 

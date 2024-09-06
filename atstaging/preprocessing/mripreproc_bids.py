@@ -1,12 +1,15 @@
 
 import datetime as dt
+import time
 import os
+
+from colorama import Fore, Style
 
 from bias_correction import run_N4_bias_correction
 from bids import MRIOutputNamer
 from dicom_to_nifiti import run_dcm2niix
 from reorient import reorient_image
-from skullstrip import run_deepmrseg_dlicv
+from skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
 from debug import run_dependency_check
 
@@ -17,23 +20,23 @@ from atstaging.printing import begin_command, end_command
 def mripreproc_bids(input_img, subject, session, output_directory,
                     overwrite=False):
 
-    print()
+    print(Fore.MAGENTA)
     print('-------------------------')
     print('|                       |')
     print('| * MRI Preprocessing * |')
     print('|                       |')
     print('-------------------------')
+    print(Style.RESET_ALL)
 
     run_dependency_check()
 
     print()
-    print(f'Date: {str(dt.datetime.now())}')
-    print(f'Input image: {input_img}')
-    print(f'Output directory: {output_directory}')
-    print(f'BIDS Subject: {subject}')
-    print(f'BIDS session: {session}')
-
-    report_configuration()
+    print(Fore.RED + Style.BRIGHT + 'INPUTS' + Style.RESET_ALL)
+    print(f'  - Date: {str(dt.datetime.now())}')
+    print(f'  - Input image: {input_img}')
+    print(f'  - Output directory: {output_directory}')
+    print(f'  - BIDS Subject: {subject}')
+    print(f'  - BIDS session: {session}')
 
     is_dicom = os.path.isdir(input_img)
     output_directory = os.path.abspath(output_directory)
@@ -41,13 +44,17 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         os.mkdir(output_directory)
 
     print()
-    print('Status:')
+    print(Fore.RED + Style.BRIGHT + 'STATUS' + Style.RESET_ALL)
     print(f'  - Overwriting existing outputs? {overwrite}')
     print(f'  - Image is DICOM? {is_dicom}')
     print(f'  - Output exists? {os.path.isdir(output_directory)}')
 
+    report_configuration()
+
     print()
-    print(' * * * * BEGINNING PREPROCESSING * * * *')
+    print(Fore.MAGENTA + Style.BRIGHT + ' * * * * BEGINNING PREPROCESSING * * * *' + Style.RESET_ALL)
+
+    starttime = time.time()
 
     # setup naming
     namer = MRIOutputNamer(
@@ -100,13 +107,14 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         end_command('debias')
 
     else:
+        print()
         tsp('Existing preskullstripped image; not rerunning.')
 
     # skullstripping
     brainmask = namer.get_path('brainmask')
     brain = namer.get_path('brain')
 
-    if not os.path.exists(brain) or overwrite:
+    if not os.path.exists(brainmask) or overwrite:
 
         print()
         tsp('Running skullstripping.')
@@ -116,11 +124,29 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         begin_command('skullstrip')
         run_deepmrseg_dlicv(preskullstrip, brainmask)
         end_command('skullstrip')
+    else:
+        print()
+        tsp('Existing brain mask; not rerunning.')
 
-    print(' * * * * END OF PREPROCESSING * * * *')
-    # if not os.path.exists()
+    if not os.path.exists(brain) or overwrite:
+        print()
+        tsp('Generating skullstripped brain image.')
+        tsp(f'Source (T1): {preskullstrip}')
+        tsp(f'Source (brainmask): {brainmask}')
+        tsp(f'Destination (brain): {brain}')
+
+        begin_command('apply_brainmask')
+        apply_brainmask(t1=preskullstrip, brainmask=brainmask, outpath=brain)
+        end_command('apply_brainmask')
 
 
+    print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)
+    endtime = time.time()
+    elapsed = int(endtime - starttime)
+    m, s = divmod(elapsed, 60)
+    h, m = divmod(m, 60)
+    print(f'Elapsed Time: {h}h:{m}m:{s}s')
+    print()
 
 inpath = '/scratch/tom.earnest/preproc_testing/rawdata/Accelerated_Sagittal_MPRAGE/2017-03-13_13_38_31.0/I829296/'
 subject = '002S0413'

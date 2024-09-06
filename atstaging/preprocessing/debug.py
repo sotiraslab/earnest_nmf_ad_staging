@@ -6,10 +6,11 @@ Created on Fri Sep  6 15:48:46 2024
 @author: earnestt1234
 """
 
+from importlib.util import find_spec
 import os
 import subprocess
 
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
 
 from atstaging.config import get
 
@@ -43,20 +44,21 @@ def check_deepmrseg():
 
 def check_packages():
 
-    success = True
-    message = None
-    try:
-        import colorama
-        import nibabel
-    except ModuleNotFoundError as error:
-        message = error
-        success = False
+    missing = []
+    for pkg in ['colorama', 'nibabel', 'numpy']:
+        spec = find_spec(pkg)
+        if not spec:
+            missing.append(pkg)
 
-    return success, message
+    if missing:
+        return False, f'Missing required package(s): {missing}'
+    else:
+        return True, None
 
 def run_dependency_check():
 
     print()
+    print(Fore.CYAN + '-' * 25 + Style.RESET_ALL)
     print(Fore.CYAN + Style.BRIGHT + 'RUNNING DEPENDENCY CHECK' + Style.RESET_ALL)
 
     checks = {
@@ -69,7 +71,6 @@ def run_dependency_check():
     count = 0
     total = len(checks)
     print()
-    print('-----')
     for name, func in checks.items():
         success, metadata = func()
         response = (Fore.GREEN + 'success' + Style.RESET_ALL if success else
@@ -79,15 +80,6 @@ def run_dependency_check():
             print(f'    > {metadata}')
 
         count += success
-
-    print()
-    print('-----')
     color = Fore.GREEN if count == total else Fore.RED
     print(color + str(count) + Style.RESET_ALL + ' / ' + str(total) + ' passed')
-
-
-
-run_dependency_check()
-
-
-
+    print(Fore.CYAN + '-' * 25 + Style.RESET_ALL)

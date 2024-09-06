@@ -5,6 +5,8 @@ from operator import getitem
 import os
 import warnings
 
+from colorama import Fore, Style
+
 CONFIG = {}
 CONFIG_FILE = ''
 
@@ -47,13 +49,18 @@ def read_config_file(path):
 def report_configuration():
 
     print()
-    print('----- CURRENT CONFIGURATION -----')
+    print(Fore.GREEN + '----- CURRENT CONFIGURATION -----' + Style.RESET_ALL)
     print(f'Name: {os.path.basename(CONFIG_FILE)}')
     print(f'Path: {CONFIG_FILE}')
     print("Configuration:")
     print()
     print(json.dumps(CONFIG, indent=4, sort_keys=True))
-    print('---------------------------------')
+
+    if not CONFIG:
+        print(Fore.RED + Style.BRIGHT + 'WARNING!  Configuration appears to not be set.' + Style.RESET_ALL)
+
+    print(Fore.GREEN + '---------------------------------' + Style.RESET_ALL)
+    print(Style.RESET_ALL)
 
 
 def set_config_by_name(name):

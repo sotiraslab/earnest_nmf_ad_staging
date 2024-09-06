@@ -8,6 +8,8 @@ from dicom_to_nifiti import run_dcm2niix
 from reorient import reorient_image
 from skullstrip import run_deepmrseg_dlicv
 
+from debug import run_dependency_check
+
 from atstaging.config import report_configuration
 from atstaging.printing import timestamp_print as tsp
 from atstaging.printing import begin_command, end_command
@@ -21,6 +23,8 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     print('| * MRI Preprocessing * |')
     print('|                       |')
     print('-------------------------')
+
+    run_dependency_check()
 
     print()
     print(f'Date: {str(dt.datetime.now())}')
@@ -122,6 +126,6 @@ inpath = '/scratch/tom.earnest/preproc_testing/rawdata/Accelerated_Sagittal_MPRA
 subject = '002S0413'
 session = '20240905'
 output = '/scratch/tom.earnest/preproc_testing/output/'
-overwrite = True
+overwrite = False
 
 mripreproc_bids(input_img=inpath, subject=subject, session=session, output_directory=output, overwrite=overwrite)

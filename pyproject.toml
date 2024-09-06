@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atstaging"
+description = "Code for Tom's NMF & SuStaIn PET staging work."
+dependencies = [
+    "nibabel"
+]
+dynamic = ["version"]
+requires-python = ">= 3.10"
+authors =[
+    {name = "Tom Earnest", email = "tom.earnest@wustl.edu"}
+]
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/sotiraslab/at_nmf_sustain"

@@ -1,3 +1,13 @@
+# CUSTOM
+# ----------
+
+# configuration files
+atstaging/config/*
+!atstaging/config/example.json
+
+# PYTHON 
+# -----------
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

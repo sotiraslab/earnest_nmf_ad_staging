@@ -2,7 +2,7 @@
 import nibabel as nib
 import numpy as np
 
-from execute import execute
+from .execute import execute
 from atstaging.config import get
 
 def apply_brainmask(t1, brainmask, outpath):

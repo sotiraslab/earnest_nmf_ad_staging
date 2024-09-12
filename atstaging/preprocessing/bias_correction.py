@@ -5,14 +5,14 @@ Created on Wed Sep  4 14:24:36 2024
 @author: earne
 """
 
-from execute import execute
+from .execute import execute
 
 from atstaging.config import get
 
 def run_N4_bias_correction(inpath, outpath):
-    
+
     ants = get('ants')
-    
+
     call = [
         f'{ants}/N4BiasFieldCorrection',
         '-d', '3',
@@ -20,6 +20,5 @@ def run_N4_bias_correction(inpath, outpath):
         '-o', outpath,
         '-v'
         ]
-    
+
     execute(call)
-    

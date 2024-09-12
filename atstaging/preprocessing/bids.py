@@ -25,7 +25,7 @@ class BIDSOutputNamer:
         return os.path.join(self.directory, self.bids_subject, self.bids_session, self.modality)
 
     def get_name(self, key):
-        
+
         try:
             pattern = self.namestore[key]
         except KeyError:
@@ -48,15 +48,20 @@ class BIDSOutputNamer:
 
     def make_img_dir(self):
         Path(self.bids_img_dir).mkdir(parents=True, exist_ok=True)
-    
+
 class MRIOutputNamer(BIDSOutputNamer):
-    
+
     def __init__(self, subject, session, modality=None, directory=None):
         super().__init__(subject=subject, session=session, modality=modality, directory=directory)
-        
+
         self.namestore = {
             'dcm2niix': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-original_T1w.nii.gz',
             'preskullstrip': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-preskullstrip_T1w.nii.gz',
             'brain': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brain_T1w.nii.gz',
             'brainmask': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_T1w.nii.gz',
+            'affine': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-affine_transform.mat',
+            'warp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-nonlinear_warpfield.nii.gz',
+            'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
+            'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
+            'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz'
         }

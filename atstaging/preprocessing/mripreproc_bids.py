@@ -5,15 +5,16 @@ import os
 
 from colorama import Fore, Style
 
-from bias_correction import run_N4_bias_correction
-from bids import MRIOutputNamer
-from dicom_to_nifiti import run_dcm2niix
-from reorient import reorient_image
-from skullstrip import apply_brainmask, run_deepmrseg_dlicv
+from .bias_correction import run_N4_bias_correction
+from .bids import MRIOutputNamer
+from .dicom_to_nifiti import run_dcm2niix
+from .reorient import reorient_image
+from .registration import create_jacobian_determinant_image, registration_mni_pipeline
+from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
-from debug import run_dependency_check
+from .debug import run_dependency_check
 
-from atstaging.config import report_configuration
+from atstaging.config import get, report_configuration
 from atstaging.printing import timestamp_print as tsp
 from atstaging.printing import begin_command, end_command
 
@@ -139,6 +140,37 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         apply_brainmask(t1=preskullstrip, brainmask=brainmask, outpath=brain)
         end_command('apply_brainmask')
 
+    # registration
+    # ---> registration, warp concatenation, jacobian determinant
+    fullwarp = namer.get_path('fullwarp')
+    jacobian = namer.get_path('jacobian')
+
+    if not os.path.exists(fullwarp) or overwrite:
+
+        print()
+        tsp('Registering brain to MNI template.')
+
+        begin_command('registration')
+        registration_mni_pipeline(brain=brain,
+                                  quick=get('quick'),
+                                  transformation='s',
+                                  out_fullwarp=fullwarp,
+                                  out_jacobian=jacobian)
+        end_command('registration')
+
+    if not os.path.exists(jacobian):
+
+        print()
+        tsp('Creating Jacobian Determinant image.')
+        print(f'Source (warpfield): {fullwarp}')
+
+        begin_command('jacobian')
+        create_jacobian_determinant_image(fullwarp, jacobian)
+        end_command('jacobian')
+
+    else:
+        print()
+        tsp('Existing registration outputs, not rerunning.')
 
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)
     endtime = time.time()
@@ -147,11 +179,3 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     h, m = divmod(m, 60)
     print(f'Elapsed Time: {h}h:{m}m:{s}s')
     print()
-
-inpath = '/scratch/tom.earnest/preproc_testing/rawdata/Accelerated_Sagittal_MPRAGE/2017-03-13_13_38_31.0/I829296/'
-subject = '002S0413'
-session = '20240905'
-output = '/scratch/tom.earnest/preproc_testing/output/'
-overwrite = False
-
-mripreproc_bids(input_img=inpath, subject=subject, session=session, output_directory=output, overwrite=overwrite)

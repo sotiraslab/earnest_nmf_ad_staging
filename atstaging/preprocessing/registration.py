@@ -20,7 +20,7 @@ def _ants_registration_outputs(prefix):
         'affine': prefix + "0GenericAffine.mat",
         'warp': prefix + "1Warp.nii.gz",
         'registered': prefix + "Warped.nii.gz",
-        'invwarp': prefix + "1InverseWarp.nii.gz",
+        'invwarp': prefix + "InverseWarp.nii.gz",
         'fullwarp': prefix + '1FullWarp.nii.gz'
         }
     return outputs
@@ -100,7 +100,6 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     print()
     print(Fore.BLUE + Style.BRIGHT + 'MRI Registration')
     print('~~~~~'  + Style.RESET_ALL)
-    print()
 
     # run
     print()
@@ -149,7 +148,8 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     print('- - -')
     for key, value in OUTNAMES.items():
         print(f'  - "{key}": {value}')
-        os.remove(value)
+        if os.path.exists(value):
+            os.remove(value)
     print('- - -')
 
     print('Completed!')

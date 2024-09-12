@@ -3,5 +3,6 @@
     "ants": "/path/to/ants/bin/",
     "deepmrseg_env": "DeepMRSeg",
     "mni152_brain": "/path/to/mni152_brain_1mm.nii.gz",
-    "quick": false
+    "quick": false,
+    "mri_preproc_keep": ["brainmask", "fullwarp"]
 }

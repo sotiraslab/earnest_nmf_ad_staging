@@ -39,12 +39,31 @@ class BIDSOutputNamer:
         path = os.path.join(self.bids_img_dir, name)
         return path
 
-    def delete_files(self, keys):
+    def keep_only(self, keys, verbose=False):
+        '''Keeps only the files corresponding to the specified keys,
+        and deletes other ones that are in the namestore.  Used for
+        cleaning up unwanted files at the end of preprocessing.'''
+        if isinstance(keys, str):
+            keys = list(keys)
+        allkeys = set(self.namestore.keys())
+        keepkeys = set(keys)
+        removekeys = allkeys - keepkeys
+        self.delete_files(removekeys, verbose=verbose)
+
+    def delete_files(self, keys, verbose=False):
+        vprint = print if verbose else lambda *args, **kwargs: None
+
+        vprint()
+        vprint('Deleting files...')
+        vprint('-----------------')
         for key in keys:
+            vprint(f'* {key}', end='')
             path = self.get_path(key)
             if not os.path.isfile(path):
+                vprint(' --> Not found.')
                 continue
             os.remove(path)
+            vprint(' --> Removed.')
 
     def make_img_dir(self):
         Path(self.bids_img_dir).mkdir(parents=True, exist_ok=True)

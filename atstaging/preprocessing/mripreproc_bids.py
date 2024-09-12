@@ -162,7 +162,7 @@ def mripreproc_bids(input_img, subject, session, output_directory,
 
         print()
         tsp('Creating Jacobian Determinant image.')
-        print(f'Source (warpfield): {fullwarp}')
+        tsp(f'Source (warpfield): {fullwarp}')
 
         begin_command('jacobian')
         create_jacobian_determinant_image(fullwarp, jacobian)
@@ -171,6 +171,17 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     else:
         print()
         tsp('Existing registration outputs, not rerunning.')
+
+    # cleanup
+    keep = get('mri_preproc_keep')
+
+    print()
+    tsp('Cleaning up files.')
+    tsp(f'Files being kept: {keep}')
+
+    begin_command('cleanup')
+    namer.keep_only(keep, verbose=True)
+    end_command('cleanup')
 
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)
     endtime = time.time()

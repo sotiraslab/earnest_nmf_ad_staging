@@ -42,6 +42,19 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
     if os.path.isfile(registered) and out_registered is not None:
         shutil.move(registered, out_registered)
 
+def apply_transform(moving, fixed, warp, output):
+
+    command = [
+        'antsApplyTransforms',
+        '-d', '3',
+        '-i', moving,
+        '-r', fixed,
+        '-t', warp,
+        '-o', output,
+        '-v', '1']
+
+    execute(command)
+
 def create_jacobian_determinant_image(fullwarp, out_jacobian):
 
     command = [

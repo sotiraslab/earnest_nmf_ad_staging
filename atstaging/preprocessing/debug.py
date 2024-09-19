@@ -45,7 +45,7 @@ def check_deepmrseg():
 def check_packages():
 
     missing = []
-    for pkg in ['colorama', 'nibabel', 'numpy']:
+    for pkg in ['colorama', 'nibabel', 'nifti_overlay', 'numpy']:
         spec = find_spec(pkg)
         if not spec:
             missing.append(pkg)

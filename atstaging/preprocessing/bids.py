@@ -82,5 +82,7 @@ class MRIOutputNamer(BIDSOutputNamer):
             'warp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-nonlinear_warpfield.nii.gz',
             'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
-            'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz'
+            'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz',
+            'qc-skullstrip': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_qc.png',
+            'qc-checkerboard': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-checkerboard_qc.png'
         }

@@ -8,8 +8,9 @@ from colorama import Fore, Style
 from .bias_correction import run_N4_bias_correction
 from .bids import MRIOutputNamer
 from .dicom_to_nifiti import run_dcm2niix
+from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
 from .reorient import reorient_image
-from .registration import create_jacobian_determinant_image, registration_mni_pipeline
+from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
 from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
 from .debug import run_dependency_check
@@ -144,6 +145,7 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     # ---> registration, warp concatenation, jacobian determinant
     fullwarp = namer.get_path('fullwarp')
     jacobian = namer.get_path('jacobian')
+    registered = namer.get_path('registered')
 
     if not os.path.exists(fullwarp) or overwrite:
 
@@ -155,8 +157,13 @@ def mripreproc_bids(input_img, subject, session, output_directory,
                                   quick=get('quick'),
                                   transformation='s',
                                   out_fullwarp=fullwarp,
-                                  out_jacobian=jacobian)
+                                  out_jacobian=jacobian,
+                                  out_registered=registered)
         end_command('registration')
+
+    else:
+        print()
+        tsp('Existing registration outputs, not rerunning.')
 
     if not os.path.exists(jacobian):
 
@@ -168,20 +175,48 @@ def mripreproc_bids(input_img, subject, session, output_directory,
         create_jacobian_determinant_image(fullwarp, jacobian)
         end_command('jacobian')
 
-    else:
+    if not os.path.exists(registered):
+
+        mni_brain = get('mni152_brain')
+
         print()
-        tsp('Existing registration outputs, not rerunning.')
+        tsp('Creating brain image warped to MNI space.')
+
+        begin_command('apply warp')
+        apply_transform(brain, mni_brain, fullwarp, registered)
+        end_command('apply warp')
+
+    # QC images
+    skullstrip_qc = namer.get_path('qc-skullstrip')
+    checkerboard_qc = namer.get_path('qc-checkerboard')
+
+    print()
+    tsp('Generating QC images')
+
+    begin_command('qc-skullstrip')
+    skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
+    end_command('qc-skullstrip')
+
+    begin_command('qc-checkerboard')
+    mni_brain = get('mni152_brain')
+    registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
+    end_command('qc-checkerboard')
 
     # cleanup
     keep = get('mri_preproc_keep')
 
-    print()
-    tsp('Cleaning up files.')
-    tsp(f'Files being kept: {keep}')
+    if 'all' in keep:
+        print()
+        tsp('Detected "all" in "mri_preproc_keep"; saving all files.')
 
-    begin_command('cleanup')
-    namer.keep_only(keep, verbose=True)
-    end_command('cleanup')
+    else:
+        print()
+        tsp('Cleaning up files.')
+        tsp(f'Files being kept: {keep}')
+
+        begin_command('cleanup')
+        namer.keep_only(keep, verbose=True)
+        end_command('cleanup')
 
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)
     endtime = time.time()

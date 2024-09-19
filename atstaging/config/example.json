@@ -9,7 +9,9 @@
         "time": "12:00:00",
         "nodes": "1",
         "ntasks": "1",
-        "mem": "64G"
+        "mem": "64G",
+        "account": "aristeidis_sotiras",
+        "partition": "tier2_cpu"
     },
     "use": true
 }

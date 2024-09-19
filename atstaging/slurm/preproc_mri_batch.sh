@@ -15,7 +15,7 @@ do
 	i)	t1=${OPTARG};;
 	o)	output=${OPTARG};;
     s)  subject=${OPTARG};;
-    S)  session=${OPTARGE} 
+    S)  session=${OPTARG};; 
 	?)	echo ""
 		echo "Unknown arguments passed; exiting."
 		echo ""
@@ -30,6 +30,10 @@ then
 	echo ""
 	echo "Some input arguments missing (-i -o -s -S); exiting."
 	echo ""
+	echo "-i: ${t1}"
+	echo "-o: ${output}"
+	echo "-s: ${subject}"
+	echo "-S: ${session}"
 	usage;
 	exit 1
 fi

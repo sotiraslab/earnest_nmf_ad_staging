@@ -104,6 +104,8 @@ def run_mri_preproc_table(table, slurm=True, force=False):
             ntasks = get('slurm', 'ntasks')
             mem = get('slurm', 'mem')
             time = get('slurm', 'time')
+            account = get('slurm', 'account')
+            partition = get('slurm', 'partition')
 
             log_dir = os.path.join(output, 'logs')
             if not os.path.exists(log_dir):
@@ -118,6 +120,8 @@ def run_mri_preproc_table(table, slurm=True, force=False):
                 '-N', nodes,
                 f'--mem={mem}',
                 '-t', time,
+                f'--account={account}',
+                f'--partition={partition}',
                 BATCH_SCRIPT,
                 '-i', t1,
                 '-o', output,
@@ -126,7 +130,10 @@ def run_mri_preproc_table(table, slurm=True, force=False):
             ]
             print()
             print('SBATCH call:')
-            print(command)
+            print(' '.join(command))
+
+            execute(command)
+
         else:
             mripreproc_bids(input_img=t1, subject=subject, session=session, output_directory=output)
         end_command(f'preproc: {tag}')

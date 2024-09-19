@@ -5,5 +5,11 @@
     "mri_preproc_keep": ["brainmask", "fullwarp", "qc-skullstrip", "qc-checkerboard"],
     "overwrite_mri": false,
     "quick": true,
+    "slurm": {
+        "time": "12:00:00",
+        "nodes": "1",
+        "ntasks": "1",
+        "mem": "64G"
+    },
     "use": true
 }

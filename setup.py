@@ -15,7 +15,8 @@ with open(path.join(this_directory, 'atstaging', 'version.py'), encoding='utf-8'
     version = f.read().split('=')[1].strip('\'"\n')
 
 requirements = [
-    'nibabel'
+    'nibabel',
+    'pandas'
 ]
 
 setup(name='atstaging',
@@ -31,6 +32,7 @@ setup(name='atstaging',
       long_description=long_description,
       long_description_content_type='text/markdown',
       entry_points = {
-        'console_scripts': ['preproc_mri=atstaging.preprocessing.mripreproc_bids:main'],
+        'console_scripts': ['preproc_mri=atstaging.preprocessing.mripreproc_bids:main',
+                            'preproc_mri_table=atstaging.slurm.preproc_mri_table:main'],
         }
       )

@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "atstaging"
 description = "Code for Tom's NMF & SuStaIn PET staging work."
 dependencies = [
-    "nibabel"
+    "nibabel",
+    "pandas"
 ]
 dynamic = ["version"]
 requires-python = ">= 3.10"
@@ -20,3 +21,4 @@ Homepage = "https://github.com/sotiraslab/at_nmf_sustain"
 
 [project.scripts]
 preproc_mri = "atstaging.preprocessing.mripreproc_bids:main"
+preproc_mri_table = "atstaging.slurm.preproc_mri_table:main"

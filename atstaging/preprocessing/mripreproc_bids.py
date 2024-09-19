@@ -64,7 +64,7 @@ def mripreproc_bids(input_img, subject, session, output_directory, config=None):
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    overwrite = get('overwrite+_mri')
+    overwrite = get('overwrite_mri')
 
     print()
     print(Fore.RED + Style.BRIGHT + 'STATUS' + Style.RESET_ALL)

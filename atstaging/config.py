@@ -15,7 +15,7 @@ def get(*args):
         return functools.reduce(getitem, args, CONFIG)
     except KeyError:
         s = ''.join([f'["{a}"]' for a in args])
-        raise KeyError(f'Cannot find configuration value for indexing operation: CONFIG{s}')
+        raise KeyError(f'Cannot find configuration value in {CONFIG_FILE} for indexing operation: CONFIG{s}')
 
 def get_config_dir():
     project_dir = os.path.dirname(os.path.abspath(__file__))

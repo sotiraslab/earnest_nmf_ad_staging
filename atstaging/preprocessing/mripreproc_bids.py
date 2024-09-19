@@ -1,4 +1,5 @@
 
+import argparse
 import datetime as dt
 import time
 import os
@@ -15,12 +16,30 @@ from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
 from .debug import run_dependency_check
 
-from atstaging.config import get, report_configuration
+from atstaging.config import get, report_configuration, set_config_automatic, set_config_by_name
 from atstaging.printing import timestamp_print as tsp
 from atstaging.printing import begin_command, end_command
 
-def mripreproc_bids(input_img, subject, session, output_directory,
-                    overwrite=False):
+def parse(arguments=None):
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-i', '--input', required=True, dest='input_img', help='Input T1 image to preprocess.')
+    parser.add_argument('-o', '--output', required=True, dest='output_directory', help='BIDS directory to create outputs')
+    parser.add_argument('--sub', required=True, dest='subject', help='BIDS subject for image.')
+    parser.add_argument('--ses', required=True, dest='session', help='BIDS session for image.')
+    parser.add_argument('-c', '--config', required=False, help='Name of a config file to use for this run.')
+
+    args = parser.parse_args(args=arguments)
+
+    return args
+
+def mripreproc_bids(input_img, subject, session, output_directory, config=None):
+
+    if config is not None:
+        set_config_by_name(config)
+    else:
+        set_config_automatic()
 
     print(Fore.MAGENTA)
     print('-------------------------')
@@ -44,6 +63,8 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     output_directory = os.path.abspath(output_directory)
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
+
+    overwrite = get('overwrite+_mri')
 
     print()
     print(Fore.RED + Style.BRIGHT + 'STATUS' + Style.RESET_ALL)
@@ -225,3 +246,10 @@ def mripreproc_bids(input_img, subject, session, output_directory,
     h, m = divmod(m, 60)
     print(f'Elapsed Time: {h}h:{m}m:{s}s')
     print()
+
+def main():
+    args = parse()
+    mripreproc_bids(**vars(args))
+
+if __name__ == '__main__':
+    main()

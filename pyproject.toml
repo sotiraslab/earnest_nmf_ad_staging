@@ -17,3 +17,6 @@ readme = "README.md"
 
 [project.urls]
 Homepage = "https://github.com/sotiraslab/at_nmf_sustain"
+
+[project.scripts]
+preproc_mri = "atstaging.preprocessing.mripreproc_bids:main"

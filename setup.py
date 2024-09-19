@@ -30,4 +30,7 @@ setup(name='atstaging',
       zip_safe=False,
       long_description=long_description,
       long_description_content_type='text/markdown',
+      entry_points = {
+        'console_scripts': ['preproc_mri=atstaging.preprocessing.mripreproc_bids:main'],
+        }
       )

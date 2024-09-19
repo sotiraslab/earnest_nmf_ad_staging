@@ -69,8 +69,7 @@ def set_config_by_name(name):
     fullpath = os.path.join(get_config_dir(), name)
     update_config(fullpath)
 
-
-def set_config_on_init():
+def set_config_automatic():
 
     files = find_config_files()
     for file in files:

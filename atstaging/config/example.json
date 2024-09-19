@@ -1,8 +1,9 @@
 {
-    "use": true,
-    "ants": "/path/to/ants/bin/",
+    "ants": "path/to/ants/bin",
     "deepmrseg_env": "DeepMRSeg",
-    "mni152_brain": "/path/to/mni152_brain_1mm.nii.gz",
-    "quick": false,
-    "mri_preproc_keep": ["brainmask", "fullwarp"]
+    "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
+    "mri_preproc_keep": ["brainmask", "fullwarp", "qc-skullstrip", "qc-checkerboard"],
+    "overwrite_mri": false,
+    "quick": true,
+    "use": true
 }

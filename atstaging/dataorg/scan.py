@@ -49,3 +49,6 @@ def create_preproc_table(subject_table, download_directory):
     print(f'Searching "{download_directory}" for downloaded images...')
 
     downloads = list_loni_images(download_directory)
+
+downloads = list_loni_images('/scratch/tom.earnest/SCAN/images/rawdata')
+downloads.to_csv('/home/tom.earnest/scan_list.csv')

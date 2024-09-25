@@ -7,8 +7,6 @@ Created on Wed Sep 25 09:38:46 2024
 """
 
 import os
-import re
-
 import pandas as pd
 
 def list_loni_images(directory, show_count=True, count_every=100):
@@ -38,29 +36,34 @@ def list_loni_images(directory, show_count=True, count_every=100):
     rows = []
 
     # move through LONI folder structure to get to images
-    print(f'Beginning search for dowloaded ADNI images at "{directory}" ...\n')
+    print(f'Beginning search for dowloaded LONI images at "{directory}" ...\n')
     c = 0
     for subject in os.listdir(directory):
         subjectfolder = os.path.join(directory, subject)
-        if not os.path.isdir(subjectfolder): continue;
+        if not os.path.isdir(subjectfolder):
+            continue
 
         for description in os.listdir(subjectfolder):
             descriptionfolder = os.path.join(subjectfolder, description)
-            if not os.path.isdir(descriptionfolder): continue;
+            if not os.path.isdir(descriptionfolder):
+                continue
 
             for date in os.listdir(descriptionfolder):
                 datefolder = os.path.join(descriptionfolder, date)
-                if not os.path.isdir(datefolder): continue;
+                if not os.path.isdir(datefolder):
+                    continue
 
                 for imageid in os.listdir(datefolder):
                     imageidfolder = os.path.join(datefolder, imageid)
-                    if not os.path.isdir(imageidfolder): continue;
+                    if not os.path.isdir(imageidfolder):
+                        continue
 
                     # can finally look at the images now
                     # remove non-image files just in case
                     imagefiles = [i for i in os.listdir(imageidfolder)
                                   if i.endswith(('.dcm', '.nii', '.nii.gz'))]
-                    if not imagefiles: continue;
+                    if not imagefiles:
+                        continue
 
                     img = imagefiles[0] # example image
                     is_dicom = img.lower().endswith('dcm')

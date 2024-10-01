@@ -2,11 +2,17 @@
 # ----------
 
 # .DS_Store
-*/.DS_Store
+.DS_Store
 
 # configuration files
 atstaging/config/*
 !atstaging/config/example.json
+
+# scripts folder
+scripts/ouputs/*
+scripts/inputs/*
+!scripts/outputs/README.md
+!scripts/inputs/README.md
 
 # PYTHON 
 # -----------

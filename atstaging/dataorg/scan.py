@@ -43,12 +43,26 @@ def create_subject_table(amy_search, tau_search, t1_search):
     result = link_loni_modalities(tau, amy, t1)
     return result
 
-def create_preproc_table(subject_table, download_directory):
+def create_preproc_table(subject_table, download_table):
 
-    print()
-    print(f'Searching "{download_directory}" for downloaded images...')
+    subject_table = create_subject_table('/Users/earnestt1234/Downloads/scan_amy_092424_9_24_2024.csv',
+                                         '/Users/earnestt1234/Downloads/scan_tau_092424_9_24_2024.csv',
+                                         '/Users/earnestt1234/Downloads/scan_t1_092424_9_25_2024.csv')
 
-    downloads = list_loni_images(download_directory)
+    df = subject_table
+    df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
+    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
+    df['ImageIDT1'] = df['ImageIDT1'].str.replace('D', 'I')
 
-downloads = list_loni_images('/scratch/tom.earnest/SCAN/images/rawdata')
-downloads.to_csv('/home/tom.earnest/scan_list.csv')
+    mapper = download_table['Path']
+    mapper.index = download_table['ImageID']
+
+    df['TauPath'] = df['ImageIDTau'].map(mapper)
+    df['AmyloidPath'] = df['ImageIDAmyloid'].map(mapper)
+    df['T1Path'] = df['ImageIDT1'].map(mapper)
+
+    return df
+
+create_subject_table('/Users/earnestt1234/Downloads/scan_amy_092424_9_24_2024.csv',
+                     '/Users/earnestt1234/Downloads/scan_tau_092424_9_24_2024.csv',
+                     '/Users/earnestt1234/Downloads/scan_t1_092424_9_25_2024.csv')

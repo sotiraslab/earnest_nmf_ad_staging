@@ -6,26 +6,26 @@ import sys
 import pandas as pd
 
 from atstaging.config import get, set_config_automatic
-from atstaging.preprocessing.mripreproc_bids import mripreproc_bids
+from atstaging.preprocessing.pipeline import at_mri_pipeline
 from atstaging.preprocessing.execute import execute
 from atstaging.printing import begin_command, end_command
 
-BATCH_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'preproc_mri_batch.sh')
+BATCH_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'at_preproc_batch.sh')
 
 def parse(arguments=None):
 
     usage = """
-    
+
     Initiate batch processing of MRIs from an input table.
     The input table has a *specific* structure which cannot be changed.
     The following columns are required:
-    
+
       - subject: subject identifier (used for BIDS outputs)
       - session: session identifier (user for BIDS outputs)
       - t1: path to the input T1 image for the given subject/session
       - output: output directory for each subject.  This can be the same for all rows
                 but need not be.
-                
+
     An error will be thrown if at least one of these columns is missing"""
 
     parser = argparse.ArgumentParser(usage=usage)
@@ -34,7 +34,7 @@ def parse(arguments=None):
                         help='Do not ask for confirmation before proceeding')
     parser.add_argument('--no-slurm', action='store_false', dest='slurm',
                         help="Do not use SLURM and instead run processing jobs serially.")
-    
+
     args = parser.parse_args(arguments)
     return args
 
@@ -48,11 +48,11 @@ def _check_input_table(df):
 
     if missing:
         raise ValueError(f'Input table is missing one or more required columns: {missing}')
-    
+
     else:
         return True
 
-def run_mri_preproc_table(table, slurm=True, force=False):
+def run_at_preproc_table(table, slurm=True, force=False):
 
     set_config_automatic()
 
@@ -61,8 +61,8 @@ def run_mri_preproc_table(table, slurm=True, force=False):
     nrows = len(df)
 
     print()
-    print('BATCH MRI PROCESSING')
-    print('- - - - - - - - - - ')
+    print('BATCH PROCESSING')
+    print('- - - - - - - - ')
     print()
     print(f"Input table: {table}")
     print(f"Number of subjects: {nrows}")
@@ -88,7 +88,7 @@ def run_mri_preproc_table(table, slurm=True, force=False):
         session = str(row['session'])
         t1 = str(row['t1'])
         output = str(row['output'])
-            
+
         print()
         print(f'PROCESSING JOB {i+1}/{nrows}')
         print(f'  * subject={subject}')
@@ -135,12 +135,12 @@ def run_mri_preproc_table(table, slurm=True, force=False):
             execute(command)
 
         else:
-            mripreproc_bids(input_img=t1, subject=subject, session=session, output_directory=output)
+            at_mri_pipeline(input_img=t1, subject=subject, session=session, output_directory=output)
         end_command(f'preproc: {tag}')
 
 def main():
     args = parse()
-    run_mri_preproc_table(**vars(args))
+    run_at_preproc_table(**vars(args))
 
 if __name__ == '__main__':
     main()

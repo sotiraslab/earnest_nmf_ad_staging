@@ -3,7 +3,7 @@
     "deepmrseg_env": "DeepMRSeg",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "qc-skullstrip", "qc-checkerboard"],
-    "overwrite_mri": false,
+    "overwrite_preproc": false,
     "quick": true,
     "slurm": {
         "time": "12:00:00",

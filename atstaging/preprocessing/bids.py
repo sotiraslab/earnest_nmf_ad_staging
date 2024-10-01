@@ -68,7 +68,7 @@ class BIDSOutputNamer:
     def make_img_dir(self):
         Path(self.bids_img_dir).mkdir(parents=True, exist_ok=True)
 
-class MRIOutputNamer(BIDSOutputNamer):
+class ATPreprocOutputNamer(BIDSOutputNamer):
 
     def __init__(self, subject, session, modality=None, directory=None):
         super().__init__(subject=subject, session=session, modality=modality, directory=directory)

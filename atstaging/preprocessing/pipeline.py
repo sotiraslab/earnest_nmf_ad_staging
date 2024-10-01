@@ -7,7 +7,7 @@ import os
 from colorama import Fore, Style
 
 from .bias_correction import run_N4_bias_correction
-from .bids import MRIOutputNamer
+from .bids import ATPreprocOutputNamer
 from .dicom_to_nifiti import run_dcm2niix
 from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
 from .reorient import reorient_image
@@ -24,7 +24,9 @@ def parse(arguments=None):
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-i', '--input', required=True, dest='input_img', help='Input T1 image to preprocess.')
+    parser.add_argument('-M', '--mri', required=True, dest='t1_img', help='Input T1 image to preprocess.')
+    parser.add_argument('-A', '--amyloid', required=True, dest='amyloid_img', help='Input aymloid PET image to preprocess.')
+    parser.add_argument('-T', '--tau', required=True, dest='tau_img', help='Input tau PET image to preprocess.')
     parser.add_argument('-o', '--output', required=True, dest='output_directory', help='BIDS directory to create outputs')
     parser.add_argument('--sub', required=True, dest='subject', help='BIDS subject for image.')
     parser.add_argument('--ses', required=True, dest='session', help='BIDS session for image.')
@@ -34,7 +36,8 @@ def parse(arguments=None):
 
     return args
 
-def mripreproc_bids(input_img, subject, session, output_directory, config=None):
+def at_mri_pipeline(t1_img, amyloid_img, tau_img,
+                    subject, session, output_directory, config=None):
 
     if config is not None:
         set_config_by_name(config)
@@ -54,17 +57,17 @@ def mripreproc_bids(input_img, subject, session, output_directory, config=None):
     print()
     print(Fore.RED + Style.BRIGHT + 'INPUTS' + Style.RESET_ALL)
     print(f'  - Date: {str(dt.datetime.now())}')
-    print(f'  - Input image: {input_img}')
+    print(f'  - Input image: {t1_img}')
     print(f'  - Output directory: {output_directory}')
     print(f'  - BIDS Subject: {subject}')
     print(f'  - BIDS session: {session}')
 
-    is_dicom = os.path.isdir(input_img)
+    is_dicom = os.path.isdir(t1_img)
     output_directory = os.path.abspath(output_directory)
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    overwrite = get('overwrite_mri')
+    overwrite = get('overwrite_preproc')
 
     print()
     print(Fore.RED + Style.BRIGHT + 'STATUS' + Style.RESET_ALL)
@@ -80,7 +83,7 @@ def mripreproc_bids(input_img, subject, session, output_directory, config=None):
     starttime = time.time()
 
     # setup naming
-    namer = MRIOutputNamer(
+    namer = ATPreprocOutputNamer(
         subject=subject,
         session=session,
         modality='anat',
@@ -97,18 +100,18 @@ def mripreproc_bids(input_img, subject, session, output_directory, config=None):
 
         print()
         tsp('Running DICOM to NIFTI conversion.')
-        tsp(f'Source image: {input_img}')
+        tsp(f'Source image: {t1_img}')
         tsp(f'Destination image: {starting_image}')
 
         begin_command('dcm2niix')
-        run_dcm2niix(input_img, img_dir, base)
+        run_dcm2niix(t1_img, img_dir, base)
         end_command('dcm2niix')
 
     else:
 
         print()
         tsp('Input image is NIFTI; no conversion.')
-        starting_image = input_img
+        starting_image = t1_img
 
     # "preskullstripping" steps
     #  ---> reorientation, bias correction
@@ -249,7 +252,7 @@ def mripreproc_bids(input_img, subject, session, output_directory, config=None):
 
 def main():
     args = parse()
-    mripreproc_bids(**vars(args))
+    at_mri_pipeline(**vars(args))
 
 if __name__ == '__main__':
     main()

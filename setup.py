@@ -32,7 +32,7 @@ setup(name='atstaging',
       long_description=long_description,
       long_description_content_type='text/markdown',
       entry_points = {
-        'console_scripts': ['preproc_mri=atstaging.preprocessing.mripreproc_bids:main',
-                            'preproc_mri_table=atstaging.slurm.preproc_mri_table:main'],
+        'console_scripts': ['at_preproc=atstaging.preprocessing.pipeline:main',
+                            'at_preproc_table=atstaging.slurm.at_preproc_table:main'],
         }
       )

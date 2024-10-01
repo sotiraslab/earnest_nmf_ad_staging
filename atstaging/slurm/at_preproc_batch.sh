@@ -3,7 +3,7 @@
 # usage string
 usage() {
 	echo ""
-	echo "Usage:	preproc_mri_batch.sh -i <t1> -o <output> -s <subject> -S <session>"
+	echo "Usage:at_preproc_batch.sh -i <t1> -o <output> -s <subject> -S <session>"
 	}
 
 # read arguments
@@ -15,7 +15,7 @@ do
 	i)	t1=${OPTARG};;
 	o)	output=${OPTARG};;
     s)  subject=${OPTARG};;
-    S)  session=${OPTARG};; 
+    S)  session=${OPTARG};;
 	?)	echo ""
 		echo "Unknown arguments passed; exiting."
 		echo ""
@@ -39,4 +39,4 @@ then
 fi
 
 # run!
-preproc_mri -i $t1 -o $output --sub $subject --ses $session
+at_preproc -i $t1 -o $output --sub $subject --ses $session

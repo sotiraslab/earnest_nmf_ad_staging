@@ -20,5 +20,5 @@ readme = "README.md"
 Homepage = "https://github.com/sotiraslab/at_nmf_sustain"
 
 [project.scripts]
-preproc_mri = "atstaging.preprocessing.mripreproc_bids:main"
-preproc_mri_table = "atstaging.slurm.preproc_mri_table:main"
+at_preproc = "atstaging.preprocessing.pipeline:main"
+at_preproc_table = "atstaging.slurm.at_preproc_table:main"

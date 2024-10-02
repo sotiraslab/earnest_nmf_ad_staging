@@ -68,9 +68,9 @@ class BIDSOutputNamer:
     def make_img_dir(self):
         Path(self.bids_img_dir).mkdir(parents=True, exist_ok=True)
 
-class ATPreprocOutputNamer(BIDSOutputNamer):
+class ATPreprocMRINamer(BIDSOutputNamer):
 
-    def __init__(self, subject, session, modality=None, directory=None):
+    def __init__(self, subject, session, modality='anat', directory=None):
         super().__init__(subject=subject, session=session, modality=modality, directory=directory)
 
         self.namestore = {
@@ -79,10 +79,34 @@ class ATPreprocOutputNamer(BIDSOutputNamer):
             'brain': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brain_T1w.nii.gz',
             'brainmask': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_T1w.nii.gz',
             'affine': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-affine_transform.mat',
-            'warp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-nonlinear_warpfield.nii.gz',
-            'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
-            'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
+            'warp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-nonlinear_warpfield.nii.gz',
+            'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
+            'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz',
             'qc-skullstrip': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_qc.png',
             'qc-checkerboard': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-checkerboard_qc.png'
         }
+
+class ATPreprocPETNamer(BIDSOutputNamer):
+
+    def __init__(self, subject, session, tracer, modality='pet', directory=None):
+        super().__init__(subject=subject, session=session, modality=modality, directory=directory)
+        self.tracer = tracer
+
+        self.namestore = {
+            'prereg': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-prereg_pet.nii.gz',
+            'registered': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-MNI152NLin6ASym_desc-registered_pet.nii.gz',
+            'rigid': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-t1_desc-rigid_pet.nii.gz',
+            'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_from-pet_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
+            'brain': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-brain_pet.nii.gz',
+        }
+
+    def get_name(self, key):
+
+        try:
+            pattern = self.namestore[key]
+        except KeyError:
+            raise KeyError(f'Key "{key}" not found in the name store.')
+
+        name = pattern.format(SUBJECT=self.subject, SESSION=self.session, TRACER=self.tracer)
+        return name

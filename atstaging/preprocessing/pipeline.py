@@ -7,7 +7,7 @@ import os
 from colorama import Fore, Style
 
 from .bias_correction import run_N4_bias_correction
-from .bids import ATPreprocOutputNamer
+from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .dicom_to_nifiti import run_dcm2niix
 from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
 from .reorient import reorient_image
@@ -36,7 +36,7 @@ def parse(arguments=None):
 
     return args
 
-def at_mri_pipeline(t1_img, amyloid_img, tau_img,
+def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                     subject, session, output_directory, config=None):
 
     if config is not None:
@@ -47,7 +47,7 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
     print(Fore.MAGENTA)
     print('-------------------------')
     print('|                       |')
-    print('| * MRI Preprocessing * |')
+    print('|   * Preprocessing *   |')
     print('|                       |')
     print('-------------------------')
     print(Style.RESET_ALL)
@@ -57,7 +57,10 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
     print()
     print(Fore.RED + Style.BRIGHT + 'INPUTS' + Style.RESET_ALL)
     print(f'  - Date: {str(dt.datetime.now())}')
-    print(f'  - Input image: {t1_img}')
+    print( '  - Input images:')
+    print(f'      * T1: {t1_img}')
+    print(f'      * Amyloid PET ({amyloid_tracer}): {amyloid_img}')
+    print(f'      * Tau PET ({tau_tracer}): {tau_img}')
     print(f'  - Output directory: {output_directory}')
     print(f'  - BIDS Subject: {subject}')
     print(f'  - BIDS session: {session}')
@@ -83,18 +86,33 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
     starttime = time.time()
 
     # setup naming
-    namer = ATPreprocOutputNamer(
+    t1namer = ATPreprocMRINamer(
         subject=subject,
         session=session,
         modality='anat',
         directory=output_directory
         )
-    namer.make_img_dir()
+    amynamer = ATPreprocPETNamer(
+        subject=subject,
+        session=session,
+        tracer=amyloid_tracer,
+        modality='pet',
+        directory=output_directory)
+    taunamer = ATPreprocPETNamer(
+        subject=subject,
+        session=session,
+        tracer=tau_tracer,
+        modality='pet',
+        directory=output_directory)
+    t1namer.make_img_dir()
+
+    print()
+    tsp('Beginnging with T1 procssing...')
 
     # convert to dicom (if needed)
     if is_dicom:
 
-        starting_image = namer.get_path('dcm2niix')
+        starting_image = t1namer.get_path('dcm2niix')
         img_dir = os.path.dirname(starting_image)
         base = os.path.basename(starting_image).removesuffix('.nii.gz')
 
@@ -115,7 +133,7 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
 
     # "preskullstripping" steps
     #  ---> reorientation, bias correction
-    preskullstrip = namer.get_path('preskullstrip')
+    preskullstrip = t1namer.get_path('preskullstrip')
     if not os.path.exists(preskullstrip) or overwrite:
 
         print()
@@ -137,8 +155,8 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
         tsp('Existing preskullstripped image; not rerunning.')
 
     # skullstripping
-    brainmask = namer.get_path('brainmask')
-    brain = namer.get_path('brain')
+    brainmask = t1namer.get_path('brainmask')
+    brain = t1namer.get_path('brain')
 
     if not os.path.exists(brainmask) or overwrite:
 
@@ -167,9 +185,9 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
 
     # registration
     # ---> registration, warp concatenation, jacobian determinant
-    fullwarp = namer.get_path('fullwarp')
-    jacobian = namer.get_path('jacobian')
-    registered = namer.get_path('registered')
+    fullwarp = t1namer.get_path('fullwarp')
+    jacobian = t1namer.get_path('jacobian')
+    registered = t1namer.get_path('registered')
 
     if not os.path.exists(fullwarp) or overwrite:
 
@@ -210,9 +228,9 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
         apply_transform(brain, mni_brain, fullwarp, registered)
         end_command('apply warp')
 
-    # QC images
-    skullstrip_qc = namer.get_path('qc-skullstrip')
-    checkerboard_qc = namer.get_path('qc-checkerboard')
+    # MRI QC images
+    skullstrip_qc = t1namer.get_path('qc-skullstrip')
+    checkerboard_qc = t1namer.get_path('qc-checkerboard')
 
     print()
     tsp('Generating QC images')
@@ -225,6 +243,9 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
     mni_brain = get('mni152_brain')
     registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
     end_command('qc-checkerboard')
+
+    # amyloid preprocessing
+
 
     # cleanup
     keep = get('mri_preproc_keep')
@@ -239,7 +260,7 @@ def at_mri_pipeline(t1_img, amyloid_img, tau_img,
         tsp(f'Files being kept: {keep}')
 
         begin_command('cleanup')
-        namer.keep_only(keep, verbose=True)
+        t1namer.keep_only(keep, verbose=True)
         end_command('cleanup')
 
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)

@@ -45,10 +45,6 @@ def create_subject_table(amy_search, tau_search, t1_search):
 
 def create_preproc_table(subject_table, download_table):
 
-    subject_table = create_subject_table('/Users/earnestt1234/Downloads/scan_amy_092424_9_24_2024.csv',
-                                         '/Users/earnestt1234/Downloads/scan_tau_092424_9_24_2024.csv',
-                                         '/Users/earnestt1234/Downloads/scan_t1_092424_9_25_2024.csv')
-
     df = subject_table
     df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
     df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
@@ -62,7 +58,3 @@ def create_preproc_table(subject_table, download_table):
     df['T1Path'] = df['ImageIDT1'].map(mapper)
 
     return df
-
-create_subject_table('/Users/earnestt1234/Downloads/scan_amy_092424_9_24_2024.csv',
-                     '/Users/earnestt1234/Downloads/scan_tau_092424_9_24_2024.csv',
-                     '/Users/earnestt1234/Downloads/scan_t1_092424_9_25_2024.csv')

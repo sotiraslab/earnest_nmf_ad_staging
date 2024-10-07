@@ -6,6 +6,7 @@ Created on Wed Sep 25 09:38:46 2024
 @author: earnestt1234
 """
 
+import datetime as dt
 import os
 import pandas as pd
 
@@ -162,7 +163,7 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
     grouped = addt1.loc[by_tau_scan.values, :]
 
     vprint()
-    vprint(f'Tracer Table:')
+    vprint('Tracer Table:')
     vprint('-----')
     vprint()
 
@@ -171,3 +172,23 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
 
     return grouped
 
+def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use_cached=True):
+    downloads = None
+    if use_cached and os.path.isdir(cachedir):
+        cache_files = os.listdir(cachedir)
+        for file in cache_files:
+            if file.startswith(dataset_key) and file.endswith('.csv'):
+                fullfile = os.path.join(cachedir, file)
+                print()
+                print(f'Using cached file at {fullfile}.')
+                downloads = pd.read_csv(fullfile)
+
+    elif downloads is None:
+        downloads = list_loni_images(download_folder)
+        if not os.path.isdir(cachedir):
+            os.mkdir(cachedir)
+        ts = dt.datetime.now().strftime('%Y_%m_%d')
+        cache_path = os.path.join(cachedir, f'{dataset_key}_{ts}.csv')
+        downloads.to_csv(cache_path, index=False)
+
+    return downloads

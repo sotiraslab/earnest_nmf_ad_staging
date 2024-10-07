@@ -18,10 +18,10 @@ from atstaging.dataorg.scan import create_subject_table, create_preproc_table
 from atstaging.config import get
 
 # INPUTS (see docstring above)
-TAU_SEARCH = ''
-AMY_SEARCH = ''
-T1_SEARCH = ''
-DOWNLAD_FOLDER = ''
+TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_tau_092424_10_07_2024.csv'
+AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_amy_092424_10_07_2024.csv'
+T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_t1_092424_10_07_2024.csv'
+DOWNLAD_FOLDER = '/scratch/tom.earnest/SCAN/images/rawdata'
 OUTPUT_FOLDER = get('output_directory')
 
 # MAIN

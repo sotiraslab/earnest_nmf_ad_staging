@@ -15,13 +15,14 @@ import os
 
 from atstaging.dataorg.utils import list_loni_images
 from atstaging.dataorg.scan import create_subject_table, create_preproc_table
+from atstaging.config import get
 
 # INPUTS (see docstring above)
 TAU_SEARCH = ''
 AMY_SEARCH = ''
 T1_SEARCH = ''
 DOWNLAD_FOLDER = ''
-OUTPUT_FOLDER = 'outputs'
+OUTPUT_FOLDER = get('output_directory')
 
 # MAIN
 

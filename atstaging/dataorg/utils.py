@@ -97,12 +97,23 @@ def list_loni_images(directory, show_count=True, count_every=100):
     print(f'\nFinished; found {c} images.\n')
     return pd.DataFrame(rows)
 
+def _nstring(df, subject_col='Subject'):
+    return f'{len(df[subject_col].unique())} subject(s), {len(df)} scan(s)'
+
 def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
                          date_col='ScanDate', tracer_col='Tracer',
-                         id_col='ImageID', tau_amyloid_threshold='180D'):
+                         id_col='ImageID', tau_amyloid_threshold='180D',
+                         verbose=True):
+
+    vprint = print if verbose else lambda *args, **kwargs: None
 
     tau = tau[[subject_col, date_col, tracer_col, id_col]]
     amyloid = amyloid[[subject_col, date_col, tracer_col, id_col]]
+
+    vprint()
+    vprint(f'Starting T1: {_nstring(t1, subject_col)}')
+    vprint(f'Starging amyloid: {_nstring(amyloid, subject_col)}')
+    vprint(f'Starting tau: {_nstring(tau, subject_col)}')
 
     # link amyloid & tau
     t_suffix = "Tau"
@@ -115,6 +126,9 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
                        how='left', on=subject_col,
                        suffixes = (t_suffix, a_suffix))
     merged = merged.loc[~ merged[a_date].isna(), :].copy()
+    vprint()
+    vprint(f'Subjects with amyloid/tau: {_nstring(merged, subject_col=subject_col)}')
+
     merged[t_date] = pd.to_datetime(merged[t_date])
     merged[a_date] = pd.to_datetime(merged[a_date])
     merged['TauAmyloidDiff'] = merged[t_date] - merged[a_date]
@@ -124,6 +138,9 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
     grouped = grouped.loc[grouped['TauAmyloidDiffAbs'].le(pd.Timedelta(tau_amyloid_threshold)), :]
     if tau_amyloid_threshold:
         grouped['TauAmyloidMeanDate'] = grouped[t_date] - (grouped['TauAmyloidDiff'] / 2)
+
+    vprint()
+    vprint(f'Subjects with amyloid/tau within {tau_amyloid_threshold}: {_nstring(grouped, subject_col=subject_col)}')
 
     # link t1
     t1 = t1[[subject_col, date_col, id_col]]
@@ -135,14 +152,22 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
                           how='left', suffixes=(None, t1_suffix))
     addt1 = addt1.loc[~ addt1[t1_date].isna(), :].copy()
 
+    vprint()
+    vprint(f'Subjects with amyloid/tau/T1: {_nstring(addt1, subject_col=subject_col)}')
+
     addt1[t1_date] = pd.to_datetime(addt1[t1_date])
     addt1['PETT1Diff'] = addt1['TauAmyloidMeanDate'] - addt1[t1_date]
     addt1['PETT1DiffAbs'] = addt1['PETT1Diff'].abs()
     by_tau_scan = addt1.groupby([subject_col, 'TauAmyloidMeanDate'])['PETT1DiffAbs'].idxmin()
     grouped = addt1.loc[by_tau_scan.values, :]
 
+    vprint()
+    vprint(f'Tracer Table:')
+    vprint('-----')
+    vprint()
+
     tracer_tabs = pd.crosstab(grouped[f'{tracer_col}{t_suffix}'], grouped[f'{tracer_col}{a_suffix}'])
-    print(tracer_tabs)
+    vprint(tracer_tabs)
 
     return grouped
 

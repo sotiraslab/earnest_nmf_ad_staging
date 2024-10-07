@@ -6,6 +6,7 @@
     "amy_preproc_keep": ["registered"],
     "tau_preproc_keep": ["registered"],
     "overwrite_preproc": false,
+    "output_directory": "/path/to/output/folder",
     "quick": true,
     "slurm": {
         "time": "12:00:00",

@@ -10,6 +10,7 @@ from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .dicom_to_nifiti import run_dcm2niix
 from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
+from .pet_registration import preregistration_pet, register_pet_image
 from .reorient import reorient_image
 from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
 from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
@@ -35,6 +36,21 @@ def parse(arguments=None):
     args = parser.parse_args(args=arguments)
 
     return args
+
+def _apply_file_keep(keep, namer, identifier):
+    
+    if 'all' in keep:
+        print()
+        tsp(f'Detected "all" for {identifier}; saving all files.')
+
+    else:
+        print()
+        tsp('Cleaning up files.')
+        tsp(f'Files being kept: {keep}')
+
+        begin_command('cleanup')
+        namer.keep_only(keep, verbose=True)
+        end_command('cleanup')
 
 def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                     subject, session, output_directory, config=None):
@@ -105,9 +121,13 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         modality='pet',
         directory=output_directory)
     t1namer.make_img_dir()
-
+    
+    # # # # # # # #
+    # T1
+    # # # # # # # #
+    
     print()
-    tsp('Beginnging with T1 procssing...')
+    tsp('Beginnging with T1 processing...')
 
     # convert to dicom (if needed)
     if is_dicom:
@@ -244,24 +264,79 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
     end_command('qc-checkerboard')
 
-    # amyloid preprocessing
-
+    # # # # # # # #
+    # AMYLOID
+    # # # # # # # #
+    
+    print()
+    tsp('Beginnging with amyloid-PET processing...')
+    
+    print()
+    tsp('Running preparatory steps for PET')
+    
+    begin_command('amyloid-prereg')
+    prereg = amynamer.get_path('prereg')
+    preregistration_pet(amyloid_img, output=prereg)
+    end_command('amyloid-prereg')
+    
+    print()
+    tsp('Registering PET image')
+    
+    begin_command('amyloid-registration')
+    amy_registered = amynamer.get_path('registered')
+    amy_warp = amynamer.get_path('fullwarp')
+    amy_rigid = amynamer.get_path('rigid')
+    register_pet_image(pet=prereg,
+                       t1=preskullstrip,
+                       brainmask=brainmask,
+                       brain=brain,
+                       warp=fullwarp,
+                       mni_brain=mni_brain,
+                       out_registered=amy_registered,
+                       out_warp=amy_warp,
+                       out_rigid_reg=amy_rigid)
+    end_command('amyloid-registration')
+    
+    # # # # # # # #
+    # TAU
+    # # # # # # # #
+    
+    print()
+    tsp('Beginnging with tau-PET processing...')
+    
+    print()
+    tsp('Running preparatory steps for PET')
+    
+    begin_command('tau-prereg')
+    prereg = taunamer.get_path('prereg')
+    preregistration_pet(tau_img, output=prereg)
+    end_command('tau-prereg')
+    
+    print()
+    tsp('Registering PET image')
+    
+    begin_command('tau-registration')
+    tau_registered = taunamer.get_path('registered')
+    tau_warp = taunamer.get_path('fullwarp')
+    tau_rigid = taunamer.get_path('rigid')
+    register_pet_image(pet=prereg,
+                       t1=preskullstrip,
+                       brainmask=brainmask,
+                       brain=brain,
+                       warp=fullwarp,
+                       mni_brain=mni_brain,
+                       out_registered=tau_registered,
+                       out_warp=tau_warp,
+                       out_rigid_reg=tau_rigid)
+    end_command('tau-registration')
 
     # cleanup
-    keep = get('mri_preproc_keep')
-
-    if 'all' in keep:
-        print()
-        tsp('Detected "all" in "mri_preproc_keep"; saving all files.')
-
-    else:
-        print()
-        tsp('Cleaning up files.')
-        tsp(f'Files being kept: {keep}')
-
-        begin_command('cleanup')
-        t1namer.keep_only(keep, verbose=True)
-        end_command('cleanup')
+    keep_t1 = get('mri_preproc_keep')
+    keep_amy = get('amy_preproc_keep')
+    keep_tau = get('tau_preproc_keep')
+    _apply_file_keep(keep_t1, t1namer, 'T1')
+    _apply_file_keep(keep_amy, amynamer, 'amyloid-PET')
+    _apply_file_keep(keep_tau, taunamer, 'tau-PET')
 
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * END OF PREPROCESSING * * * *' + Style.RESET_ALL)
     endtime = time.time()

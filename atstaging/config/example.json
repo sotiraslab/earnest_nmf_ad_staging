@@ -3,6 +3,8 @@
     "deepmrseg_env": "DeepMRSeg",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "qc-skullstrip", "qc-checkerboard"],
+    "amy_preproc_keep": ["registered"],
+    "tau_preproc_keep": ["registered"],
     "overwrite_preproc": false,
     "quick": true,
     "slurm": {

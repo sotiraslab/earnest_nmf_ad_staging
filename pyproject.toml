@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "atstaging"
 description = "Code for Tom's NMF & SuStaIn PET staging work."
 dependencies = [
+    "colorama",
     "nibabel",
     "pandas"
 ]

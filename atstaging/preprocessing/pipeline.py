@@ -121,6 +121,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         modality='pet',
         directory=output_directory)
     t1namer.make_img_dir()
+    amynamer.make_img_dir()
+    taunamer.make_img_dir()
     
     # # # # # # # #
     # T1

@@ -15,6 +15,7 @@ with open(path.join(this_directory, 'atstaging', 'version.py'), encoding='utf-8'
     version = f.read().split('=')[1].strip('\'"\n')
 
 requirements = [
+    'colorama',
     'nibabel',
     'pandas'
 ]

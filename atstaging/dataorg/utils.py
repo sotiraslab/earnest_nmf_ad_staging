@@ -8,7 +8,22 @@ Created on Wed Sep 25 09:38:46 2024
 
 import datetime as dt
 import os
+
+import numpy as np
 import pandas as pd
+
+def assign_training_validation(df, omit_non_ad_training=True):
+    df = df.sort_values(['Subject', 'TauAmyloidMeanDate'])
+    baseline = df.groupby('Subject')['TauAmyloidMeanDate'].idxmin()
+
+    training_type = np.where(df['TracerAmyloid'].eq('FBR') & df['TracerTau'].eq('FTP'), 'Training', 'Validation')
+    visit_type = np.where(df.index.isin(baseline.values), 'Baseline', 'Followup')
+    df['Division'] = visit_type + training_type
+
+    if omit_non_ad_training:
+        df = df.loc[~(df['Division'].eq('BaselineTraining') & df['CDR'].ge(0.5) & df['AmyloidPositive'].eq(1.0)), :].copy()
+
+    return df
 
 def list_loni_images(directory, show_count=True, count_every=100):
     '''
@@ -182,8 +197,8 @@ def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use
                 print()
                 print(f'Using cached file at {fullfile}.')
                 downloads = pd.read_csv(fullfile)
-
-    elif downloads is None:
+                
+    if downloads is None:
         downloads = list_loni_images(download_folder)
         if not os.path.isdir(cachedir):
             os.mkdir(cachedir)

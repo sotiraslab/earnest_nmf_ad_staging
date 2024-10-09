@@ -8,9 +8,51 @@ Created on Wed Sep 25 09:38:46 2024
 
 import datetime as dt
 import os
+import re
 
 import numpy as np
 import pandas as pd
+
+def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_subject='Subject', b_date='Date', b_name='Visit',
+                         gap_allowed='90D', drop_missing=False, include_gap_cols=True):
+    # ensure numeric datetime
+    a[a_date] = pd.to_datetime(a[a_date])
+    b[b_date] = pd.to_datetime(b[b_date])
+
+    # filter columns in b
+    bcols_date = f'{b_name}Date'
+    bcols_gap = f'GapTo{b_name}'
+    bcols_abs = f'AbsGapTo{b_name}'
+    b = b.rename(columns={b_date: bcols_date})
+    b = b[[b_subject, bcols_date] + fields]
+
+    # left merge
+    merged = a.merge(b, how='left', left_on=a_subject, right_on=b_subject)
+    if drop_missing:
+        merged = merged.loc[~merged[bcols_date].isna(), :].copy()
+
+    # add gap information and filer
+    merged[bcols_gap] = merged[a_date] - merged[bcols_date]
+    merged[bcols_abs] = merged[bcols_gap].abs()
+    by_a = merged.groupby([a_subject, a_date])[bcols_abs].idxmin()
+    grouped = merged.loc[by_a, :]
+    if gap_allowed is not None:
+        grouped = grouped.loc[grouped[bcols_abs].le(pd.Timedelta(gap_allowed)), :]
+
+    if not include_gap_cols:
+        merged = merged.drop([bcols_gap, bcols_abs], axis=1)
+
+    return grouped
+
+def add_features_by_viscode(a, b, fields, a_subject='Subject', a_viscode='VISCODE',
+                            b_subject='Subject', b_viscode='VISCODE', drop_missing=False):
+    b = b[[b_subject, b_viscode] + fields]
+    b = b.rename(columns={b_subject: a_subject, b_viscode: a_viscode})
+    merged = a.merge(b, how='left', on=[a_subject, a_viscode])
+    if drop_missing:
+        merged = merged.loc[~merged[b_viscode].isna(), :].copy()
+
+    return merged
 
 def assign_training_validation(df, omit_non_ad_training=True):
     df = df.sort_values(['Subject', 'TauAmyloidMeanDate'])
@@ -116,15 +158,19 @@ def list_loni_images(directory, show_count=True, count_every=100):
 def _nstring(df, subject_col='Subject'):
     return f'{len(df[subject_col].unique())} subject(s), {len(df)} scan(s)'
 
-def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
-                         date_col='ScanDate', tracer_col='Tracer',
-                         id_col='ImageID', tau_amyloid_threshold='180D',
-                         verbose=True):
-
+def link_modalities(tau, amyloid, t1, subject_col='Subject',
+                    date_col='ScanDate', tracer_col='Tracer',
+                    tau_amyloid_threshold='180D', verbose=True,
+                    extra_tau_columns=None, extra_amyloid_columns=None,
+                    extra_t1_columns=None):
     vprint = print if verbose else lambda *args, **kwargs: None
 
-    tau = tau[[subject_col, date_col, tracer_col, id_col]]
-    amyloid = amyloid[[subject_col, date_col, tracer_col, id_col]]
+    extra_tau_columns = [] if extra_tau_columns is None else extra_tau_columns
+    extra_amyloid_columns = [] if extra_amyloid_columns is None else extra_amyloid_columns
+    extra_t1_columns = [] if extra_t1_columns is None else extra_t1_columns
+
+    tau = tau[[subject_col, date_col, tracer_col] + extra_tau_columns]
+    amyloid = amyloid[[subject_col, date_col, tracer_col] + extra_amyloid_columns]
 
     vprint()
     vprint(f'Starting T1: {_nstring(t1, subject_col)}')
@@ -159,7 +205,7 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
     vprint(f'Subjects with amyloid/tau within {tau_amyloid_threshold}: {_nstring(grouped, subject_col=subject_col)}')
 
     # link t1
-    t1 = t1[[subject_col, date_col, id_col]]
+    t1 = t1[[subject_col, date_col] + extra_t1_columns]
     tmp = t1.drop('Subject', axis=1).copy()
     tmp.columns = tmp.columns + 'T1'
     tmp['Subject'] = t1['Subject']
@@ -168,14 +214,14 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
                           how='left', suffixes=(None, t1_suffix))
     addt1 = addt1.loc[~ addt1[t1_date].isna(), :].copy()
 
-    vprint()
-    vprint(f'Subjects with amyloid/tau/T1: {_nstring(addt1, subject_col=subject_col)}')
-
     addt1[t1_date] = pd.to_datetime(addt1[t1_date])
     addt1['PETT1Diff'] = addt1['TauAmyloidMeanDate'] - addt1[t1_date]
     addt1['PETT1DiffAbs'] = addt1['PETT1Diff'].abs()
     by_tau_scan = addt1.groupby([subject_col, 'TauAmyloidMeanDate'])['PETT1DiffAbs'].idxmin()
     grouped = addt1.loc[by_tau_scan.values, :]
+
+    vprint()
+    vprint(f'Subjects with amyloid/tau/T1: {_nstring(grouped, subject_col=subject_col)}')
 
     vprint()
     vprint('Tracer Table:')
@@ -187,6 +233,22 @@ def link_loni_modalities(tau, amyloid, t1, subject_col='Subject',
 
     return grouped
 
+def load_csv_by_match(directory, pattern):
+
+    output = None
+    listdir = os.listdir(directory)
+    for file in listdir:
+        match = re.search(pattern, file)
+        if match:
+            output = os.path.join(directory, file)
+            break
+
+    if output is not None:
+        df = pd.read_csv(output)
+        return df
+    else:
+        raise FileNotFoundError(f'Unable to find file matching "{pattern}" in {directory}')
+
 def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use_cached=True):
     downloads = None
     if use_cached and os.path.isdir(cachedir):
@@ -197,7 +259,7 @@ def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use
                 print()
                 print(f'Using cached file at {fullfile}.')
                 downloads = pd.read_csv(fullfile)
-                
+
     if downloads is None:
         downloads = list_loni_images(download_folder)
         if not os.path.isdir(cachedir):
@@ -207,3 +269,28 @@ def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use
         downloads.to_csv(cache_path, index=False)
 
     return downloads
+
+def report_feature_distribution(features):
+    # report
+    print()
+    print('DATASET COMPOSITION')
+    print('===================')
+
+    print()
+    print("Dataset sizes")
+    print('-----')
+    print(features['Division'].value_counts())
+
+    print()
+    print('Training set (baseline)')
+    print('-----')
+    tmp = features.loc[features['Division'].eq('BaselineTraining')]
+    print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
+
+    print()
+    print('Validation (baseline)')
+    print('-----')
+    tmp = features.loc[features['Division'].eq('BaselineValidation')]
+    print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
+    print()
+    print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))

@@ -8,23 +8,7 @@ Created on Tue Sep 24 10:55:05 2024
 
 import pandas as pd
 
-from atstaging.dataorg.utils import assign_training_validation, link_loni_modalities
-
-def create_preproc_table(subject_table, download_table):
-
-    df = subject_table
-    df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
-    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
-    df['ImageIDT1'] = df['ImageIDT1'].str.replace('D', 'I')
-
-    mapper = download_table['Path']
-    mapper.index = download_table['ImageID']
-
-    df['TauPath'] = df['ImageIDTau'].map(mapper)
-    df['AmyloidPath'] = df['ImageIDAmyloid'].map(mapper)
-    df['T1Path'] = df['ImageIDT1'].map(mapper)
-
-    return df
+from atstaging.dataorg.utils import assign_training_validation, link_modalities, report_feature_distribution
 
 def create_subject_table(amy_search, tau_search, t1_search):
 
@@ -56,12 +40,26 @@ def create_subject_table(amy_search, tau_search, t1_search):
          'M62 Coreg, Avg, Rigid Reg to Std Img/Vox Size, 90-110, 6mm Res': 'M62',
          'P26 Coreg, Avg, Rigid Reg to Std Img/Vox Size, 45-75, 6mm Res': 'P26'})
 
-    result = link_loni_modalities(tau, amy, t1)
+    result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
     return result
 
-def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verbose=True):
+def create_preproc_table(subject_table, download_table):
 
-    vprint = print if verbose else lambda *args, **kwargs: None
+    df = subject_table
+    df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
+    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
+    df['ImageIDT1'] = df['ImageIDT1'].str.replace('D', 'I')
+
+    mapper = download_table['Path']
+    mapper.index = download_table['ImageID']
+
+    df['PathTau'] = df['ImageIDTau'].map(mapper)
+    df['PathAmyloid'] = df['ImageIDAmyloid'].map(mapper)
+    df['PathT1'] = df['ImageIDT1'].map(mapper)
+
+    return df
+
+def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verbose=True):
     nacc = nacc_uds
 
     # make dataset more manageable in terms of columns
@@ -140,28 +138,7 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     # add dataset assignment
     feature_table = assign_training_validation(grouped_small)
 
-    # report
-    vprint()
-    vprint('DATASET COMPOSITION')
-    vprint('===================')
-
-    vprint()
-    vprint("Dataset sizes")
-    vprint('-----')
-    vprint(feature_table['Division'].value_counts())
-
-    vprint()
-    vprint('Training set (baseline)')
-    vprint('-----')
-    tmp = feature_table.loc[feature_table['Division'].eq('BaselineTraining')]
-    vprint(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
-
-    vprint()
-    vprint('Validation (baseline)')
-    vprint('-----')
-    tmp = feature_table.loc[feature_table['Division'].eq('BaselineValidation')]
-    vprint(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
-    vprint()
-    vprint(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))
+    if verbose:
+        report_feature_distribution(feature_table)
 
     return feature_table

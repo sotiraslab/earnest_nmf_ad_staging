@@ -67,6 +67,12 @@ def assign_training_validation(df, omit_non_ad_training=True):
 
     return df
 
+def bin_cdr(cdr):
+    cdr = pd.Series(cdr)
+    cdr[cdr.ge(1)] = 1
+    cdr = cdr.map({0: '0.0', 0.5: '0.5', 1.0: '1.0+'})
+    return cdr
+
 def list_loni_images(directory, show_count=True, count_every=100):
     '''
     Search a folder of images downloaded from LONI and return a DataFrame

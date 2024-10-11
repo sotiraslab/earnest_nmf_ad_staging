@@ -40,7 +40,7 @@ nacc_uds = pd.read_csv(NACC_DATASET)
 downloads = load_loni_downloads_with_caching('scan', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
 subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH)
 preproc_table = create_preproc_table(subject_table, downloads)
-preproc_table.insert(0, 'DataSet', 'NACC')
+preproc_table.insert(0, 'DataSet', 'SCAN')
 feature_table = create_feature_table(preproc_table, nacc_uds=nacc_uds)
 
 # save

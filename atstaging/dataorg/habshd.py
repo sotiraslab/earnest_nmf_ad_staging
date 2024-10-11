@@ -6,9 +6,16 @@ Created on Tue Sep 24 10:55:05 2024
 @author: earnestt1234
 """
 
+import numpy as np
 import pandas as pd
 
-from atstaging.dataorg.utils import assign_training_validation, link_modalities, report_feature_distribution
+from atstaging.dataorg.utils import (
+    add_features_by_viscode,
+    assign_training_validation,
+    bin_cdr,
+    link_modalities,
+    report_feature_distribution
+    )
 
 def create_subject_table(amy_search, tau_search, t1_search):
 
@@ -51,86 +58,52 @@ def create_preproc_table(subject_table, download_table):
 
     return df
 
-def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verbose=True):
-    nacc = nacc_uds
+def create_feature_table(preproc_table, habshd_uds, verbose=True):
+    
+    # add a visit code for the images
+    # this assumes that most images are taken at the first visit
+    # which seems to be true based on IDA
+    # not the best approach, but seems to be needed since dates are given in the subject datatable
+    preproc_table = preproc_table.sort_values(['Subject', 'ScanDateTau'])
+    preproc_table['VisitID'] = preproc_table.groupby('Subject').cumcount() + 1
 
-    # make dataset more manageable in terms of columns
-    desired_columns = [
-        'NACCID',
-        'NACCADC', # ADRC
-        'VISITMO',
-        'VISITDAY',
-        'VISITYR',
-        'NACCFDYS', # Days since baseline visit
-        'NACCAGE',
-        'BIRTHYR',
-        'BIRTHMO',
-        'SEX',
-        'AMYLPET',
-        'CDRSUM',
-        'CDRGLOB',
-        'NACCAPOE',
-        'NACCNE4S',
-    ]
-    naccsub = nacc[desired_columns].copy()
+    # add the variables of interest
+    features = add_features_by_viscode(preproc_table, habshd_uds, fields=['Age', 'ID_Gender','APOE4_Positivity', '01_AB_FBB_AB_pos', 'CDR_Global', 'CDR_Sum'],
+                                       a_subject='Subject', b_subject='Med_ID',
+                                       a_viscode='VisitID', b_viscode='Visit_ID')
+    features = features.drop_duplicates(subset=['Subject', 'VisitID'], keep='first')
 
-    # link the imaging data to the clinical/cog data
-    preproc_table['TauAmyloidMeanDate'] = pd.to_datetime(preproc_table['TauAmyloidMeanDate'])
-    naccsub['VisitDate'] = pd.to_datetime(
-        {'year': naccsub['VISITYR'],
-        'month': naccsub['VISITMO'],
-        'day': naccsub['VISITDAY']}
-    )
-    merged = preproc_table.merge(naccsub, how='left', left_on='Subject', right_on='NACCID')
-    merged = merged.loc[~merged['VisitDate'].isna(), :]
-    merged['GapToVisit'] = merged['TauAmyloidMeanDate'] - merged['VisitDate']
-    merged['GapToVisitAbs'] = merged['GapToVisit'].abs()
-    by_imaging = merged.groupby(['Subject', 'TauAmyloidMeanDate'])['GapToVisitAbs'].idxmin()
-    grouped = merged.loc[by_imaging, :]
-    grouped = grouped.loc[grouped['GapToVisitAbs'].le(pd.Timedelta(gap_imaging_visit)), :]
+    # recoding features
+    # Many visit twos with missing age, so imputing two years from the baseline age
+    features['ImputedAge'] = features.groupby('Subject')['Age'].transform('first') + (2 * (features['VisitID'] - 1))
+    features.loc[features['Age'].isna(), 'Age'] = features['ImputedAge']
 
-    # Recoding 
+    # ID_Gender is male=0, female=1
+    features['SexMale'] = 1 - features['ID_Gender']
+    features['SexMale'] = features.groupby('Subject')['SexMale'].transform('ffill')
 
-    # >>> Age
-    birthage = pd.to_datetime(
-        {'year': grouped['BIRTHYR'],
-        'month': grouped['BIRTHMO'],
-        'day': 15}
-    )
+    # Ffill Amyloid positivity
+    features['AmyloidPositive'] = features['01_AB_FBB_AB_pos']
+    features['APosImputed'] = features.groupby('Subject')['AmyloidPositive'].transform('ffill')
+    features['AmyloidPositive'] = np.where(features['AmyloidPositive'].isna() & features['APosImputed'].eq(1), features['APosImputed'], features['AmyloidPositive'])
 
-    grouped['Age'] = (grouped['TauAmyloidMeanDate'] - birthage).dt.total_seconds() / (60 * 60 * 24 * 365.25)
-    grouped[['Age', 'NACCAGE']]
+    # APOE
+    features['HasE4'] = features['01_AB_FBB_AB_pos']
+    features['HasE4'] = features.groupby('Subject')['HasE4'].transform('ffill')
 
-    # >>> Sex
-    grouped['SexMale'] = (grouped['SEX'] == 1).astype(float)
-
-    # >>> APOE
-    grouped['HasE4'] = grouped['NACCNE4S'].ge(1).astype(float)
-    grouped.loc[grouped['NACCNE4S'].eq(9), 'HasE4'] = pd.NA
-
-    # >>> amyloid
-    grouped['AmyloidPositive'] = grouped['AMYLPET'].map({
-        0: 0.0,
-        1: 1.0,
-        8: None,
-        -4: None,
-    })
-
-    # >>> CDR
-    grouped['CDR'] = grouped['CDRGLOB']
-    grouped['CDRSumBoxes'] = grouped['CDRSUM']
-    grouped['CDRBinned'] = grouped['CDR']
-    grouped.loc[grouped['CDRBinned'].ge(1), 'CDRBinned'] = 1
-    grouped['CDRBinned'] = grouped['CDRBinned'].map({0: '0.0', 0.5: '0.5', 1.0: '1.0+'})
+    # CDR
+    features['CDR'] = features['CDR_Global']
+    features['CDRSumBoxes'] = features['CDR_Sum']
+    features['CDRBinned'] = bin_cdr(features['CDR'])
 
     # filter columns
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']
-    grouped_small = grouped[keep_columns].copy()
+    features = features[keep_columns].copy()
 
-    # add dataset assignment
-    feature_table = assign_training_validation(grouped_small)
+    # assign training/validation 
+    final = assign_training_validation(features)
 
     if verbose:
-        report_feature_distribution(feature_table)
+        report_feature_distribution(final)
 
-    return feature_table
+    return final

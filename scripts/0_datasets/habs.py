@@ -23,5 +23,6 @@ TABULAR_DIRECTORY = '/scratch/tom.earnest/HABS/tabular/'
 OUTPUT_FOLDER = get('output_directory')
 
 preproc_table = create_preproc_table(TAU_DOWNLOADS, AMY_DOWNLOADS, T1_DOWNLOADS)
+preproc_table.insert(0, 'DataSet', 'HABS')
 features = create_feature_table(preproc_table, habs_tabular_directory=TABULAR_DIRECTORY)
 features.to_csv(os.path.join(OUTPUT_FOLDER, 'datasetTables', 'habs.csv'), index=False)

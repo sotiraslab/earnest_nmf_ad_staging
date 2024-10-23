@@ -1,5 +1,24 @@
 # Image Search Protocols
 
+## ADNI
+
+Image searches for ADNI are run on LONI.
+
+### Amyloid
+
+Make sure "Pre-processed" and "PET" are ticked.  In the Image Description area, run 2 searches.  After each search, select all images and add to the same image collection:
+
+- `AV45 Coreg, Avg, Standardized Image and Voxel Size`
+- `FBB Coreg, Avg, Standardized Image and Voxel Size`
+
+### Tau
+
+Make sure "Pre-processed" and "PET" are ticked.  In the Image Description area, run 3 searches.  After each search, select all images and add to the same image collection:
+
+- `AV1451 Coreg, Avg, Standardized Image and Voxel Size`
+- `PI2620 Coreg, Avg, Standardized Image and Voxel Size`
+- `MK6240 Coreg, Avg, Standardized Image and Voxel Size`
+
 ## SCAN
 
 Image searches for SCAN are run through LONI.  Note that some of the PET images have multiple imaging windows available (e.g. 45-75 mins vs 30-60 minutes for PI-2620).  We specifically include the ones recommended in documentation or otherwise the most abundant.

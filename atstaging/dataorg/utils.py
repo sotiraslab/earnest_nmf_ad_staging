@@ -166,7 +166,7 @@ def _nstring(df, subject_col='Subject'):
 
 def link_modalities(tau, amyloid, t1, subject_col='Subject',
                     date_col='ScanDate', tracer_col='Tracer',
-                    tau_amyloid_threshold='180D', verbose=True,
+                    tau_amyloid_threshold='365D', verbose=True,
                     extra_tau_columns=None, extra_amyloid_columns=None,
                     extra_t1_columns=None):
     vprint = print if verbose else lambda *args, **kwargs: None
@@ -212,9 +212,9 @@ def link_modalities(tau, amyloid, t1, subject_col='Subject',
 
     # link t1
     t1 = t1[[subject_col, date_col] + extra_t1_columns]
-    tmp = t1.drop('Subject', axis=1).copy()
+    tmp = t1.drop(subject_col, axis=1).copy()
     tmp.columns = tmp.columns + 'T1'
-    tmp['Subject'] = t1['Subject']
+    tmp[subject_col] = t1[subject_col]
 
     addt1 = grouped.merge(tmp, on=subject_col,
                           how='left', suffixes=(None, t1_suffix))

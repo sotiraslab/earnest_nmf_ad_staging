@@ -1,4 +1,5 @@
 {
+    "afni": "path/to/afni/bin",
     "ants": "path/to/ants/bin",
     "deepmrseg_env": "DeepMRSeg",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",

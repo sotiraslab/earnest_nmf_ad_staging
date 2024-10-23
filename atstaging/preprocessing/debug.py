@@ -24,6 +24,11 @@ def _check_which_command(command):
     process = _run(['which', command])
     return process.returncode == 0, process
 
+def check_afni():
+    afni = get('afni')
+    command = os.path.join(afni, 'afni')
+    return _check_which_command(command)
+
 def check_ants():
     ants = get('ants')
     command = os.path.join(ants, 'antsRegistration')
@@ -64,6 +69,7 @@ def run_dependency_check():
     checks = {
         'Conda': check_conda,
         'Python packages': check_packages,
+        'AFNI': check_afni,
         'ANTS Registration': check_ants,
         'DeepMRSeg': check_deepmrseg,
         }

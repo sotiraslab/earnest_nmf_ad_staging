@@ -77,10 +77,10 @@ def apply_3dFWHMx_NIFTI(nifti, automask=True, difMAD=True, verbose=False):
         fwhm = apply_3dFWHMx(path, automask=automask, difMAD=difMAD, verbose=verbose)
     return fwhm
 
-def smooth_pet_image(imgpath, outpath, target_fwhm=(8, 8, 8),
-                     start_fwhm=(0, 0, 0), stepsize=0.5,
-                     tolerance=0.5, max_iterations=60,
-                     automask=True, difMAD=True, verbose=True):
+def iterative_smoothing(imgpath, outpath, target_fwhm=(8, 8, 8),
+                        start_fwhm=(0, 0, 0), stepsize=0.5,
+                        tolerance=0.5, max_iterations=60,
+                        automask=True, difMAD=True, verbose=True):
 
     vprint = print if verbose else lambda *args, **kwargs: None
 
@@ -115,7 +115,7 @@ def smooth_pet_image(imgpath, outpath, target_fwhm=(8, 8, 8),
 
     c = 0
     xyz_cycle = it.cycle([0, 1, 2])
-    current_filter = start_fwhm
+    current_filter = list(start_fwhm)
 
     vprint()
     vprint('Initating algorithm...')

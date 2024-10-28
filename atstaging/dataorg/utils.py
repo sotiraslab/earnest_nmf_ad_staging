@@ -281,6 +281,10 @@ def link_modalities(tau, amyloid, t1, subject_col='Subject',
     by_tau_scan = addt1.groupby([subject_col, 'TauAmyloidMeanDate'])['PETT1DiffAbs'].idxmin()
     grouped = addt1.loc[by_tau_scan.values, :]
 
+    # remove duplicates
+    grouped = grouped.drop_duplicates(subset=[subject_col, a_date])
+    grouped = grouped.drop_duplicates(subset=[subject_col, t_date])
+
     vprint()
     vprint(f'Subjects with amyloid/tau/T1: {_nstring(grouped, subject_col=subject_col)}')
 
@@ -368,7 +372,3 @@ def report_feature_distribution(features):
     print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
     print()
     print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))
-
-missing = check_missing_loni_images('/Users/earnestt1234/Desktop/scanlist.csv',
-                                    '/Users/earnestt1234/Desktop/collections',
-                                    out_text='/Users/earnestt1234/Desktop/scan_missing.txt')

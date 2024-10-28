@@ -2,7 +2,12 @@
 
 ## ADNI
 
-Image searches for ADNI are run on LONI.  Images are downloaded with frame alignment (coregistration) and averaging applied.
+Image searches for ADNI are run on LONI.  There is a script (`scripts/misc/adni_images_to_download.py`) which helps with the filtering of scans.  This script requires two main inputs:
+
+- `PET_SEARCH`: CSV from the search results (not the image collection) for all PET images.  In the advanced image search, make sure to check Original, Pre-processed, and PET as images to search.  Also check "Display in result" for Study Date, Image ID, and Radiopharmaceutical.
+- `T1_SEARCH`: CSV from the search results (not the image collection) for all T1 images.  Make sure Original, Pre-processed, MRI, and T1 are checked for images to search.  Also check "Display in result" for Study Date, Image ID, and Radiopharmaceutical.
+
+You can also set an `OUTPUT_DIRECTORY` in this script.  In this folder, 3 text files will be spit out, with Image IDs to download from ADNI.
 
 ### Amyloid
 

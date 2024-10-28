@@ -6,7 +6,7 @@ import pandas as pd
 from atstaging.dataorg.utils import link_modalities
 
 # VARIABLES
-PET_SEARCH = '/Users/earnestt1234/Downloads/idaSearch_10_22_2024.csv'
+PET_SEARCH = '/Users/earnestt1234/Downloads/idaSearch_10_28_2024.csv'
 T1_SEARCH = '/Users/earnestt1234/Downloads/idaSearch_10_14_2024.csv'
 OUTPUT_DIRECTORY = '/Users/earnestt1234/Desktop'
 
@@ -96,15 +96,24 @@ def filter_adni_t1(t1_search, add_columns=False):
 
     return grouped
 
+def filter_pet(pet_search):
+    pet_search['Study Date'] = pd.to_datetime(pet_search['Study Date'])
+    pet_search = pet_search.sort_values(['Subject ID', 'Study Date'])
+    pet_search['Imaging Protocol'] = pet_search.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
+    pet_search = pet_search.loc[pet_search['Description'].str.contains('Co-registered, Averaged'), :].copy()
+
+    amyloid = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV45') |
+                              pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-FBB'))].copy()
+
+    tau = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV1451') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-MK6240') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-PI2620'))].copy()
+
+    return amyloid, tau
+
 # filter tau/amyloid/t1
 t1 = filter_adni_t1(t1_search)
-tau = pet_search.loc[pet_search['Type'].eq('Original') &
-                     (pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV1451') |
-                      pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-MK6240') |
-                      pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-PI2620'))].copy()
-amyloid = pet_search.loc[pet_search['Type'].eq('Original') &
-                         (pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV45') |
-                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-FBB'))].copy()
+amyloid, tau = filter_pet(pet_search)
 
 # merge to find overlap
 tau['Tracer'] = tau['Imaging Protocol'].map({
@@ -129,8 +138,13 @@ def save_loni_search_field(series, outfile):
     with open(outfile, 'w') as f:
         f.write(text)
 
-save_loni_search_field(merged['Image IDTau'].astype(str), os.path.join(OUTPUT_DIRECTORY, 'tau_ids.txt'))
-save_loni_search_field(merged['Image IDAmyloid'].astype(str), os.path.join(OUTPUT_DIRECTORY, 'amyloid_ids.txt'))
-save_loni_search_field(merged['Image IDT1'].astype(str), os.path.join(OUTPUT_DIRECTORY, 't1_ids.txt'))
+a = merged['Image IDTau'].astype(int).astype(str)
+t = merged['Image IDAmyloid'].astype(int).astype(str)
+n = merged['Image IDT1'].astype(int).astype(str)
+
+save_loni_search_field(a, os.path.join(OUTPUT_DIRECTORY, 'tau_ids.txt'))
+save_loni_search_field(t, os.path.join(OUTPUT_DIRECTORY, 'amyloid_ids.txt'))
+save_loni_search_field(n, os.path.join(OUTPUT_DIRECTORY, 't1_ids.txt'))
 
 
+save_loni_search_field(pd.concat([a, t, n]), os.path.join(OUTPUT_DIRECTORY, 'all_ids.txt'))

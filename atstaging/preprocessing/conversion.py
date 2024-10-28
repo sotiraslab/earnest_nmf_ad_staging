@@ -9,6 +9,17 @@ import os
 from pathlib import Path
 import subprocess
 
+import nibabel as nib
+
+def ecat_to_nifti(inimg, outimg):
+    # https://neurostars.org/t/how-can-i-convert-ecat-v-file-to-nifti-nii-file-in-python/27297/2
+    ecat = nib.ecat.load(inimg)
+    nii = nib.Nifti1Image(
+        ecat.get_fdata(),
+        ecat.affine
+    )
+    nib.save(nii, outimg)
+
 def run_dcm2niix(indir, outdir, name):
 
     call = [

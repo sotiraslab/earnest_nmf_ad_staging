@@ -12,10 +12,12 @@ import tempfile
 import warnings
 
 from colorama import Fore, Style
+import nibabel as nib
+import numpy as np
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
-from atstaging.preprocessing.dicom_to_nifiti import run_dcm2niix
+from atstaging.preprocessing.conversion import ecat_to_nifti, run_dcm2niix
 from atstaging.preprocessing.reorient import reorient_image
 
 def _ants_registration_outputs(prefix):
@@ -51,6 +53,102 @@ def _copy_outputs(prefix, out_registered=None, out_rigid_reg=None,
 
     if os.path.isfile(petbrain) and out_petbrain is not None:
         shutil.move(petbrain, out_petbrain)
+
+def _get_img_format(pet):
+    if os.path.isdir(pet):
+        return 'DICOM'
+    elif pet.endswith('.v'):
+        return 'ECAT'
+    elif pet.endswith('.nii.gz'):
+        return 'NIFTI'
+    elif pet.endswith('.nii'):
+        return 'NIFTI_UNCOMPRESSED'
+    else:
+        raise ValueError(f'Unrecognized type for {os.path.basename(pet)}')
+    
+def _is_dynamic(pet):
+    nii = nib.load(pet)
+    shape = nii.shape
+    if len(shape) == 3:
+        return False
+    elif len(shape) == 4:
+        return True
+    else:
+        raise ValueError(f'Unrecognized shape for determining dynamic image: {shape}')
+
+def prepare_registration_pet(pet, zero_negatives=True, out_nifti=None,
+                             out_realign=None, out_average=None,
+                             out_smoothed=None):
+    outputs = [out_nifti, out_realign, out_average, out_smoothed]
+    if all([x is None for x in outputs]):
+        raise ValueError('At least one output must be specified for PET pre-registration.')
+    
+    with tempfile.TemporaryDirectory() as WORKINGDIR:
+
+        # variable to track the image as it progresses through different steps
+        TEMPIMAGE_NAME = '_temp_image'
+        TEMPIMAGE = os.path.join(WORKINGDIR, TEMPIMAGE_NAME + '.nii.gz')
+    
+        # covert to NIFTI
+        img_fmt = _get_img_format(pet)
+        print()
+        print('>>> Detected image format: {img_fmt}')
+
+        if img_fmt == 'DICOM':
+            print()
+            print('>>> Running DICOM to NIFTI conversion...')
+            print('- - -')
+            run_dcm2niix(pet, WORKINGDIR, TEMPIMAGE_NAME)
+            print('- - -')
+        elif img_fmt == 'ECAT':
+            print()
+            print('>>> Running ECAT to NIFTI conversion...')
+            print('- - -')
+            ecat_to_nifti(pet, TEMPIMAGE)
+            print('- - -')
+        elif img_fmt in ['NIFTI_UNCOMPRESSED', 'NIFTI']:
+            print()
+            print('>>> Creating compressed NIFTI image')
+            print('- - -')
+            nii = nib.load(pet)
+            nib.save(nii, TEMPIMAGE)
+            print('- - -')
+
+        # reorient, zero-negatives, and then save out_nifti if requested
+        print()
+        print('>>> Running image reorientation...')
+        reorient_image(TEMPIMAGE, 'RPI')
+
+        if zero_negatives:
+            print()
+            print('>>> Zeroing negative values')
+            nii = nib.load(TEMPIMAGE)
+            data = nii.get_fdata().copy()
+            data = np.where(data < 0, 0, data)
+            newimg = nib.Nifti1Image(
+                dataobj=data,
+                affine=nii.affine,
+                header=nii.header
+            )
+            nib.save(newimg, TEMPIMAGE)
+
+        if out_nifti is not None:
+            shutil.copy(TEMPIMAGE, out_nifti)
+
+        # realignment
+        if _is_dynamic(TEMPIMAGE):
+            print()
+            print('>>> Running MCFLIRT for realignment of PET frames...')
+            print('- - -')
+            run_mcflirt(TEMPIMAGE, TEMPIMAGE)
+            print('- - -')
+        else:
+            print('>>> Image is not dynamic; skipping realignment and averaging.')
+
+        if out_realign:
+            shutil.copy(TEMPIMAGE, )
+
+    
 
 def preregistration_pet(pet, output):
 
@@ -202,3 +300,13 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
 
         print('Completed!')
 
+def run_mcflirt(inimg, outimg):
+    
+    FSLDIR = get('fsl')
+    mcflirt = os.path.join(FSLDIR, 'bin', 'mcflirt')
+    command = [mcflirt,
+               '-in', inimg,
+               '-out', outimg,
+               '-report',
+               '-stages', '4']
+    execute(command)

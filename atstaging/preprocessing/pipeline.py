@@ -8,7 +8,7 @@ from colorama import Fore, Style
 
 from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
-from .dicom_to_nifiti import run_dcm2niix
+from .conversion import run_dcm2niix
 from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
 from .pet_registration import preregistration_pet, register_pet_image
 from .reorient import reorient_image

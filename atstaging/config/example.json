@@ -2,6 +2,7 @@
     "afni": "path/to/afni/bin",
     "ants": "path/to/ants/bin",
     "deepmrseg_env": "DeepMRSeg",
+    "fsl": "/usr/local/fsl",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "qc-skullstrip", "qc-checkerboard"],
     "amy_preproc_keep": ["registered"],

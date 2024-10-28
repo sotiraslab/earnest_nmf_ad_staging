@@ -73,6 +73,61 @@ def bin_cdr(cdr):
     cdr = cdr.map({0: '0.0', 0.5: '0.5', 1.0: '1.0+'})
     return cdr
 
+def check_missing_loni_images(downloads, collections, show_count=True, count_every=100,
+                              out_table=None, out_text=None):
+
+    # read collections
+    if os.path.isfile(collections):
+        collection_df = read_loni_collection(collections)
+    elif os.path.isdir(collections):
+        collection_df = read_loni_collection_folder(collections)
+    else:
+        raise FileNotFoundError(f'Cannot find input file/folder "{collections}"')
+
+    # read downloads
+    if isinstance(downloads, pd.DataFrame):
+        # downloads already read;just compare to collections
+        download_df = downloads
+    elif os.path.isdir(downloads):
+        # input is download folder; search and read
+        download_df = list_loni_images(downloads, show_count=show_count, count_every=count_every)
+    elif os.path.isfile(downloads):
+        # input is a download file; read
+        download_df = pd.read_csv(downloads)
+    else:
+        raise ValueError(f'Input `downloads` must be a string path or a DataFrame, not {type(downloads)}')
+
+    DOWNLOAD_IMAGE_COL = 'ImageID'
+    COLLECTION_IMAGE_COL = 'Image Data ID'
+    collection_ids = collection_df[COLLECTION_IMAGE_COL].str.extract('(\d+)', expand=False).astype(int)
+    download_ids = download_df[DOWNLOAD_IMAGE_COL].str.extract('(\d+)', expand=False).astype(int)
+    present = collection_ids.isin(download_ids)
+    missing = collection_df[~present]
+
+    # report
+    if missing.empty:
+        print()
+        print("No missing images!")
+        return
+    else:
+        print()
+        print(f"Missing images: {len(missing)}")
+
+    # create output
+    if out_text:
+        print(f"Writing text file of image IDs to {out_text}.")
+        text = ','.join(missing[COLLECTION_IMAGE_COL].str.lstrip('ID'))
+        with open(out_text, 'w') as f:
+            f.write(text)
+        print("Done.")
+
+    if out_table:
+        print(f"Writing table of missing images to {out_table}.")
+        missing.to_csv(out_table, index=False)
+        print("Done.")
+
+    return missing
+
 def list_loni_images(directory, show_count=True, count_every=100):
     '''
     Search a folder of images downloaded from LONI and return a DataFrame
@@ -276,6 +331,19 @@ def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use
 
     return downloads
 
+def read_loni_collection(csv):
+    df = pd.read_csv(csv)
+    return df
+
+def read_loni_collection_folder(folder):
+    dfs = []
+    for file in os.listdir(folder):
+        if not file.lower().endswith('csv'): continue;
+        fullpath = os.path.join(folder, file)
+        dfs.append(read_loni_collection(fullpath))
+    concatted = pd.concat(dfs)
+    return concatted
+
 def report_feature_distribution(features):
     # report
     print()
@@ -300,3 +368,7 @@ def report_feature_distribution(features):
     print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
     print()
     print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))
+
+missing = check_missing_loni_images('/Users/earnestt1234/Desktop/scanlist.csv',
+                                    '/Users/earnestt1234/Desktop/collections',
+                                    out_text='/Users/earnestt1234/Desktop/scan_missing.txt')

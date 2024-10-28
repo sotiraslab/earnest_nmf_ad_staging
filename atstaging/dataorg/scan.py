@@ -16,6 +16,9 @@ def create_subject_table(amy_search, tau_search, t1_search):
     tau = pd.read_csv(tau_search)
     t1 = pd.read_csv(t1_search)
 
+    # explicilty omit rsFMRI scans - error that these were added
+    t1 = t1.loc[~ t1['Description'].str.contains('rsfmri', case=False), :].copy()
+
     # select columns
     def select(df):
         cols = ['Image Data ID', 'Subject', 'Description',
@@ -30,15 +33,15 @@ def create_subject_table(amy_search, tau_search, t1_search):
 
     # label tracers
     amy['Tracer'] = amy['Description'].map(
-        {'AV Coreg, Avg, Rigid Reg to Std Img/Vox Size, 50-70, 6mm Res': 'FBR',
-         'FBB Coreg, Avg, Rigid Reg to Std Img/Vox Size, 90-110, 6mm Res': 'FBB',
-         'PIB Coreg, Avg, Rigid Reg to Std Img/Vox Size, 40-60, 6mm Res': 'PIB',
-         'NAV Coreg, Avg, Rigid Reg to Std Img/Vox Size, 50-70, 6mm Res': 'NAV'}
+        {'AV Co-registered, Averaged, 50-70': 'FBR',
+         'FBB Co-registered, Averaged, 90-110': 'FBB',
+         'PIB Co-registered, Averaged, 40-60': 'PIB',
+         'NAV Coreg, Avg, Rigid Reg to Std Img/Vox Size, 50-70': 'NAV'}
         )
     tau['Tracer'] = tau['Description'].map(
-        {'T80 Coreg, Avg, Rigid Reg to Std Img/Vox Size, 80-100, 6mm Res': 'FTP',
-         'M62 Coreg, Avg, Rigid Reg to Std Img/Vox Size, 90-110, 6mm Res': 'M62',
-         'P26 Coreg, Avg, Rigid Reg to Std Img/Vox Size, 45-75, 6mm Res': 'P26'})
+        {'T80 Co-registered, Averaged, 80-100': 'FTP',
+         'M62 Co-registered, Averaged, 90-110': 'M62',
+         'P26 Co-registered, Averaged, 45-75': 'P26'})
 
     result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
     return result
@@ -56,6 +59,19 @@ def create_preproc_table(subject_table, download_table):
     df['PathTau'] = df['ImageIDTau'].map(mapper)
     df['PathAmyloid'] = df['ImageIDAmyloid'].map(mapper)
     df['PathT1'] = df['ImageIDT1'].map(mapper)
+
+    # present_tau = ~df['PathTau'].isna()
+    # present_amyloid = ~df['PathAmyloid'].isna()
+    # present_t1 = ~df['PathT1'].isna()
+
+    # print()
+    # print('PREPROCESSING TABLE')
+    # print('-------------------')
+    # print(f'Scan groups to process: {len(df)}')
+    # print(f'All modalities available: {sum((present_tau & present_amyloid) & present_t1)}')
+    # print(f'Missing amyloid: {sum(~present_amyloid)}')
+    # print(f'Missing tau: {sum(~present_tau)}')
+    # print(f'Missing T1: {sum(~present_t1)}')
 
     return df
 

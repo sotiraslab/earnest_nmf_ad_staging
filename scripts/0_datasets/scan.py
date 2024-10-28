@@ -23,12 +23,12 @@ from atstaging.outputs import setup_outputs_folder
 import pandas as pd
 
 # INPUTS (see docstring above)
-TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_tau_092424_10_07_2024.csv'
-AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_amy_092424_10_07_2024.csv'
-T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_t1_092424_10_07_2024.csv'
-DOWNLAD_FOLDER = '/scratch/tom.earnest/SCAN/images/rawdata'
+TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_tau_10282024_10_28_2024.csv'
+AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_amyloid_10282024_10_28_2024.csv'
+T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_t1_092424_10_28_2024.csv'
+DOWNLAD_FOLDER = '/scratch/tom.earnest/SCAN/images/SCAN'
 NACC_DATASET = '/scratch/tom.earnest/SCAN/tabular/investigator_nacc66_atsubset.csv'
-USE_CACHED = True
+USE_CACHED = False
 OUTPUT_FOLDER = get('output_directory')
 
 # MAIN

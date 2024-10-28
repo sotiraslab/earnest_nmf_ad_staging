@@ -338,7 +338,8 @@ def read_loni_collection(csv):
 def read_loni_collection_folder(folder):
     dfs = []
     for file in os.listdir(folder):
-        if not file.lower().endswith('csv'): continue;
+        if not file.lower().endswith('csv'):
+            continue
         fullpath = os.path.join(folder, file)
         dfs.append(read_loni_collection(fullpath))
     concatted = pd.concat(dfs)
@@ -368,7 +369,3 @@ def report_feature_distribution(features):
     print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
     print()
     print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))
-
-missing = check_missing_loni_images('/Users/earnestt1234/Desktop/scanlist.csv',
-                                    '/Users/earnestt1234/Desktop/collections',
-                                    out_text='/Users/earnestt1234/Desktop/scan_missing.txt')

@@ -342,7 +342,8 @@ def read_loni_collection(csv):
 def read_loni_collection_folder(folder):
     dfs = []
     for file in os.listdir(folder):
-        if not file.lower().endswith('csv'): continue;
+        if not file.lower().endswith('csv'):
+            continue
         fullpath = os.path.join(folder, file)
         dfs.append(read_loni_collection(fullpath))
     concatted = pd.concat(dfs)

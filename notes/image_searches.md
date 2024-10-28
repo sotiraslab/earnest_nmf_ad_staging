@@ -2,22 +2,22 @@
 
 ## ADNI
 
-Image searches for ADNI are run on LONI.
+Image searches for ADNI are run on LONI.  Images are downloaded with frame alignment (coregistration) and averaging applied.
 
 ### Amyloid
 
 Make sure "Pre-processed" and "PET" are ticked.  In the Image Description area, run 2 searches.  After each search, select all images and add to the same image collection:
 
-- `AV45 Coreg, Avg, Standardized Image and Voxel Size`
-- `FBB Coreg, Avg, Standardized Image and Voxel Size`
+- `AV45 Co-registered, Averaged`
+- `FBB Co-registered, Averaged`
 
 ### Tau
 
 Make sure "Pre-processed" and "PET" are ticked.  In the Image Description area, run 3 searches.  After each search, select all images and add to the same image collection:
 
-- `AV1451 Coreg, Avg, Standardized Image and Voxel Size`
-- `PI2620 Coreg, Avg, Standardized Image and Voxel Size`
-- `MK6240 Coreg, Avg, Standardized Image and Voxel Size`
+- `AV1451 Co-registered, Averaged`
+- `PI2620 Co-registered, Averaged`
+- `MK6240 Co-registered, Averaged`
 
 ## SCAN
 

@@ -28,7 +28,7 @@ AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_amyloid_10282024_10_2
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_t1_092424_10_28_2024.csv'
 DOWNLAD_FOLDER = '/scratch/tom.earnest/SCAN/images/SCAN'
 NACC_DATASET = '/scratch/tom.earnest/SCAN/tabular/investigator_nacc66_atsubset.csv'
-USE_CACHED = False
+USE_CACHED = True
 OUTPUT_FOLDER = get('output_directory')
 
 # MAIN

@@ -14,7 +14,6 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     bin_cdr,
     link_modalities,
-    report_download_coverage,
     report_feature_distribution
     )
 
@@ -37,8 +36,18 @@ def create_subject_table(amy_search, tau_search, t1_search):
     t1 = select(t1)
 
     # label tracers
-    amy['Tracer'] = 'FBB'
-    tau['Tracer'] = 'P26'
+    amy['Tracer'] = None
+    amy.loc[amy['Description'].str.contains('AV45'), 'Tracer'] = 'FBR'
+    amy.loc[amy['Description'].str.contains('FBB'), 'Tracer'] = 'FBB'
+    if amy['Tracer'].isna().any():
+        raise ValueError('Unable to detect tracer for some rows; recheck logic for assigning ADNI tracers.')
+
+    tau['Tracer'] = None
+    tau.loc[tau['Description'].str.contains('AV1451'), 'Tracer'] = 'FTP'
+    tau.loc[tau['Description'].str.contains('MK6240'), 'Tracer'] = 'M62'
+    tau.loc[tau['Description'].str.contains('PI2620'), 'Tracer'] = 'P26'
+    if amy['Tracer'].isna().any():
+        raise ValueError('Unable to detect tracer for some rows; recheck logic for assigning ADNI tracers.')
 
     result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
     return result
@@ -56,8 +65,6 @@ def create_preproc_table(subject_table, download_table):
     df['PathTau'] = df['ImageIDTau'].map(mapper)
     df['PathAmyloid'] = df['ImageIDAmyloid'].map(mapper)
     df['PathT1'] = df['ImageIDT1'].map(mapper)
-
-    report_download_coverage(preproc_table=df)
 
     return df
 

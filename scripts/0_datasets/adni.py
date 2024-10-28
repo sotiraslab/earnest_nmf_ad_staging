@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Prep the HABS-HD (not HABS!) dataset for preprocessing.  Requires the following inputs:
+Prep the ADNI dataset for preprocessing.  Requires the following inputs:
 
     - TAU_SEARCH: path to the CSV record of the LONI collection containing tau images
     - AMY_SEARCH: path to the CSV record of the LONI collection containing amyloid images
     - T1_SEARCH: path to the CSV record of the LONI collection containing T1w images
-    - DOWNLOAD_FOLDER: path to images download folder from HABS-HD
+    - DOWNLOAD_FOLDER: path to images download folder from ADNI
     - USE CACHED: uses the saved download list, if found
-    - TABULAR_FOLDER: path to the folder containing HABS-HD tabular data
+    - TABULAR_FOLDER: path to the folder containing ADNI tabular data
     - OUTPUT_FOLDER: directory to output derivative files
 """
 
@@ -27,7 +27,7 @@ AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_amy_10102024_10_10_
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_10_10_2024.csv'
 DOWNLAD_FOLDER = '/scratch/tom.earnest/HABS-HD/images/HABS_HD'
 TABULAR_FOLDER = '/scratch/tom.earnest/HABS-HD/tabular/'
-USE_CACHED = True
+USE_CACHED = False
 OUTPUT_FOLDER = get('output_directory')
 
 # load HABS-HD subject tables
@@ -46,7 +46,7 @@ setup_outputs_folder(OUTPUT_FOLDER)
 cachedir = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 downloads = load_loni_downloads_with_caching('habshd', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
 subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH)
-preproc_table = create_preproc_table(subject_table=subject_table, download_table=downloads)
+preproc_table = create_preproc_table(subject_table=subject_table, )
 preproc_table.insert(0, 'DataSet', 'HABS-HD')
 features = create_feature_table(preproc_table=preproc_table, habshd_uds=habshd, verbose=True)
 

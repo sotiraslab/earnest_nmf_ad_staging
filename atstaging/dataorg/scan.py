@@ -8,7 +8,11 @@ Created on Tue Sep 24 10:55:05 2024
 
 import pandas as pd
 
-from atstaging.dataorg.utils import assign_training_validation, link_modalities, report_feature_distribution
+from atstaging.dataorg.utils import (
+    assign_training_validation,
+    link_modalities,
+    report_download_coverage,
+    report_feature_distribution)
 
 def create_subject_table(amy_search, tau_search, t1_search):
 
@@ -60,18 +64,7 @@ def create_preproc_table(subject_table, download_table):
     df['PathAmyloid'] = df['ImageIDAmyloid'].map(mapper)
     df['PathT1'] = df['ImageIDT1'].map(mapper)
 
-    # present_tau = ~df['PathTau'].isna()
-    # present_amyloid = ~df['PathAmyloid'].isna()
-    # present_t1 = ~df['PathT1'].isna()
-
-    # print()
-    # print('PREPROCESSING TABLE')
-    # print('-------------------')
-    # print(f'Scan groups to process: {len(df)}')
-    # print(f'All modalities available: {sum((present_tau & present_amyloid) & present_t1)}')
-    # print(f'Missing amyloid: {sum(~present_amyloid)}')
-    # print(f'Missing tau: {sum(~present_tau)}')
-    # print(f'Missing T1: {sum(~present_t1)}')
+    report_download_coverage(df)
 
     return df
 

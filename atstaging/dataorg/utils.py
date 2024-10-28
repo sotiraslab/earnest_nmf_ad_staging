@@ -349,6 +349,23 @@ def read_loni_collection_folder(folder):
     concatted = pd.concat(dfs)
     return concatted
 
+def report_download_coverage(preproc_table, amy_paths='PathAmyloid', tau_paths='PathTau', t1_paths='PathT1'):
+    df = preproc_table
+
+    present_tau = ~df['PathTau'].isna()
+    present_amyloid = ~df['PathAmyloid'].isna()
+    present_t1 = ~df['PathT1'].isna()
+
+    print()
+    print('DOWNLOAD COVERAGE')
+    print('-----------------')
+    print(f'Scan groups to process: {len(df)}')
+    print(f'All modalities available: {sum((present_tau & present_amyloid) & present_t1)}')
+    print()
+    print(f'Missing amyloid: {sum(~present_amyloid)}')
+    print(f'Missing tau: {sum(~present_tau)}')
+    print(f'Missing T1: {sum(~present_t1)}')
+
 def report_feature_distribution(features):
     # report
     print()

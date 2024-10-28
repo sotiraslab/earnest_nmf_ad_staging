@@ -9,6 +9,7 @@ from atstaging.dataorg.utils import (
     assign_training_validation, 
     link_modalities, 
     load_csv_by_match,
+    report_download_coverage,
     report_feature_distribution)
 
 def parse_habs_fields(image_path):
@@ -53,6 +54,8 @@ def create_preproc_table(tau_downloads, amyloid_downloads, t1_downloads):
                             extra_amyloid_columns=['Path', 'HABSPhase'],
                             extra_tau_columns=['Path', 'HABSPhase'],
                             extra_t1_columns=['Path', 'HABSPhase'])
+    
+    report_download_coverage(linked)
     
     return linked
 

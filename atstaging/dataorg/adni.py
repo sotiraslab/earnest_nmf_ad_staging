@@ -14,14 +14,21 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     bin_cdr,
     link_modalities,
+    report_download_coverage,
     report_feature_distribution
     )
 
-def create_subject_table(amy_search, tau_search, t1_search):
+def create_subject_table_from_combined_search(image_search):
+    df = pd.read_csv(image_search)
 
-    amy = pd.read_csv(amy_search)
-    tau = pd.read_csv(tau_search)
-    t1 = pd.read_csv(t1_search)
+    amy = df.loc[df['Description'].eq('AV45 Co-registered, Averaged') |
+                 df['Description'].eq('FBB Co-registered, Averaged'), :].copy()
+    
+    tau = df.loc[df['Description'].eq('AV1451 Co-registered, Averaged') |
+                 df['Description'].eq('MK6240 Co-registered, Averaged') |
+                 df['Description'].eq('PI2620 Co-registered, Averaged'), :].copy()
+    
+    t1 = df.loc[~ (df['Description'].isin(amy['Description']) | df['Description'].isin(tau['Description'])), :].copy()
 
     # select columns
     def select(df):
@@ -65,6 +72,8 @@ def create_preproc_table(subject_table, download_table):
     df['PathTau'] = df['ImageIDTau'].map(mapper)
     df['PathAmyloid'] = df['ImageIDAmyloid'].map(mapper)
     df['PathT1'] = df['ImageIDT1'].map(mapper)
+
+    report_download_coverage(df)
 
     return df
 

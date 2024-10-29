@@ -34,8 +34,7 @@ def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_sub
     # add gap information and filer
     merged[bcols_gap] = merged[a_date] - merged[bcols_date]
     merged[bcols_abs] = merged[bcols_gap].abs()
-    by_a = merged.groupby([a_subject, a_date])[bcols_abs].idxmin()
-    grouped = merged.loc[by_a, :]
+    grouped = merged.sort_values([a_subject, a_date, bcols_abs]).groupby([a_subject, a_date]).head(n=1)
     if gap_allowed is not None:
         grouped = grouped.loc[grouped[bcols_abs].le(pd.Timedelta(gap_allowed)), :]
 

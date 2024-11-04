@@ -6,17 +6,20 @@ Created on Tue Sep 24 10:55:05 2024
 @author: earnestt1234
 """
 
-import numpy as np
 import pandas as pd
 
 from atstaging.dataorg.utils import (
-    add_features_by_viscode,
-    assign_training_validation,
     bin_cdr,
+    add_features_by_date,
+    add_features_by_subject,
+    apply_amyloid_pos_filter,
+    assign_training_validation,
     link_modalities,
+    load_csv_by_match,
+    print_missing,
     report_download_coverage,
     report_feature_distribution
-    )
+)
 
 def create_subject_table_from_combined_search(image_search):
     df = pd.read_csv(image_search)
@@ -77,52 +80,70 @@ def create_preproc_table(subject_table, download_table):
 
     return df
 
-def create_feature_table(preproc_table, habshd_uds, verbose=True):
+def create_feature_table(preproc_table, tabular_folder):
     
-    # add a visit code for the images
-    # this assumes that most images are taken at the first visit
-    # which seems to be true based on IDA
-    # not the best approach, but seems to be needed since dates are given in the subject datatable
-    preproc_table = preproc_table.sort_values(['Subject', 'ScanDateTau'])
-    preproc_table['VisitID'] = preproc_table.groupby('Subject').cumcount() + 1
+    # load tables
+    amyloid = load_csv_by_match(tabular_folder, 'UCBERKELEY_AMY')
+    apoe = load_csv_by_match(tabular_folder, 'APOERES')
+    cdr = load_csv_by_match(tabular_folder, 'CDR')
+    demog = load_csv_by_match(tabular_folder, 'PTDEMOG')
+    first_visit = load_csv_by_match(tabular_folder, 'First_Visit')
 
-    # add the variables of interest
-    features = add_features_by_viscode(preproc_table, habshd_uds, fields=['Age', 'ID_Gender','APOE4_Positivity', '01_AB_FBB_AB_pos', 'CDR_Global', 'CDR_Sum'],
-                                       a_subject='Subject', b_subject='Med_ID',
-                                       a_viscode='VisitID', b_viscode='Visit_ID')
-    features = features.drop_duplicates(subset=['Subject', 'VisitID'], keep='first')
+    # Age
+    first_visit['BaselineAge'] = first_visit['subject_age']
+    first_visit['BaselineDate'] = pd.to_datetime(first_visit['subject_date'])
+    features = add_features_by_subject(preproc_table, first_visit,
+                                    fields=['BaselineAge', 'BaselineDate'],
+                                    a_subject='Subject', b_subject='subject_id')
+    features = features.sort_values(['Subject', 'TauAmyloidMeanDate'])
+    features['Age'] = features['BaselineAge'] + ((pd.to_datetime(features['TauAmyloidMeanDate']) - features['BaselineDate']).dt.total_seconds() / (60 * 60 * 24 * 365.25))
 
-    # recoding features
-    # Many visit twos with missing age, so imputing two years from the baseline age
-    features['ImputedAge'] = features.groupby('Subject')['Age'].transform('first') + (2 * (features['VisitID'] - 1))
-    features.loc[features['Age'].isna(), 'Age'] = features['ImputedAge']
+    # Sex
+    sex = demog.copy()
+    sex = sex.drop_duplicates('PTID')
+    sex['SexMale'] = (sex['PTGENDER'] == 1).astype(float)
+    features = add_features_by_subject(features, sex,
+                                    fields=['SexMale'],
+                                    a_subject='Subject', b_subject='PTID')
+    
+    # Genotype
+    apoe['HasE4'] = apoe['GENOTYPE'].str.contains('4').astype(float)
+    features = add_features_by_subject(features, apoe,
+                                    fields=['HasE4'],
+                                    a_subject='Subject', b_subject='PTID')
 
-    # ID_Gender is male=0, female=1
-    features['SexMale'] = 1 - features['ID_Gender']
-    features['SexMale'] = features.groupby('Subject')['SexMale'].transform('ffill')
-
-    # Ffill Amyloid positivity
-    features['AmyloidPositive'] = features['01_AB_FBB_AB_pos']
-    features['APosImputed'] = features.groupby('Subject')['AmyloidPositive'].transform('ffill')
-    features['AmyloidPositive'] = np.where(features['AmyloidPositive'].isna() & features['APosImputed'].eq(1), features['APosImputed'], features['AmyloidPositive'])
-
-    # APOE
-    features['HasE4'] = features['01_AB_FBB_AB_pos']
-    features['HasE4'] = features.groupby('Subject')['HasE4'].transform('ffill')
+    # Amyloid status
+    amyloid['DateAmyloidUCB'] = pd.to_datetime(amyloid['SCANDATE'])
+    amyloid['AmyloidPositive'] = amyloid['AMYLOID_STATUS']
+    features = add_features_by_date(features, amyloid, fields=['AmyloidPositive'],
+                                    a_subject='Subject', a_date='ScanDateAmyloid',
+                                    b_subject='PTID', b_date='DateAmyloidUCB', b_name='UCBAMY',
+                                    gap_allowed='90D', include_gap_cols=False)
 
     # CDR
-    features['CDR'] = features['CDR_Global']
-    features['CDRSumBoxes'] = features['CDR_Sum']
-    features['CDRBinned'] = bin_cdr(features['CDR'])
+    cdr['CDR'] = cdr['CDGLOBAL']
+    cdr['CDRSumBoxes'] = cdr['CDRSB']
+    cdr['CDRBinned'] = bin_cdr(cdr['CDGLOBAL'])
+    cdr = cdr.loc[cdr['CDR'].ge(0)]
+    features = add_features_by_date(features, cdr, fields=['CDR', 'CDRSumBoxes', 'CDRBinned'],
+                                    a_subject='Subject', a_date='TauAmyloidMeanDate',
+                                    b_subject='PTID', b_date='VISDATE', b_name='CDRVisit',
+                                    gap_allowed='180D', include_gap_cols=True)
+    
 
-    # filter columns
-    keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']
-    features = features[keep_columns].copy()
+    print()
+    print('MISSINGNESS')
+    print('-----------')
+    print_missing(features, 'Age')
+    print_missing(features, 'SexMale')
+    print_missing(features, 'HasE4')
+    print_missing(features, 'AmyloidPositive')
+    print_missing(features, 'CDR')
 
-    # assign training/validation 
-    final = assign_training_validation(features)
+    # assign training/validation
+    final = apply_amyloid_pos_filter(features)
+    final = assign_training_validation(final)
 
-    if verbose:
-        report_feature_distribution(final)
+    report_feature_distribution(final)
 
     return final

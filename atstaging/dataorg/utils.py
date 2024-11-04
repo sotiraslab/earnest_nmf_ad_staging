@@ -9,12 +9,17 @@ Created on Wed Sep 25 09:38:46 2024
 import datetime as dt
 import os
 import re
+import warnings
 
 import numpy as np
 import pandas as pd
 
 def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_subject='Subject', b_date='Date', b_name='Visit',
                          gap_allowed='90D', drop_missing=False, include_gap_cols=True):
+    # b_subject column gets renamed to a_subject, which is confusing
+    # pulling this out as a variable to indicate the destination name for subject
+    subject = a_subject
+
     # ensure numeric datetime
     a[a_date] = pd.to_datetime(a[a_date])
     b[b_date] = pd.to_datetime(b[b_date])
@@ -23,11 +28,11 @@ def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_sub
     bcols_date = f'{b_name}Date'
     bcols_gap = f'GapTo{b_name}'
     bcols_abs = f'AbsGapTo{b_name}'
-    b = b.rename(columns={b_date: bcols_date})
-    b = b[[b_subject, bcols_date] + fields]
+    b = b.rename(columns={b_subject: subject, b_date: bcols_date})
+    b = b[[subject, bcols_date] + fields]
 
     # left merge
-    merged = a.merge(b, how='left', left_on=a_subject, right_on=b_subject)
+    merged = a.merge(b, how='left', on=subject)
     if drop_missing:
         merged = merged.loc[~merged[bcols_date].isna(), :].copy()
 
@@ -36,12 +41,28 @@ def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_sub
     merged[bcols_abs] = merged[bcols_gap].abs()
     grouped = merged.sort_values([a_subject, a_date, bcols_abs]).groupby([a_subject, a_date]).head(n=1)
     if gap_allowed is not None:
-        grouped = grouped.loc[grouped[bcols_abs].le(pd.Timedelta(gap_allowed)), :]
+        grouped.loc[grouped[bcols_abs].gt(pd.Timedelta(gap_allowed)), fields + [bcols_gap, bcols_abs]] = None
 
     if not include_gap_cols:
         merged = merged.drop([bcols_gap, bcols_abs], axis=1)
 
     return grouped
+
+def add_features_by_subject(a, b, fields, a_subject='Subject', b_subject='Subject',
+                            drop_missing=False):
+    if b[b_subject].duplicated().any():
+        warnings.warn(RuntimeWarning('Merged dataframe has duplicate subjects - more than '
+                                     'one row is being added for some subjects.'))
+    subject = a_subject
+    b = b.rename(columns={b_subject: subject})
+    b = b[[subject] + fields]
+
+    # left merge
+    merged = a.merge(b, how='left', on=subject)
+    if drop_missing:
+        merged = merged.dropna(axis=1, subset=fields)
+
+    return merged
 
 def add_features_by_viscode(a, b, fields, a_subject='Subject', a_viscode='VISCODE',
                             b_subject='Subject', b_viscode='VISCODE', drop_missing=False):
@@ -53,16 +74,26 @@ def add_features_by_viscode(a, b, fields, a_subject='Subject', a_viscode='VISCOD
 
     return merged
 
-def assign_training_validation(df, omit_non_ad_training=True):
-    df = df.sort_values(['Subject', 'TauAmyloidMeanDate'])
-    baseline = df.groupby('Subject')['TauAmyloidMeanDate'].idxmin()
+def apply_amyloid_pos_filter(df, subject_col='Subject', positivity_col='AmyloidPositive'):
+    def amyfilter(group):
+        if (group[positivity_col].eq(0) | group[positivity_col].isna()).all():
+            return group
+        first_index = group[group[positivity_col].eq(1)].index[0]
+        return group.loc[first_index:, :]
+    
+    return df.groupby(subject_col, as_index=False, group_keys=False)[df.columns].apply(amyfilter)
+
+def assign_training_validation(df, omit_non_ad_training=True, subject='Subject',
+                               date='TauAmyloidMeanDate'):
+    df = df.sort_values([subject, date])
+    baseline = df.groupby(subject)[date].idxmin()
 
     training_type = np.where(df['TracerAmyloid'].eq('FBR') & df['TracerTau'].eq('FTP'), 'Training', 'Validation')
     visit_type = np.where(df.index.isin(baseline.values), 'Baseline', 'Followup')
     df['Division'] = visit_type + training_type
 
     if omit_non_ad_training:
-        df = df.loc[~(df['Division'].eq('BaselineTraining') & df['CDR'].ge(0.5) & df['AmyloidPositive'].eq(1.0)), :].copy()
+        df = df.loc[~(df['Division'].eq('BaselineTraining') & (df['CDR'].ge(0.5) | df['CDR'].isna()) & df['AmyloidPositive'].eq(0.0)), :].copy()
 
     return df
 
@@ -314,25 +345,27 @@ def load_csv_by_match(directory, pattern):
         raise FileNotFoundError(f'Unable to find file matching "{pattern}" in {directory}')
 
 def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use_cached=True):
+
+    target_file = os.path.join(cachedir, f'{dataset_key}_downloadcache.csv')
+
     downloads = None
-    if use_cached and os.path.isdir(cachedir):
-        cache_files = os.listdir(cachedir)
-        for file in cache_files:
-            if file.startswith(dataset_key) and file.endswith('.csv'):
-                fullfile = os.path.join(cachedir, file)
-                print()
-                print(f'Using cached file at {fullfile}.')
-                downloads = pd.read_csv(fullfile)
+    if use_cached and os.path.isfile(target_file):
+        print()
+        print(f'Using cached file at {target_file}.')
+        print('Date last modified: ', dt.datetime.utcfromtimestamp(os.path.getmtime(target_file)).strftime('%Y-%m-%d %H:%M:%S'))
+        downloads = pd.read_csv(target_file)
 
     if downloads is None:
         downloads = list_loni_images(download_folder)
         if not os.path.isdir(cachedir):
             os.mkdir(cachedir)
-        ts = dt.datetime.now().strftime('%Y_%m_%d')
-        cache_path = os.path.join(cachedir, f'{dataset_key}_{ts}.csv')
-        downloads.to_csv(cache_path, index=False)
+        downloads.to_csv(target_file, index=False)
 
     return downloads
+
+def print_missing(df, col):
+    data = df[col]
+    print(f'Count of missing values for "{col}": {data.isna().sum()}')
 
 def read_loni_collection(csv):
     df = pd.read_csv(csv)
@@ -375,6 +408,9 @@ def report_feature_distribution(features):
     print("Dataset sizes")
     print('-----')
     print(features['Division'].value_counts())
+
+    print()
+    print(f"TOTAL: {len(features)}")
 
     print()
     print('Training set (baseline)')

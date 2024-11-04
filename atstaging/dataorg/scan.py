@@ -6,6 +6,7 @@ Created on Tue Sep 24 10:55:05 2024
 @author: earnestt1234
 """
 
+import numpy as np
 import pandas as pd
 
 from atstaging.dataorg.utils import (
@@ -104,7 +105,6 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     merged['GapToVisitAbs'] = merged['GapToVisit'].abs()
     by_imaging = merged.groupby(['Subject', 'TauAmyloidMeanDate'])['GapToVisitAbs'].idxmin()
     grouped = merged.loc[by_imaging, :]
-    grouped = grouped.loc[grouped['GapToVisitAbs'].le(pd.Timedelta(gap_imaging_visit)), :]
 
     # Recoding 
 
@@ -139,6 +139,8 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     grouped['CDRBinned'] = grouped['CDR']
     grouped.loc[grouped['CDRBinned'].ge(1), 'CDRBinned'] = 1
     grouped['CDRBinned'] = grouped['CDRBinned'].map({0: '0.0', 0.5: '0.5', 1.0: '1.0+'})
+
+    grouped.loc[grouped['GapToVisitAbs'].gt(pd.Timedelta(gap_imaging_visit)), ['AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']] = np.nan
 
     # filter columns
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']

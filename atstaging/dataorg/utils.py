@@ -11,6 +11,7 @@ import os
 import re
 import warnings
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 
@@ -157,6 +158,28 @@ def check_missing_loni_images(downloads, collections, show_count=True, count_eve
         print("Done.")
 
     return missing
+
+def get_bids_entities(file, final_entity='modality', remove_ext_pattern='(.nii.gz)|(.nii)$'):
+    stem = os.path.basename(file)
+    stem = re.sub(remove_ext_pattern, '', stem)
+    pairs = stem.split('_')
+    entities = {}
+    for p in pairs:
+        if '-' in p:
+            i = p.index('-')
+            entities[p[:i]] = p[i+1:]
+        else:
+            entities[final_entity] = p
+
+    return entities
+
+def get_shape(imgpath):
+    try:
+        nii = nib.load(imgpath)
+        shape = nii.shape
+        return shape
+    except Exception:
+        return None
 
 def list_loni_images(directory, show_count=True, count_every=100):
     '''

@@ -8,6 +8,14 @@ from atstaging.dataorg.utils import (
     get_shape
 )
 
+def _get_bids_json(oasis_image):
+    nifti_dir = os.path.dirname(oasis_image)
+    acq_dir = os.path.dirname(nifti_dir)
+    bids_dir = os.path.join(acq_dir, 'BIDS')
+    jsonfile = os.path.basename(oasis_image).removesuffix('.nii.gz') + '.json'
+    fullpath = os.path.join(bids_dir, jsonfile)
+    return fullpath
+
 def oasis3_image_list(oasis3_directory):
     c = 0
     images = []
@@ -36,6 +44,7 @@ def oasis3_image_list(oasis3_directory):
 
             data = {
                 'path': fullfile,
+                'json': _get_bids_json(fullfile)
             }
             data.update(get_bids_entities(fullfile))
             images.append(data)

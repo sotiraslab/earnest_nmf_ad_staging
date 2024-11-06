@@ -34,6 +34,7 @@ setup(name='atstaging',
       long_description_content_type='text/markdown',
       entry_points = {
         'console_scripts': ['at_preproc=atstaging.preprocessing.pipeline:main',
-                            'at_preproc_table=atstaging.slurm.at_preproc_table:main'],
+                            'at_preproc_table=atstaging.slurm.at_preproc_table:main',
+                            'catalogue_loni=atstaging.cli.catalogue_loni:main'],
         }
       )

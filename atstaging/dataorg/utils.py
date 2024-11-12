@@ -446,5 +446,8 @@ def report_feature_distribution(features):
     print('-----')
     tmp = features.loc[features['Division'].eq('BaselineValidation')]
     print(pd.crosstab(tmp['AmyloidPositive'], tmp['CDRBinned'], dropna=False))
+
     print()
+    print('Validation tracer (baseline)')
+    print('-----')
     print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))

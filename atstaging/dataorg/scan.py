@@ -38,7 +38,7 @@ def create_subject_table(amy_search, tau_search, t1_search):
 
     # label tracers
     amy['Tracer'] = amy['Description'].map(
-        {'AV Co-registered, Averaged, 50-70': 'FBR',
+        {'AV Co-registered, Averaged, 50-70': 'FBP',
          'FBB Co-registered, Averaged, 90-110': 'FBB',
          'PIB Co-registered, Averaged, 40-60': 'PIB',
          'NAV Coreg, Avg, Rigid Reg to Std Img/Vox Size, 50-70': 'NAV'}

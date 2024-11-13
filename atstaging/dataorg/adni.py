@@ -47,7 +47,7 @@ def create_subject_table_from_combined_search(image_search):
 
     # label tracers
     amy['Tracer'] = None
-    amy.loc[amy['Description'].str.contains('AV45'), 'Tracer'] = 'FBR'
+    amy.loc[amy['Description'].str.contains('AV45'), 'Tracer'] = 'FBP'
     amy.loc[amy['Description'].str.contains('FBB'), 'Tracer'] = 'FBB'
     if amy['Tracer'].isna().any():
         raise ValueError('Unable to detect tracer for some rows; recheck logic for assigning ADNI tracers.')

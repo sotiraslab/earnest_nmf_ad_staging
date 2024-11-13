@@ -121,7 +121,7 @@ tau['Tracer'] = tau['Imaging Protocol'].map({
     'Radiopharmaceutical=18F-MK6240': 'M62',
     'Radiopharmaceutical=18F-PI2620': 'P26'})
 amyloid['Tracer'] = amyloid['Imaging Protocol'].map({
-    'Radiopharmaceutical=18F-AV45': 'FBR',
+    'Radiopharmaceutical=18F-AV45': 'FBP',
     'Radiopharmaceutical=18F-FBB': 'FBB'})
 merged = link_modalities(tau=tau, amyloid=amyloid, t1=t1,
                          subject_col='Subject ID',

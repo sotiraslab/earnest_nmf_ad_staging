@@ -89,7 +89,7 @@ def assign_training_validation(df, omit_non_ad_training=True, subject='Subject',
     df = df.sort_values([subject, date])
     baseline = df.groupby(subject)[date].idxmin()
 
-    training_type = np.where(df['TracerAmyloid'].eq('FBR') & df['TracerTau'].eq('FTP'), 'Training', 'Validation')
+    training_type = np.where(df['TracerAmyloid'].eq('FBP') & df['TracerTau'].eq('FTP'), 'Training', 'Validation')
     visit_type = np.where(df.index.isin(baseline.values), 'Baseline', 'Followup')
     df['Division'] = visit_type + training_type
 

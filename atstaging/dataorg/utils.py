@@ -61,7 +61,7 @@ def add_features_by_subject(a, b, fields, a_subject='Subject', b_subject='Subjec
     # left merge
     merged = a.merge(b, how='left', on=subject)
     if drop_missing:
-        merged = merged.dropna(axis=1, subset=fields)
+        merged = merged.dropna(axis=0, subset=fields)
 
     return merged
 

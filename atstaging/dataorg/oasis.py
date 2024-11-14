@@ -8,6 +8,7 @@ import pandas as pd
 
 from atstaging.dataorg.utils import (
     get_bids_entities,
+    link_modalities
 )
 
 def _get_bids_json(oasis_image):
@@ -60,6 +61,54 @@ def _find_frame_within_tolerance(target_seconds, frames_seconds, tolerance):
         matches = list(frames_seconds.loc[acceptable])
         raise ValueError(f'Multiple acceptable frames within {tolerance}s of {target_seconds}: '
                         f'{matches}')
+
+def create_preproc_table(amyloid_conversion_csv, tau_conversion_csv, mri_conversion_csv,
+                         basedate=None):
+    
+    if basedate is None:
+        basedate = pd.Timestamp(year=2001, month=1, day=1)
+
+    def prep_table(oasis_table):
+        df = oasis_table[['sub', 'ses', 'res_img']].copy()
+        df.columns = ['Subject', 'OASISSession', 'Path']
+        df['ScanDate'] = basedate + pd.to_timedelta(df['OASISSession'].str.lstrip('d').astype(int), unit='days')
+        return df
+
+    # select the base columns needed
+    amy = prep_table(pd.read_csv(amyloid_conversion_csv))
+    tau = prep_table(pd.read_csv(tau_conversion_csv))
+    mri = prep_table(pd.read_csv(mri_conversion_csv))
+
+    # define the tracer
+    amy['Tracer'] = amy['Path'].str.extract('(?<=acq-)([a-zA-Z0-9]+)', expand=False)
+    amy['Tracer'] = amy['Tracer'].map({'AV45': 'FBP', 'PIB': 'PIB'})
+
+    tau['Tracer'] = tau['Path'].str.extract('(?<=acq-)([a-zA-Z0-9]+)', expand=False)
+    tau['Tracer'] = tau['Tracer'].map({'AV1451': 'FTP'})
+
+    # link
+    linked = link_modalities(
+        tau=tau,
+        amyloid=amy,
+        t1=mri,
+        subject_col='Subject',
+        date_col='ScanDate',
+        tracer_col='Tracer',
+        extra_tau_columns=['OASISSession'],
+        extra_amyloid_columns=['OASISSession'],
+        extra_t1_columns=['OASISSession'],
+    )
+
+    # record the baseline date
+    linked['BaselineDate'] = basedate
+ 
+    # since we are starting from the download records,
+    # this already meets the "preproc_table" format
+    # and has all the paths included
+    print()
+    print('All observations in tracer table have been downloaded.')
+
+    return linked
 
 def get_window_indices(frames, tracer, imgpath='<PathNotProvided>', tolerance=200):
     frames['Frame_End'] = frames['Frame_Start'] + frames['Frame_duration']

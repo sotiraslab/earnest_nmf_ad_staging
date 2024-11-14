@@ -1,4 +1,5 @@
 
+import datetime as dt
 import glob
 import os
 
@@ -7,7 +8,6 @@ import pandas as pd
 
 from atstaging.dataorg.utils import (
     get_bids_entities,
-    get_shape
 )
 
 def _get_bids_json(oasis_image):
@@ -112,7 +112,17 @@ def get_window_indices(frames, tracer, imgpath='<PathNotProvided>', tolerance=20
     ends = list(frameends.loc[indices])
     return indices, starts, ends
 
-def oasis3_image_list(oasis3_directory, add_shape=False):
+def oasis3_image_list(oasis3_directory, cache_dir, use_cache=True, cache_tag='oasis', omit_caching=False):
+    
+    cache_path = os.path.join(cache_dir, f'{cache_tag}_downloadcache.csv')
+    if os.path.isfile(cache_path) and use_cache:
+        print()
+        print(f'Using cached file at {cache_path}.')
+        print('Date last modified: ', dt.datetime.utcfromtimestamp(os.path.getmtime(cache_path)).strftime('%Y-%m-%d %H:%M:%S'))
+        df = pd.read_csv(cache_path)
+        print(f'Number of scans in cached record: {len(df)}')
+        return df
+
     c = 0
     images = []
 
@@ -160,27 +170,11 @@ def oasis3_image_list(oasis3_directory, add_shape=False):
     print()
     print(f'Found {len(df)} scans.')
 
-    if add_shape:
-        print()
-        print('Getting image shapes for PET images...')
-
-        global COUNTER
-        COUNTER = 0
-
-        def foo(row):
-            global COUNTER
-            COUNTER += 1
-
-            if COUNTER % 1000 == 0:
-                print(f'Row #{COUNTER}...')
-            
-            if row['modality'] == 'T1w':
-                return None
-
-            return get_shape(row['path'])
-
-        df['shape'] = df.apply(foo, axis=1)
-        print('Complete.')
+    # save in cache
+    if not omit_caching:
+        if not os.path.isdir(cache_dir):
+            os.mkdir(cache_dir)
+        df.to_csv(cache_path, index=False)
 
     return df
 
@@ -276,7 +270,11 @@ def pull_oasis_frames(imgpath, frames_tsv, tracer, output_directory, dry_run=Fal
     savetsv = os.path.join(output_directory, basetsv)
 
     if dry_run:
-        selected = nii
+        new_shape = list(orig_shape)
+        new_shape[3] = len(indices)
+        new_shape = tuple(new_shape)
+    elif saveimg_exists and not overwrite:
+        print(f'> Not overwriting existing image at {saveimg}')
         new_shape = list(orig_shape)
         new_shape[3] = len(indices)
         new_shape = tuple(new_shape)
@@ -284,14 +282,10 @@ def pull_oasis_frames(imgpath, frames_tsv, tracer, output_directory, dry_run=Fal
         data = nii.get_fdata()[:, :, :, indices]
         selected = nib.Nifti1Image(data, affine=nii.affine, header=nii.header)
         new_shape = selected.shape
-
-        if saveimg_exists and not overwrite:
-            print(f'> Not overwriting existing image at {saveimg}')
-        else:
-            if not os.path.isdir(output_directory):
-                os.mkdir(output_directory)
-            nib.save(selected, saveimg)
-            frames.to_csv(savetsv, sep='\t', index=False)
+        if not os.path.isdir(output_directory):
+            os.mkdir(output_directory)
+        nib.save(selected, saveimg)
+        frames.to_csv(savetsv, sep='\t', index=False)
 
     output = {
         'src_img': imgpath,

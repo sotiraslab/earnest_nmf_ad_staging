@@ -156,6 +156,10 @@ for i, (_, row) in enumerate(mri_downloads_filtered.iterrows()):
     base = os.path.basename(imgpath)
     newpath = os.path.join(t1_outfolder, base)
 
+    d = row.to_dict()
+    d['res_img'] = newpath
+    images.append(d)
+
     print(f'> MRI Image: {i+1}: {imgpath}')
     if os.path.exists(newpath) and not OVERWRITE_COPY:
         print(f'    * Not overwriting existing image at {newpath}')
@@ -165,8 +169,6 @@ for i, (_, row) in enumerate(mri_downloads_filtered.iterrows()):
     nii = nib.load(imgpath)
     nib.save(nii, newpath)
 
-    d = row.to_dict()
-    d['res_img'] = newpath
-    images.append(d)
+
 mri_conversion = pd.DataFrame(images)
 mri_conversion.to_csv(os.path.join(OUTPUT_FOLDER, 'downloadLists', 'oasis3_mri_conversion.csv'), index=False)

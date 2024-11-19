@@ -4,7 +4,7 @@ from amyloid/tau PET images, and copy all filtered images to a new directory.  T
 also copied.
 
 The primary need for this code is to do frame selection for PET images.  The PET processing pipeline
-(`atstaging.preprocessing.pet_registration`) is not prepared to select frames from dynamic scans.
+(`atstaging.preprocessing.pet`) is not prepared to select frames from dynamic scans.
 Many of the scans avaialable (particularly for amyloid) are dynamic, and need the stable window
 frames pulled out.  Frame selection is as follows:
 

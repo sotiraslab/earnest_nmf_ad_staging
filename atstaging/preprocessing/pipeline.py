@@ -10,7 +10,7 @@ from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .conversion import run_dcm2niix
 from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
-from .pet_registration import preregistration_pet, register_pet_image
+from .pet import prepare_registration_pet, register_pet_image
 from .reorient import reorient_image
 from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
 from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
@@ -106,8 +106,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         subject=subject,
         session=session,
         modality='anat',
-        directory=output_directory
-        )
+        directory=output_directory)
     amynamer = ATPreprocPETNamer(
         subject=subject,
         session=session,
@@ -148,7 +147,6 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         end_command('dcm2niix')
 
     else:
-
         print()
         tsp('Input image is NIFTI; no conversion.')
         starting_image = t1_img
@@ -277,8 +275,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     tsp('Running preparatory steps for PET')
     
     begin_command('amyloid-prereg')
-    prereg = amynamer.get_path('prereg')
-    preregistration_pet(amyloid_img, output=prereg)
+    smoothed = amynamer.get_path('smoothed')
+    prepare_registration_pet(amyloid_img, out_smoothed=smoothed)
     end_command('amyloid-prereg')
     
     print()
@@ -288,7 +286,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     amy_registered = amynamer.get_path('registered')
     amy_warp = amynamer.get_path('fullwarp')
     amy_rigid = amynamer.get_path('rigid')
-    register_pet_image(pet=prereg,
+    register_pet_image(pet=smoothed,
                        t1=preskullstrip,
                        brainmask=brainmask,
                        brain=brain,
@@ -310,8 +308,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     tsp('Running preparatory steps for PET')
     
     begin_command('tau-prereg')
-    prereg = taunamer.get_path('prereg')
-    preregistration_pet(tau_img, output=prereg)
+    smoothed = taunamer.get_path('smoothed')
+    prepare_registration_pet(tau_img, out_smoothed=smoothed)
     end_command('tau-prereg')
     
     print()
@@ -321,7 +319,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     tau_registered = taunamer.get_path('registered')
     tau_warp = taunamer.get_path('fullwarp')
     tau_rigid = taunamer.get_path('rigid')
-    register_pet_image(pet=prereg,
+    register_pet_image(pet=smoothed,
                        t1=preskullstrip,
                        brainmask=brainmask,
                        brain=brain,

@@ -1,11 +1,12 @@
 import subprocess
 
-def execute(cmd, shell=False, verbose=True):
+def execute(cmd, shell=False, verbose=True, env=None):
     popen = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              universal_newlines=True,
-                             shell=shell)
+                             shell=shell,
+                             env=env)
     while True:
         line = popen.stdout.readline()
         if not line:

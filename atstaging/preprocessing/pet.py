@@ -13,12 +13,12 @@ import warnings
 
 from colorama import Fore, Style
 import nibabel as nib
-import numpy as np
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
 from atstaging.preprocessing.conversion import ecat_to_nifti, run_dcm2niix
 from atstaging.preprocessing.reorient import reorient_image
+from atstaging.preprocessing.smoothing import iterative_smoothing
 
 def _ants_registration_outputs(prefix):
     outputs = {
@@ -65,7 +65,7 @@ def _get_img_format(pet):
         return 'NIFTI_UNCOMPRESSED'
     else:
         raise ValueError(f'Unrecognized type for {os.path.basename(pet)}')
-    
+
 def _is_dynamic(pet):
     nii = nib.load(pet)
     shape = nii.shape
@@ -76,23 +76,23 @@ def _is_dynamic(pet):
     else:
         raise ValueError(f'Unrecognized shape for determining dynamic image: {shape}')
 
-def prepare_registration_pet(pet, zero_negatives=True, out_nifti=None,
+def prepare_registration_pet(pet, out_nifti=None,
                              out_realign=None, out_average=None,
-                             out_smoothed=None):
+                             out_smoothed=None, target_fwhm=(10, 10, 10)):
     outputs = [out_nifti, out_realign, out_average, out_smoothed]
     if all([x is None for x in outputs]):
         raise ValueError('At least one output must be specified for PET pre-registration.')
-    
+
     with tempfile.TemporaryDirectory() as WORKINGDIR:
 
         # variable to track the image as it progresses through different steps
         TEMPIMAGE_NAME = '_temp_image'
         TEMPIMAGE = os.path.join(WORKINGDIR, TEMPIMAGE_NAME + '.nii.gz')
-    
+
         # covert to NIFTI
         img_fmt = _get_img_format(pet)
         print()
-        print('>>> Detected image format: {img_fmt}')
+        print(f'>>> Detected image format: {img_fmt}')
 
         if img_fmt == 'DICOM':
             print()
@@ -114,23 +114,10 @@ def prepare_registration_pet(pet, zero_negatives=True, out_nifti=None,
             nib.save(nii, TEMPIMAGE)
             print('- - -')
 
-        # reorient, zero-negatives, and then save out_nifti if requested
+        # reorient, and then save out_nifti if requested
         print()
         print('>>> Running image reorientation...')
         reorient_image(TEMPIMAGE, 'RPI')
-
-        if zero_negatives:
-            print()
-            print('>>> Zeroing negative values')
-            nii = nib.load(TEMPIMAGE)
-            data = nii.get_fdata().copy()
-            data = np.where(data < 0, 0, data)
-            newimg = nib.Nifti1Image(
-                dataobj=data,
-                affine=nii.affine,
-                header=nii.header
-            )
-            nib.save(newimg, TEMPIMAGE)
 
         if out_nifti is not None:
             shutil.copy(TEMPIMAGE, out_nifti)
@@ -143,29 +130,41 @@ def prepare_registration_pet(pet, zero_negatives=True, out_nifti=None,
             run_mcflirt(TEMPIMAGE, TEMPIMAGE)
             print('- - -')
         else:
-            print('>>> Image is not dynamic; skipping realignment and averaging.')
+            print('>>> Image is not dynamic; skipping realignment.')
 
         if out_realign:
-            shutil.copy(TEMPIMAGE, )
+            shutil.copy(TEMPIMAGE, out_realign)
 
-    
+        # averaging
+        if _is_dynamic(TEMPIMAGE):
+            print('>>> Averaging image across frames...')
+            print('- - -')
+            nii = nib.load(TEMPIMAGE)
+            data = nii.get_fdata().mean(axis=3)
+            newimg = nib.Nifti1Image(dataobj=data, affine=nii.affine, header=nii.header)
+            nib.save(newimg, TEMPIMAGE)
+            print('- - -')
+        else:
+            print('>>> Image is not dynamic; skipping averaging.')
 
-def preregistration_pet(pet, output):
+        if out_average:
+            shutil.copy(TEMPIMAGE, out_average)
 
-    is_dicom = os.path.isdir(pet)
-    outdir = os.path.dirname(os.path.abspath(output))
-    name = os.path.basename(output).removesuffix('.nii.gz')
-    if is_dicom:
+        # smoothing
         print()
-        print('>>> Running DICOM to NIFTI conversion...')
+        print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')
         print('- - -')
-        run_dcm2niix(pet, outdir, name)
-        pet = output
+        iterative_smoothing(TEMPIMAGE, TEMPIMAGE, target_fwhm=target_fwhm,
+                            start_fwhm=(0, 0, 0), stepsize=0.5,
+                            tolerance=0.5, max_iterations=75,
+                            automask=True, difMAD=True, verbose=True)
         print('- - -')
 
-    print()
-    print('>>> Running image reorientation...')
-    reorient_image(pet, 'RPI', outpath=output)
+        if out_smoothed:
+            shutil.copy(TEMPIMAGE, out_smoothed)
+
+        print()
+        print('PET pre-registration steps completed.')
 
 def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
                        out_registered=None, out_rigid_reg=None, out_warp=None,
@@ -301,7 +300,7 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
         print('Completed!')
 
 def run_mcflirt(inimg, outimg):
-    
+
     FSLDIR = get('fsl')
     mcflirt = os.path.join(FSLDIR, 'bin', 'mcflirt')
     command = [mcflirt,
@@ -309,4 +308,4 @@ def run_mcflirt(inimg, outimg):
                '-out', outimg,
                '-report',
                '-stages', '4']
-    execute(command)
+    execute(command, env={'FSLOUTPUTTYPE': 'NIFTI_GZ'})

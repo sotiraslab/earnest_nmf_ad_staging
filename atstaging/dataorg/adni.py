@@ -16,9 +16,9 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     link_modalities,
     load_csv_by_match,
-    print_missing,
     report_download_coverage,
-    report_feature_distribution
+    report_feature_distribution,
+    report_missingness
 )
 
 def create_subject_table_from_combined_search(image_search):
@@ -130,16 +130,8 @@ def create_feature_table(preproc_table, tabular_folder):
                                     b_subject='PTID', b_date='VISDATE', b_name='CDRVisit',
                                     gap_allowed='180D', include_gap_cols=True)
     
-
-    print()
-    print('MISSINGNESS')
-    print('-----------')
-    print_missing(features, 'Age')
-    print_missing(features, 'SexMale')
-    print_missing(features, 'HasE4')
-    print_missing(features, 'AmyloidPositive')
-    print_missing(features, 'CDR')
-
+    report_missingness(features)
+    
     # assign training/validation
     final = apply_amyloid_pos_filter(features)
     final = assign_training_validation(final)

@@ -4,12 +4,20 @@ import glob
 import os
 
 import nibabel as nib
+import numpy as np
 import pandas as pd
 
 from atstaging.dataorg.utils import (
+    add_features_by_date,
+    add_features_by_subject,
+    add_features_by_viscode,
+    assign_training_validation,
+    bin_cdr,
     get_bids_entities,
-    link_modalities
-)
+    link_modalities,
+    report_missingness,
+    report_feature_distribution
+    )
 
 def _get_bids_json(oasis_image):
     nifti_dir = os.path.dirname(oasis_image)
@@ -109,6 +117,41 @@ def create_preproc_table(amyloid_conversion_csv, tau_conversion_csv, mri_convers
     print('All observations in tracer table have been downloaded.')
 
     return linked
+
+def create_feature_table(preproc_table, oasis3_demographics, oasis3_cdr, oasis3_centiloid, basedate=None):
+    if basedate is None:
+        basedate = pd.Timestamp(year=2001, month=1, day=1)
+
+    features = preproc_table.copy()
+    demo = pd.read_csv(oasis3_demographics)
+    features = add_features_by_subject(features, demo, fields=['AgeatEntry', 'GENDER', 'APOE'],
+                                    a_subject='Subject', b_subject='OASISID', drop_missing=False)
+    features['Age'] = features['AgeatEntry'] + ((features['TauAmyloidMeanDate'] - features['BaselineDate']).dt.total_seconds() / (60 * 60 * 24 * 365.25))
+    features['SexMale'] = features['GENDER'].eq(1).astype(float)
+    features['HasE4'] = features['APOE'].astype(str).str.contains('4')
+
+    cl = pd.read_csv(oasis3_centiloid)
+    features['oasis_session_id'] = features['Subject'] + '_' + features['TracerAmyloid'].map({'FBP': 'AV45', 'PIB': 'PIB'}) + '_' + features['OASISSessionAmyloid']
+    features = add_features_by_viscode(features, cl, fields=['Centiloid_fSUVR_rsf_TOT_CORTMEAN'], a_subject='Subject', a_viscode='oasis_session_id', b_subject='subject_id', b_viscode='oasis_session_id')
+    features['AmyloidPositive'] = np.where(features['TracerAmyloid'].eq('PIB'),
+                                        features['Centiloid_fSUVR_rsf_TOT_CORTMEAN'].ge(16.4),
+                                        features['Centiloid_fSUVR_rsf_TOT_CORTMEAN'].ge(20.6)).astype(float)
+    features.loc[features['Centiloid_fSUVR_rsf_TOT_CORTMEAN'].isna(), 'AmyloidPositive'] = np.nan
+
+    cdr = pd.read_csv(oasis3_cdr)
+    cdr['CDRDate'] = basedate + pd.to_timedelta(cdr['days_to_visit'], unit='days')
+    features = add_features_by_date(features, cdr, fields=['CDRSUM', 'CDRTOT'], a_subject='Subject', a_date='TauAmyloidMeanDate', b_subject='OASISID', b_name='CDR', b_date='CDRDate')
+    features['CDR'] = features['CDRTOT']
+    features['CDRSumBoxes'] = features['CDRSUM']
+    features['CDRBinned'] = bin_cdr(features['CDRTOT'])
+
+    features = features[list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']]
+    report_missingness(features)
+
+    final = assign_training_validation(features)
+    report_feature_distribution(final)
+
+    return final
 
 def get_window_indices(frames, tracer, imgpath='<PathNotProvided>', tolerance=200):
     frames['Frame_End'] = frames['Frame_Start'] + frames['Frame_duration']

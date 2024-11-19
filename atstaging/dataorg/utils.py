@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_subject='Subject', b_date='Date', b_name='Visit',
-                         gap_allowed='90D', drop_missing=False, include_gap_cols=True):
+                         gap_allowed='180D', drop_missing=False, include_gap_cols=True):
     # b_subject column gets renamed to a_subject, which is confusing
     # pulling this out as a variable to indicate the destination name for subject
     subject = a_subject
@@ -451,3 +451,13 @@ def report_feature_distribution(features):
     print('Validation tracer (baseline)')
     print('-----')
     print(pd.crosstab(tmp['TracerAmyloid'], tmp['TracerTau']))
+
+def report_missingness(features):
+    print()
+    print('MISSINGNESS')
+    print('-----------')
+    print_missing(features, 'Age')
+    print_missing(features, 'SexMale')
+    print_missing(features, 'HasE4')
+    print_missing(features, 'AmyloidPositive')
+    print_missing(features, 'CDR')

@@ -107,6 +107,6 @@ def segmentation_pipeline(brain, out_segmentation, out_volumes=None, out_petrefe
         nii = nib.load(out_segmentation)
         data = nii.get_fdata()
         maskdata = np.where((data == 38) | (data == 39), 1., 0.)
-        mask = nib.Nifti1Image(dataobj=maskdata, affine=nii.affine, header=nii.header)
+        mask = nib.Nifti1Image(dataobj=maskdata, affine=nii.affine, dtype=np.int16)
         nib.save(mask, out_petreference)
         print('>>> Done.')

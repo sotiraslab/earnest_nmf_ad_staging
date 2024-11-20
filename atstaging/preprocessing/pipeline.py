@@ -13,6 +13,7 @@ from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
 from .pet import prepare_registration_pet, register_pet_image
 from .reorient import reorient_image
 from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
+from .segmentation import segmentation_pipeline
 from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
 from .debug import run_dependency_check
@@ -227,7 +228,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         print()
         tsp('Existing registration outputs, not rerunning.')
 
-    if not os.path.exists(jacobian):
+    if not os.path.exists(jacobian) or overwrite:
 
         print()
         tsp('Creating Jacobian Determinant image.')
@@ -237,7 +238,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         create_jacobian_determinant_image(fullwarp, jacobian)
         end_command('jacobian')
 
-    if not os.path.exists(registered):
+    if not os.path.exists(registered) or overwrite:
 
         mni_brain = get('mni152_brain')
 
@@ -247,6 +248,23 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         begin_command('apply warp')
         apply_transform(brain, mni_brain, fullwarp, registered)
         end_command('apply warp')
+
+    # segmentation
+    #  ---> MUSE, volume CSV generation, PET reference generation
+    segmentation = t1namer.get_path('muse')
+    volumes = t1namer.get_path('volumes')
+    petreference = t1namer.get_path('petreference')
+
+    print()
+    tsp('Beginnging MRI segmentation.')
+
+    begin_command('segmentation')
+    segmentation_pipeline(brain=brain,
+                          out_segmentation=segmentation,
+                          out_petreference=petreference,
+                          out_volumes=volumes)
+    end_command('segmentation')
+
 
     # MRI QC images
     skullstrip_qc = t1namer.get_path('qc-skullstrip')
@@ -267,70 +285,107 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     # # # # # # # #
     # AMYLOID
     # # # # # # # #
-    
+
     print()
     tsp('Beginnging with amyloid-PET processing...')
     
-    print()
-    tsp('Running preparatory steps for PET')
+    # preregistration
+    # ---> dcm2niix, coreg, avg, smoothing
+    amy_smoothed = amynamer.get_path('smoothed')
+
+    if not os.path.exists(amy_smoothed) or overwrite:
+        print()
+        tsp('Creating pre-regsitration image for amyloid.')
+
+        begin_command('amyloid-prereg')
+        prepare_registration_pet(amyloid_img, out_smoothed=amy_smoothed)
+        end_command('amyloid-prereg')
+    else:
+        print()
+        tsp('Existing pre-registration image for amyloid detected; not rerunning.')
     
-    begin_command('amyloid-prereg')
-    smoothed = amynamer.get_path('smoothed')
-    prepare_registration_pet(amyloid_img, out_smoothed=smoothed)
-    end_command('amyloid-prereg')
-    
-    print()
-    tsp('Registering PET image')
-    
-    begin_command('amyloid-registration')
+    # registration
+    # ---> registration, SUVR calculation
     amy_registered = amynamer.get_path('registered')
     amy_warp = amynamer.get_path('fullwarp')
     amy_rigid = amynamer.get_path('rigid')
-    register_pet_image(pet=smoothed,
-                       t1=preskullstrip,
-                       brainmask=brainmask,
-                       brain=brain,
-                       warp=fullwarp,
-                       mni_brain=mni_brain,
-                       out_registered=amy_registered,
-                       out_warp=amy_warp,
-                       out_rigid_reg=amy_rigid)
-    end_command('amyloid-registration')
+    amy_suvr = amynamer.get_path('origsuvr')
+    
+    if not os.path.exists(amy_registered) or overwrite:
+        print()
+        tsp('Registering PET image')
+        
+        begin_command('amyloid-registration')
+        
+        register_pet_image(pet=amy_smoothed,
+                        t1=preskullstrip,
+                        brainmask=brainmask,
+                        warp=fullwarp,
+                        suvr_reference_mask=petreference,
+                        mni_brain=mni_brain,
+                        out_registered=amy_registered,
+                        out_warp=amy_warp,
+                        out_rigid_reg=amy_rigid,
+                        out_suvr=amy_suvr)
+        end_command('amyloid-registration')
+    else:
+        print()
+        tsp('Existing registered image for amyloid detected; not rerunning.')
     
     # # # # # # # #
     # TAU
     # # # # # # # #
     
     print()
-    tsp('Beginnging with tau-PET processing...')
+    tsp('Beginnging with amyloid-PET processing...')
     
-    print()
-    tsp('Running preparatory steps for PET')
+    # preregistration
+    # ---> dcm2niix, coreg, avg, smoothing
+    tau_smoothed = taunamer.get_path('smoothed')
+
+    if not os.path.exists(tau_smoothed) or overwrite:
+        print()
+        tsp('Creating pre-regsitration image for tau.')
+
+        begin_command('tau-prereg')
+        prepare_registration_pet(tau_img, out_smoothed=tau_smoothed)
+        end_command('tau-prereg')
+    else:
+        print()
+        tsp('Existing pre-registration image for tau detected; not rerunning.')
     
-    begin_command('tau-prereg')
-    smoothed = taunamer.get_path('smoothed')
-    prepare_registration_pet(tau_img, out_smoothed=smoothed)
-    end_command('tau-prereg')
-    
-    print()
-    tsp('Registering PET image')
-    
-    begin_command('tau-registration')
+    # registration
+    # ---> registration, SUVR calculation
     tau_registered = taunamer.get_path('registered')
     tau_warp = taunamer.get_path('fullwarp')
     tau_rigid = taunamer.get_path('rigid')
-    register_pet_image(pet=smoothed,
-                       t1=preskullstrip,
-                       brainmask=brainmask,
-                       brain=brain,
-                       warp=fullwarp,
-                       mni_brain=mni_brain,
-                       out_registered=tau_registered,
-                       out_warp=tau_warp,
-                       out_rigid_reg=tau_rigid)
-    end_command('tau-registration')
+    tau_suvr = taunamer.get_path('origsuvr')
+    
+    if not os.path.exists(tau_registered) or overwrite:
+        print()
+        tsp('Registering PET image')
+        
+        begin_command('tau-registration')
+        
+        register_pet_image(pet=tau_smoothed,
+                        t1=preskullstrip,
+                        brainmask=brainmask,
+                        warp=fullwarp,
+                        suvr_reference_mask=petreference,
+                        mni_brain=mni_brain,
+                        out_registered=tau_registered,
+                        out_warp=tau_warp,
+                        out_rigid_reg=tau_rigid,
+                        out_suvr=tau_suvr)
+        end_command('tau-registration')
+    else:
+        print()
+        tsp('Existing registered image for tau detected; not rerunning.')
 
-    # cleanup
+    # # # # # # # #
+    # CLEANUP
+    # # # # # # # #
+    
     keep_t1 = get('mri_preproc_keep')
     keep_amy = get('amy_preproc_keep')
     keep_tau = get('tau_preproc_keep')

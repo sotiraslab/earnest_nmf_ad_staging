@@ -13,6 +13,7 @@ import warnings
 
 from colorama import Fore, Style
 import nibabel as nib
+import numpy as np
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
@@ -25,6 +26,7 @@ def _ants_registration_outputs(prefix):
         'affine': prefix + "0GenericAffine.mat",
         'warp': prefix + "1Warp.nii.gz",
         'rigidregistered': prefix + "Warped.nii.gz",
+        'origsuvr': prefix + 'OrigSUVR.nii.gz',
         'invwarp': prefix + "1InverseWarp.nii.gz",
         'fullwarp': prefix + '1FullWarp.nii.gz',
         'petbrainmask': prefix + 'BrainMaskPETSpace.nii.gz',
@@ -34,11 +36,12 @@ def _ants_registration_outputs(prefix):
     return outputs
 
 def _copy_outputs(prefix, out_registered=None, out_rigid_reg=None,
-                  out_warp=None, out_petbrain=None):
+                  out_suvr=None, out_warp=None, out_petbrain=None):
 
     outputs = _ants_registration_outputs(prefix)
     registered = outputs['petregistered']
     rigid_reg = outputs['rigidregistered']
+    suvr = outputs['origsuvr']
     warp = outputs['fullwarp']
     petbrain = outputs['petbrain']
 
@@ -47,6 +50,9 @@ def _copy_outputs(prefix, out_registered=None, out_rigid_reg=None,
 
     if os.path.isfile(rigid_reg) and out_rigid_reg is not None:
         shutil.move(rigid_reg, out_rigid_reg)
+
+    if os.path.isfile(suvr) and out_suvr is not None:
+        shutil.move(suvr, out_suvr)
 
     if os.path.isfile(warp) and out_warp is not None:
         shutil.move(warp, out_warp)
@@ -166,8 +172,8 @@ def prepare_registration_pet(pet, out_nifti=None,
         print()
         print('PET pre-registration steps completed.')
 
-def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
-                       out_registered=None, out_rigid_reg=None, out_warp=None,
+def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, mni_brain=None,
+                       out_registered=None, out_suvr=None, out_rigid_reg=None, out_warp=None,
                        out_petbrain=None):
     outputs = [out_registered, out_rigid_reg, out_warp, out_petbrain]
     if all(x is None for x in outputs):
@@ -211,6 +217,37 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
         execute(command)
         print('- - -')
 
+        # compute SUVR
+        rigidregisted = OUTNAMES['rigidregistered']
+        working_pet_image = pet
+        suvr = OUTNAMES['origsuvr']
+        if suvr_reference_mask is not None:
+            print()
+            print(f'>>> Using {suvr_reference_mask} to compuete an SUVR.')
+            img = nib.load(rigidregisted)
+            mask = nib.load(suvr_reference_mask)
+            img_data = img.get_fdata()
+            mask_data = np.isclose(mask.get_fdata(), 1.0).astype(float)
+            mask_applied = np.where(mask_data == 1, img_data, 0.)
+            sum_img_data = mask_applied.sum()
+            n_voxels_in_mask = mask_data.sum()
+            ref_uptake = float(sum_img_data / n_voxels_in_mask)
+
+            print(f'>>> Reference uptake value: {ref_uptake}')
+            nii = nib.load(pet)
+            data = nii.get_fdata()
+            print(f'>>> Range before SUVR normalization: {float(data.min()), float(data.max())}')
+
+            data /= ref_uptake
+            print(f'>>> Range after SUVR normalization: {float(data.min()), float(data.max())}')
+            
+            data = np.where(data < 0, 0, data)
+            print(f'>>> Range after negative removal: {float(data.min()), float(data.max())}')
+
+            newimg = nib.Nifti1Image(dataobj=data, affine=nii.affine)
+            nib.save(newimg, suvr)
+            working_pet_image = suvr
+
         # skullstrip the PET image
         affine = OUTNAMES['affine']
         petbrain = OUTNAMES['petbrain']
@@ -219,7 +256,7 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
             ants_applytransforms,
             '-d', '3',
             '-i', brainmask,
-            '-r', pet,
+            '-r', working_pet_image,
             '-o', petbrainmask,
             '-t', f"[{affine},1]",
             '-n', 'NearestNeighbor',
@@ -233,7 +270,7 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
         execute(command)
         print('- - -')
 
-        command = [ants_imagemath, '3', petbrain, 'm', petbrainmask, pet]
+        command = [ants_imagemath, '3', petbrain, 'm', petbrainmask, working_pet_image]
 
         print()
         print('>>> Skullstripping the PET image:')
@@ -247,7 +284,7 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
         command = [
             ants_applytransforms,
             '-d', '3',
-            '-i', pet,
+            '-i', working_pet_image,
             '-r', REFERENCE,
             '-t', warp, affine,
             '-o', f'[{fullwarp},1]',
@@ -281,7 +318,7 @@ def register_pet_image(pet, t1, brainmask, brain, warp, mni_brain=None,
         # move output files
         print()
         print('>>> Copying outputs to selected destinations. ')
-        _copy_outputs(PREFIX, out_registered=out_registered,
+        _copy_outputs(PREFIX, out_registered=out_registered, out_suvr=out_suvr,
                       out_warp=out_warp, out_rigid_reg=out_rigid_reg,
                       out_petbrain=out_petbrain)
 

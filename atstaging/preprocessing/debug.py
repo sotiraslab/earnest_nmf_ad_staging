@@ -47,6 +47,11 @@ def check_deepmrseg():
          'deepmrseg_apply'])
     return process.returncode == 0, process
 
+def check_fsl():
+    fsl = get('fsl')
+    command = os.path.join(fsl, 'bin', 'fsl')
+    return _check_which_command(command)
+
 def check_packages():
 
     missing = []
@@ -71,6 +76,7 @@ def run_dependency_check():
         'Python packages': check_packages,
         'AFNI': check_afni,
         'ANTS Registration': check_ants,
+        'FSL': check_fsl,
         'DeepMRSeg': check_deepmrseg,
         }
 

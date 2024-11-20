@@ -83,6 +83,9 @@ class ATPreprocMRINamer(BIDSOutputNamer):
             'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz',
+            'muse': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-muse_seg.nii.gz',
+            'volumes': 'sub-{SUBJECT}_ses-{SESSION}_desc-musevolumes_table.csv',
+            'petreference': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-petreference_mask.nii.gz',
             'qc-skullstrip': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_qc.png',
             'qc-checkerboard': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-checkerboard_qc.png'
         }
@@ -100,6 +103,7 @@ class ATPreprocPETNamer(BIDSOutputNamer):
             'smoothed': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-smoothed10mm_pet.nii.gz',
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-MNI152NLin6ASym_desc-registered_pet.nii.gz',
             'rigid': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-t1_desc-rigid_pet.nii.gz',
+            'origsuvr': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-suvr_pet.nii.gz',
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_from-pet_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'brain': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-brain_pet.nii.gz',
         }

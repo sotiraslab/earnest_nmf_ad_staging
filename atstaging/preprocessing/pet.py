@@ -73,6 +73,14 @@ def _get_img_format(pet):
         return 'NIFTI_UNCOMPRESSED'
     else:
         raise ValueError(f'Unrecognized type for {os.path.basename(pet)}')
+    
+def _get_shape_dict(img):
+    nii = nib.load(img)
+    shape = nii.shape
+    output = {f'Dim{i}': s for i, s in enumerate(shape) if i <= 3}
+    if len(shape) == 3:
+        output['Dim3'] = None
+    return output
 
 def _is_dynamic(pet):
     nii = nib.load(pet)
@@ -90,6 +98,10 @@ def prepare_registration_pet(pet, out_nifti=None,
     outputs = [out_nifti, out_realign, out_average, out_smoothed]
     if all([x is None for x in outputs]):
         raise ValueError('At least one output must be specified for PET pre-registration.')
+    
+    INFO = {
+        'Source': pet
+    }
 
     with tempfile.TemporaryDirectory() as WORKINGDIR:
 
@@ -99,6 +111,7 @@ def prepare_registration_pet(pet, out_nifti=None,
 
         # covert to NIFTI
         img_fmt = _get_img_format(pet)
+        INFO['ImageFormat'] = img_fmt
         print()
         print(f'>>> Detected image format: {img_fmt}')
 
@@ -131,14 +144,18 @@ def prepare_registration_pet(pet, out_nifti=None,
             shutil.copy(TEMPIMAGE, out_nifti)
 
         # realignment
+        INFO['IsDynamic'] = _is_dynamic(TEMPIMAGE)
+        INFO.update(_get_shape_dict(TEMPIMAGE))
         if _is_dynamic(TEMPIMAGE):
             print()
             print('>>> Running MCFLIRT for realignment of PET frames...')
             print('- - -')
             run_mcflirt(TEMPIMAGE, TEMPIMAGE)
             print('- - -')
+            INFO['MCFLIRTApplied'] = True
         else:
             print('>>> Image is not dynamic; skipping realignment.')
+            INFO['MCFLIRTApplied'] = False
 
         if out_realign:
             shutil.copy(TEMPIMAGE, out_realign)
@@ -152,8 +169,10 @@ def prepare_registration_pet(pet, out_nifti=None,
             newimg = nib.Nifti1Image(dataobj=data, affine=nii.affine, header=nii.header)
             nib.save(newimg, TEMPIMAGE)
             print('- - -')
+            INFO['AverageApplied'] = True
         else:
             print('>>> Image is not dynamic; skipping averaging.')
+            INFO['AverageApplied'] = False
 
         if out_average:
             shutil.copy(TEMPIMAGE, out_average)
@@ -162,10 +181,11 @@ def prepare_registration_pet(pet, out_nifti=None,
         print()
         print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')
         print('- - -')
-        iterative_smoothing(TEMPIMAGE, TEMPIMAGE, target_fwhm=target_fwhm,
-                            start_fwhm=(0, 0, 0), stepsize=0.5,
-                            tolerance=0.5, max_iterations=75,
-                            automask=True, difMAD=True, verbose=True)
+        smoothstats = iterative_smoothing(TEMPIMAGE, TEMPIMAGE, target_fwhm=target_fwhm,
+                                          start_fwhm=(0, 0, 0), stepsize=0.5,
+                                          tolerance=0.5, max_iterations=75,
+                                          automask=True, difMAD=True, verbose=True)
+        INFO.update(smoothstats)
         print('- - -')
 
         if out_smoothed:
@@ -174,6 +194,8 @@ def prepare_registration_pet(pet, out_nifti=None,
         print()
         print('PET pre-registration steps completed.')
 
+        return INFO
+
 def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_segmentation=None,
                        mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_warp=None,
                        out_petbrain=None, out_regional_suvrs=None):
@@ -181,6 +203,8 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_
     if all(x is None for x in outputs):
         warnings.warn(RuntimeWarning('MRI registration: no outputs selected, exiting!'))
         return
+    
+    INFO = {}
 
     with tempfile.TemporaryDirectory() as WORKINGDIR:
 
@@ -234,17 +258,24 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_
             sum_img_data = mask_applied.sum()
             n_voxels_in_mask = mask_data.sum()
             ref_uptake = float(sum_img_data / n_voxels_in_mask)
+            INFO['ReferenceUptake'] = ref_uptake
 
             print(f'>>> Reference uptake value: {ref_uptake}')
             nii = nib.load(pet)
             data = nii.get_fdata()
             print(f'>>> Range before SUVR normalization: {float(data.min()), float(data.max())}')
+            INFO['PreSUVRMin'] = float(data.min())
+            INFO['PreSUVRMax'] = float(data.max())
 
             data /= ref_uptake
             print(f'>>> Range after SUVR normalization: {float(data.min()), float(data.max())}')
+            INFO['PostSUVRMin'] = float(data.min())
+            INFO['PostSUVRMax'] = float(data.max())
             
             data = np.where(data < 0, 0, data)
             print(f'>>> Range after negative removal: {float(data.min()), float(data.max())}')
+            INFO['ZeroNegMin'] = float(data.min())
+            INFO['ZeroNegMax'] = float(data.max())
 
             newimg = nib.Nifti1Image(dataobj=data, affine=nii.affine)
             nib.save(newimg, suvr)
@@ -366,6 +397,8 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_
         print('- - -')
 
         print('Completed!')
+
+        return INFO
 
 def run_mcflirt(inimg, outimg):
 

@@ -160,14 +160,15 @@ def iterative_smoothing(imgpath, outpath, target_fwhm=(8, 8, 8),
     nib.save(smoothed, outpath)
     vprint('Done.')
 
-    return
+    info = {'original_fwhm_x': orig_fwhm[0],
+            'original_fwhm_y': orig_fwhm[1],
+            'original_fwhm_z': orig_fwhm[2],
+            'final_fwhm_x': smoothed_fwhm[0],
+            'final_fwhm_y': smoothed_fwhm[1],
+            'final_fwhm_z': smoothed_fwhm[2],
+            'kernel_x': current_filter[0],
+            'kernel_y': current_filter[1],
+            'kernel_z': current_filter[2],
+            'target_fwhm': target_fwhm,}
 
-
-
-
-
-
-
-
-
-
+    return info

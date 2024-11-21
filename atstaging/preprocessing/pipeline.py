@@ -1,8 +1,9 @@
 
 import argparse
 import datetime as dt
-import time
+import json
 import os
+import time
 
 from colorama import Fore, Style
 
@@ -123,7 +124,24 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     t1namer.make_img_dir()
     amynamer.make_img_dir()
     taunamer.make_img_dir()
+
+    # Information returned by the pipeline
+    PATHS = {}
+    PATHS['Subject'] = subject
+    PATHS['Session'] = session
+    PATHS['PathT1'] = t1_img
+    PATHS['PathAmyloid'] = amyloid_img
+    PATHS['PathTau'] = tau_img
+
+    for name, path in t1namer.namestore.items():
+        PATHS['t1_' + name] = path
     
+    for name, path in amynamer.namestore.items():
+        PATHS['amyloid_' + name] = path
+
+    for name, path in taunamer.namestore.items():
+        PATHS['tau_' + name] = path
+
     # # # # # # # #
     # T1
     # # # # # # # #
@@ -287,6 +305,9 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     # AMYLOID
     # # # # # # # #
 
+    AMYINFO = {}
+    amystats = amynamer.get_path('petstats')
+
     print()
     tsp('Beginnging with amyloid-PET processing...')
     
@@ -299,7 +320,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         tsp('Creating pre-regsitration image for amyloid.')
 
         begin_command('amyloid-prereg')
-        prepare_registration_pet(amyloid_img, out_smoothed=amy_smoothed)
+        out = prepare_registration_pet(amyloid_img, out_smoothed=amy_smoothed)
+        AMYINFO.update(out)
         end_command('amyloid-prereg')
     else:
         print()
@@ -319,7 +341,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         
         begin_command('amyloid-registration')
         
-        register_pet_image(pet=amy_smoothed,
+        out = register_pet_image(pet=amy_smoothed,
                         t1=preskullstrip,
                         brainmask=brainmask,
                         warp=fullwarp,
@@ -331,14 +353,22 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                         out_rigid_reg=amy_rigid,
                         out_suvr=amy_suvr,
                         out_regional_suvrs=amy_stats)
+        AMYINFO.update(out)
         end_command('amyloid-registration')
     else:
         print()
         tsp('Existing registered image for amyloid detected; not rerunning.')
+
+    if (not os.path.exists(amystats) or overwrite) and len(AMYINFO):
+        with open(amystats, 'w') as f:
+            json.dump(AMYINFO, f, indent=4)
     
     # # # # # # # #
     # TAU
     # # # # # # # #
+
+    TAUINFO = {}
+    taustats = taunamer.get_path('petstats')
     
     print()
     tsp('Beginnging with amyloid-PET processing...')
@@ -352,7 +382,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         tsp('Creating pre-regsitration image for tau.')
 
         begin_command('tau-prereg')
-        prepare_registration_pet(tau_img, out_smoothed=tau_smoothed)
+        info = prepare_registration_pet(tau_img, out_smoothed=tau_smoothed)
+        TAUINFO.update(info)
         end_command('tau-prereg')
     else:
         print()
@@ -372,7 +403,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
         
         begin_command('tau-registration')
         
-        register_pet_image(pet=tau_smoothed,
+        info = register_pet_image(pet=tau_smoothed,
                         t1=preskullstrip,
                         brainmask=brainmask,
                         warp=fullwarp,
@@ -384,10 +415,15 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                         out_rigid_reg=tau_rigid,
                         out_suvr=tau_suvr,
                         out_regional_suvrs=tau_stats)
+        TAUINFO.update(info)
         end_command('tau-registration')
     else:
         print()
         tsp('Existing registered image for tau detected; not rerunning.')
+
+    if (not os.path.exists(taustats) or overwrite) and len(TAUINFO):
+        with open(taustats, 'w') as f:
+            json.dump(TAUINFO, f, indent=4)
 
     # # # # # # # #
     # CLEANUP
@@ -407,6 +443,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     h, m = divmod(m, 60)
     print(f'Elapsed Time: {h}h:{m}m:{s}s')
     print()
+
+    return PATHS
 
 def main():
     args = parse()

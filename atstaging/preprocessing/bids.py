@@ -107,6 +107,7 @@ class ATPreprocPETNamer(BIDSOutputNamer):
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_from-pet_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'brain': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-brain_pet.nii.gz',
             'musestats': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-musestats_table.csv',
+            'petstats': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_desc-petstats_table.json',
         }
 
     def get_name(self, key):

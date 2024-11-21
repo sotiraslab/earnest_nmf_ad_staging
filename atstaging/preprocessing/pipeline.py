@@ -127,6 +127,8 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     # # # # # # # #
     # T1
     # # # # # # # #
+
+    mni_brain = get('mni152_brain')
     
     print()
     tsp('Beginnging with T1 processing...')
@@ -267,20 +269,19 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
 
 
     # MRI QC images
-    skullstrip_qc = t1namer.get_path('qc-skullstrip')
-    checkerboard_qc = t1namer.get_path('qc-checkerboard')
+    # skullstrip_qc = t1namer.get_path('qc-skullstrip')
+    # checkerboard_qc = t1namer.get_path('qc-checkerboard')
 
-    print()
-    tsp('Generating QC images')
+    # print()
+    # tsp('Generating QC images')
 
-    begin_command('qc-skullstrip')
-    skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
-    end_command('qc-skullstrip')
+    # begin_command('qc-skullstrip')
+    # skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
+    # end_command('qc-skullstrip')
 
-    begin_command('qc-checkerboard')
-    mni_brain = get('mni152_brain')
-    registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
-    end_command('qc-checkerboard')
+    # begin_command('qc-checkerboard')
+    # registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
+    # end_command('qc-checkerboard')
 
     # # # # # # # #
     # AMYLOID
@@ -310,6 +311,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     amy_warp = amynamer.get_path('fullwarp')
     amy_rigid = amynamer.get_path('rigid')
     amy_suvr = amynamer.get_path('origsuvr')
+    amy_stats = amynamer.get_path('musestats')
     
     if not os.path.exists(amy_registered) or overwrite:
         print()
@@ -321,12 +323,14 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                         t1=preskullstrip,
                         brainmask=brainmask,
                         warp=fullwarp,
+                        muse_segmentation=segmentation,
                         suvr_reference_mask=petreference,
                         mni_brain=mni_brain,
                         out_registered=amy_registered,
                         out_warp=amy_warp,
                         out_rigid_reg=amy_rigid,
-                        out_suvr=amy_suvr)
+                        out_suvr=amy_suvr,
+                        out_regional_suvrs=amy_stats)
         end_command('amyloid-registration')
     else:
         print()
@@ -360,6 +364,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     tau_warp = taunamer.get_path('fullwarp')
     tau_rigid = taunamer.get_path('rigid')
     tau_suvr = taunamer.get_path('origsuvr')
+    tau_stats = taunamer.get_path('musestats')
     
     if not os.path.exists(tau_registered) or overwrite:
         print()
@@ -371,12 +376,14 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                         t1=preskullstrip,
                         brainmask=brainmask,
                         warp=fullwarp,
+                        muse_segmentation=segmentation,
                         suvr_reference_mask=petreference,
                         mni_brain=mni_brain,
                         out_registered=tau_registered,
                         out_warp=tau_warp,
                         out_rigid_reg=tau_rigid,
-                        out_suvr=tau_suvr)
+                        out_suvr=tau_suvr,
+                        out_regional_suvrs=tau_stats)
         end_command('tau-registration')
     else:
         print()

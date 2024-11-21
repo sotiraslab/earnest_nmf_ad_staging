@@ -9,6 +9,34 @@ import pandas as pd
 from .execute import execute
 from atstaging.config import get
 
+def compute_regional_statistics_MUSE(img, segmentaion):
+    img = nib.load(img)
+    seg = nib.load(segmentaion)
+    voxel_dims = (img.header["pixdim"])[1:4]
+    voxel_volume = np.prod(voxel_dims)
+    img_data = img.get_fdata()
+    seg_data = seg.get_fdata()
+    labels, sizes = np.unique(seg_data, return_counts=True)
+    print(f' ** Found {len(labels)} labels in segmentation:')
+    print(f' **     {[float(i) for i in labels]}')
+    rows = []
+    for label, size in zip(labels, sizes):
+        mask = seg_data == label
+        region = img_data[mask]
+        row = {}
+        row['ROI'] = label
+        row['MUSEVoxels'] = size
+        row['MUSEVolume'] = size * voxel_volume
+        row['MUSEMinimum'] = region.min()
+        row['MUSEMaximum'] = region.max()
+        row['MUSEAverage'] = region.mean()
+        rows.append(row)
+
+    muse = load_muse_roi_table_cleaned()
+    df = pd.DataFrame(rows)
+    output = muse.merge(df, how='left', on='ROI')
+    return output
+
 def get_mask_volume(inpath, binarize=True, background_value=0.):
     nii = nib.load(inpath)
     voxel_dims = (nii.header["pixdim"])[1:4]

@@ -19,6 +19,7 @@ from atstaging.config import get
 from atstaging.preprocessing.execute import execute
 from atstaging.preprocessing.conversion import ecat_to_nifti, run_dcm2niix
 from atstaging.preprocessing.reorient import reorient_image
+from atstaging.preprocessing.segmentation import compute_regional_statistics_MUSE
 from atstaging.preprocessing.smoothing import iterative_smoothing
 
 def _ants_registration_outputs(prefix):
@@ -30,6 +31,7 @@ def _ants_registration_outputs(prefix):
         'invwarp': prefix + "1InverseWarp.nii.gz",
         'fullwarp': prefix + '1FullWarp.nii.gz',
         'petbrainmask': prefix + 'BrainMaskPETSpace.nii.gz',
+        'petsegmentation': prefix + 'SegementationPETSpace.nii.gz',
         'petbrain': prefix + 'PETBrain.nii.gz',
         'petregistered': prefix + 'PETRegistered.nii.gz',
         }
@@ -172,10 +174,10 @@ def prepare_registration_pet(pet, out_nifti=None,
         print()
         print('PET pre-registration steps completed.')
 
-def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, mni_brain=None,
-                       out_registered=None, out_suvr=None, out_rigid_reg=None, out_warp=None,
-                       out_petbrain=None):
-    outputs = [out_registered, out_rigid_reg, out_warp, out_petbrain]
+def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_segmentation=None,
+                       mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_warp=None,
+                       out_petbrain=None, out_regional_suvrs=None):
+    outputs = [out_registered, out_rigid_reg, out_warp, out_petbrain, out_suvr, out_regional_suvrs]
     if all(x is None for x in outputs):
         warnings.warn(RuntimeWarning('MRI registration: no outputs selected, exiting!'))
         return
@@ -278,6 +280,35 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, mni_b
         print('- - -')
         execute(command)
         print('- - -')
+
+        # get regional SUVRs for PET image
+        petsegmentation = OUTNAMES['petsegmentation']
+        if muse_segmentation is not None:
+            command = [
+                ants_applytransforms,
+                '-d', '3',
+                '-i', muse_segmentation,
+                '-r', working_pet_image,
+                '-o', petsegmentation,
+                '-t', f"[{affine},1]",
+                '-n', 'NearestNeighbor',
+                '-v'
+                ]
+            
+            print()
+            print('>>> Moving T1 MUSE segmentation to PET space:')
+            print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+            print('- - -')
+            execute(command)
+            print('- - -')
+
+            print()
+            print('>>> Computing regional statistics from segmentation in PET space:')
+            print('- - -')
+            regional_suvrs = compute_regional_statistics_MUSE(img=working_pet_image, segmentaion=petsegmentation)
+            if out_regional_suvrs is not None:
+                regional_suvrs.to_csv(out_regional_suvrs, index=False)
+            print('- - -')
 
         # combined transform
         fullwarp = OUTNAMES['fullwarp']

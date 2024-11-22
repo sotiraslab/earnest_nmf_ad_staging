@@ -8,6 +8,7 @@ description = "Code for Tom's NMF & SuStaIn PET staging work."
 dependencies = [
     "colorama",
     "nibabel",
+    "nilearn",
     "pandas"
 ]
 dynamic = ["version"]

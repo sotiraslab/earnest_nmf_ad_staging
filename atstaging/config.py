@@ -22,6 +22,9 @@ def get_config_dir():
     config_dir = os.path.join(project_dir, 'config')
     return config_dir
 
+def get_slurm_setup_script():
+    return os.path.join(get_config_dir(), 'slurm_setup.sh')
+
 def find_config_files():
     config_dir = get_config_dir()
     config_files = os.listdir(config_dir)

@@ -29,22 +29,6 @@ from atstaging.config import get, report_configuration, set_config_automatic, se
 from atstaging.printing import timestamp_print as tsp
 from atstaging.printing import begin_command, end_command
 
-def parse(arguments=None):
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-M', '--mri', required=True, dest='t1_img', help='Input T1 image to preprocess.')
-    parser.add_argument('-A', '--amyloid', required=True, dest='amyloid_img', help='Input aymloid PET image to preprocess.')
-    parser.add_argument('-T', '--tau', required=True, dest='tau_img', help='Input tau PET image to preprocess.')
-    parser.add_argument('-o', '--output', required=True, dest='output_directory', help='BIDS directory to create outputs')
-    parser.add_argument('--sub', required=True, dest='subject', help='BIDS subject for image.')
-    parser.add_argument('--ses', required=True, dest='session', help='BIDS session for image.')
-    parser.add_argument('-c', '--config', required=False, help='Name of a config file to use for this run.')
-
-    args = parser.parse_args(args=arguments)
-
-    return args
-
 def _apply_file_keep(keep, namer, identifier):
     
     if 'all' in keep:
@@ -491,10 +475,3 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     print()
 
     return PATHS
-
-def main():
-    args = parse()
-    at_mri_pipeline(**vars(args))
-
-if __name__ == '__main__':
-    main()

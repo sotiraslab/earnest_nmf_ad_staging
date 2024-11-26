@@ -7,8 +7,8 @@
     "mri_preproc_keep": ["brainmask", "fullwarp", "muse", "volumes", "qc-skullstrip", "qc-checkerboard"],
     "amy_preproc_keep": ["registered"],
     "tau_preproc_keep": ["registered"],
-    "overwrite_preproc": false,
     "output_directory": "/path/to/output/folder",
+    "overwrite_preproc": false,
     "quick": true,
     "slurm": {
         "time": "12:00:00",
@@ -17,6 +17,16 @@
         "mem": "64G",
         "account": "aristeidis_sotiras",
         "partition": "tier2_cpu"
+    },
+    "tablecols": {
+        "t1_img": "PathT1",
+        "amyloid_img": "PathAmyloid",
+        "amyloid_tracer": "TracerAmyloid",
+        "tau_img": "PathTau",
+        "tau_tracer": "TracerTau",
+        "output_directory": "OutputDirectory",
+        "subject": "Subject",
+        "session": "Session"
     },
     "use": true
 }

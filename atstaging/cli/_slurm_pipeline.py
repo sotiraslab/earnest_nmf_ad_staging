@@ -2,7 +2,7 @@
 
 import os
 
-from atstaging.config import get, get_slurm_setup_path
+from atstaging.config import get, get_slurm_setup_script
 from atstaging.preprocessing.execute import execute
 
 BATCH_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'atproc_batch.sh')
@@ -10,7 +10,7 @@ BATCH_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'atproc_batch.sh')
 def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
                           subject, session, output_directory):
     tag = f"sub-{subject}_ses-{session}"
-    setup_script = get_slurm_setup_path()
+    setup_script = get_slurm_setup_script()
     
     nodes = get('slurm', 'nodes')
     ntasks = get('slurm', 'ntasks')

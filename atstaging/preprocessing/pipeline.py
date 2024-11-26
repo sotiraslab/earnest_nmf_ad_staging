@@ -123,14 +123,23 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     PATHS['PathAmyloid'] = amyloid_img
     PATHS['PathTau'] = tau_img
 
-    for name, path in t1namer.namestore.items():
-        PATHS['t1_' + name] = path
+    for name in t1namer.namestore.keys():
+        PATHS['t1_' + name] = t1namer.get_path(name)
     
-    for name, path in amynamer.namestore.items():
-        PATHS['amyloid_' + name] = path
+    for name in amynamer.namestore.keys():
+        PATHS['amyloid_' + name] = amynamer.get_path(name)
 
-    for name, path in taunamer.namestore.items():
-        PATHS['tau_' + name] = path
+    for name in taunamer.namestore.keys():
+        PATHS['tau_' + name] = taunamer.get_path(name)
+
+    # save path information
+    procpathsdir = os.path.join(output_directory, 'paths')
+    if not os.path.isdir(procpathsdir):
+        os.mkdir(procpathsdir)
+    
+    pathsjson = os.path.join(procpathsdir, f'sub-{subject}_ses-{session}.json')
+    with open(pathsjson, 'w') as f:
+        json.dump(PATHS, f, indent=4)
 
     # # # # # # # #
     # T1

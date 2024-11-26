@@ -11,7 +11,8 @@ from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .conversion import run_dcm2niix
 from .qc import (
-    pet_registration_qc_image,
+    pet_mni_registration_qc_image,
+    pet_t1_registration_qc_image,
     registration_checkerboard_qc_image,
     skullstripping_qc_image,
     suvr_qc_image,
@@ -370,6 +371,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
 
     # amyloid QC images
     suvr_qc = amynamer.get_path('qc-suvr')
+    coreg_qc = amynamer.get_path('qc-coregistration')
     petreg_qc = amynamer.get_path('qc-registration')
 
     print()
@@ -379,9 +381,13 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     suvr_qc_image(amy_suvr, output=suvr_qc)
     end_command('qc-suvr')
 
-    begin_command('qc-checkerboard')
-    pet_registration_qc_image(registeredpet=amy_registered, mni=mni_brain, output=petreg_qc)
-    end_command('qc-checkerboard')
+    begin_command('qc-coregistration')
+    pet_t1_registration_qc_image(registeredpet=amy_rigid, t1=preskullstrip, output=coreg_qc)
+    end_command('qc-coregistration')
+
+    begin_command('qc-registration')
+    pet_mni_registration_qc_image(registeredpet=amy_registered, mni=mni_brain, output=petreg_qc)
+    end_command('qc-registration')
     
     # # # # # # # #
     # TAU
@@ -447,6 +453,7 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
 
     # tau QC images
     suvr_qc = taunamer.get_path('qc-suvr')
+    coreg_qc = taunamer.get_path('qc-coregistration')
     petreg_qc = taunamer.get_path('qc-registration')
 
     print()
@@ -456,9 +463,13 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     suvr_qc_image(tau_suvr, output=suvr_qc)
     end_command('qc-suvr')
 
-    begin_command('qc-checkerboard')
-    pet_registration_qc_image(registeredpet=tau_registered, mni=mni_brain, output=petreg_qc)
-    end_command('qc-checkerboard')
+    begin_command('qc-coregistration')
+    pet_t1_registration_qc_image(registeredpet=tau_rigid, t1=preskullstrip, output=coreg_qc)
+    end_command('qc-coregistration')
+
+    begin_command('qc-registration')
+    pet_mni_registration_qc_image(registeredpet=tau_registered, mni=mni_brain, output=petreg_qc)
+    end_command('qc-registration')
 
     # # # # # # # #
     # CLEANUP

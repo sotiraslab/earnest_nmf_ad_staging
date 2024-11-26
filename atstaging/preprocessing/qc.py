@@ -9,10 +9,17 @@ Created on Thu Sep 19 10:48:35 2024
 import matplotlib.pyplot as plt
 from nifti_overlay import NiftiOverlay
 
-def pet_registration_qc_image(registeredpet, mni, output):
+def pet_mni_registration_qc_image(registeredpet, mni, output):
     overlay = NiftiOverlay(dpi=300)
     overlay.add_anat(mni)
-    overlay.add_anat(registeredpet, color='nipy_spectral', vmin=1.0, vmax=2.5, alpha=.5)
+    overlay.add_anat(registeredpet, color='jet', alpha=.5)
+    overlay.generate(output)
+    plt.close()
+
+def pet_t1_registration_qc_image(registeredpet, t1, output):
+    overlay = NiftiOverlay(dpi=300)
+    overlay.add_anat(t1)
+    overlay.add_anat(registeredpet, color='jet', alpha=.5)
     overlay.generate(output)
     plt.close()
 

@@ -109,6 +109,7 @@ class ATPreprocPETNamer(BIDSOutputNamer):
             'musestats': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-musestats_table.csv',
             'petstats': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_desc-petstats_table.json',
             'qc-suvr': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-suvr_qc.png',
+            'qc-coregistration': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-t1_desc-coregistration_qc.png',
             'qc-registration': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-MNI152NLin6ASym_desc-registered_qc.png',
         }
 

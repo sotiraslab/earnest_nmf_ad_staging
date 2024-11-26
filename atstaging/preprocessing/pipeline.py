@@ -10,7 +10,12 @@ from colorama import Fore, Style
 from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .conversion import run_dcm2niix
-from .qc import skullstripping_qc_image, registration_checkerboard_qc_image
+from .qc import (
+    pet_registration_qc_image,
+    registration_checkerboard_qc_image,
+    skullstripping_qc_image,
+    suvr_qc_image,
+    )
 from .pet import prepare_registration_pet, register_pet_image
 from .reorient import reorient_image
 from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
@@ -287,19 +292,19 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
 
 
     # MRI QC images
-    # skullstrip_qc = t1namer.get_path('qc-skullstrip')
-    # checkerboard_qc = t1namer.get_path('qc-checkerboard')
+    skullstrip_qc = t1namer.get_path('qc-skullstrip')
+    checkerboard_qc = t1namer.get_path('qc-checkerboard')
 
-    # print()
-    # tsp('Generating QC images')
+    print()
+    tsp('Generating QC images')
 
-    # begin_command('qc-skullstrip')
-    # skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
-    # end_command('qc-skullstrip')
+    begin_command('qc-skullstrip')
+    skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
+    end_command('qc-skullstrip')
 
-    # begin_command('qc-checkerboard')
-    # registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
-    # end_command('qc-checkerboard')
+    begin_command('qc-checkerboard')
+    registration_checkerboard_qc_image(registered, mni_brain, checkerboard_qc)
+    end_command('qc-checkerboard')
 
     # # # # # # # #
     # AMYLOID
@@ -362,6 +367,21 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     if (not os.path.exists(amystats) or overwrite) and len(AMYINFO):
         with open(amystats, 'w') as f:
             json.dump(AMYINFO, f, indent=4)
+
+    # amyloid QC images
+    suvr_qc = amynamer.get_path('qc-suvr')
+    petreg_qc = amynamer.get_path('qc-registration')
+
+    print()
+    tsp('Generating QC images')
+
+    begin_command('qc-suvr')
+    suvr_qc_image(amy_suvr, output=suvr_qc)
+    end_command('qc-suvr')
+
+    begin_command('qc-checkerboard')
+    pet_registration_qc_image(registeredpet=amy_registered, mni=mni_brain, output=petreg_qc)
+    end_command('qc-checkerboard')
     
     # # # # # # # #
     # TAU
@@ -424,6 +444,21 @@ def at_mri_pipeline(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
     if (not os.path.exists(taustats) or overwrite) and len(TAUINFO):
         with open(taustats, 'w') as f:
             json.dump(TAUINFO, f, indent=4)
+
+    # tau QC images
+    suvr_qc = taunamer.get_path('qc-suvr')
+    petreg_qc = taunamer.get_path('qc-registration')
+
+    print()
+    tsp('Generating QC images')
+
+    begin_command('qc-suvr')
+    suvr_qc_image(tau_suvr, output=suvr_qc)
+    end_command('qc-suvr')
+
+    begin_command('qc-checkerboard')
+    pet_registration_qc_image(registeredpet=tau_registered, mni=mni_brain, output=petreg_qc)
+    end_command('qc-checkerboard')
 
     # # # # # # # #
     # CLEANUP

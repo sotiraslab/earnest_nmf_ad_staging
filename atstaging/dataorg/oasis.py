@@ -102,9 +102,9 @@ def create_preproc_table(amyloid_conversion_csv, tau_conversion_csv, mri_convers
         subject_col='Subject',
         date_col='ScanDate',
         tracer_col='Tracer',
-        extra_tau_columns=['OASISSession'],
-        extra_amyloid_columns=['OASISSession'],
-        extra_t1_columns=['OASISSession'],
+        extra_tau_columns=['OASISSession', 'Path'],
+        extra_amyloid_columns=['OASISSession', 'Path'],
+        extra_t1_columns=['OASISSession', 'Path'],
     )
 
     # record the baseline date

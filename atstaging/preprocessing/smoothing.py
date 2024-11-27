@@ -13,10 +13,8 @@ import itertools as it
 import os
 import tempfile
 
-from colorama import Fore, Style
 import nibabel as nib
 from nilearn.image import smooth_img
-import numpy as np
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute

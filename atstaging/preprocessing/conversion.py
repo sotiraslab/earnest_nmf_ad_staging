@@ -7,9 +7,10 @@ Created on Wed Sep  4 13:53:34 2024
 
 import os
 from pathlib import Path
-import subprocess
 
 import nibabel as nib
+
+from atstaging.preprocessing.execute import execute
 
 def ecat_to_nifti(inimg, outimg):
     # https://neurostars.org/t/how-can-i-convert-ecat-v-file-to-nifti-nii-file-in-python/27297/2
@@ -20,7 +21,7 @@ def ecat_to_nifti(inimg, outimg):
     )
     nib.save(nii, outimg)
 
-def run_dcm2niix(indir, outdir, name):
+def run_dcm2niix(indir, outdir, name, silent=False):
 
     call = [
         'dcm2niix', 
@@ -32,7 +33,7 @@ def run_dcm2niix(indir, outdir, name):
         indir
         ]
 
-    subprocess.run(call)
+    execute(call, verbose=not silent)
 
 def recursive_dcm2niix(indir, outdir, name_fmt=r'sub-%i_ses-%t_desc-%p'):
 

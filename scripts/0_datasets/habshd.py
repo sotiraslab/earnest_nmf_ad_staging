@@ -52,3 +52,15 @@ features = create_feature_table(preproc_table=preproc_table, habshd_uds=habshd, 
 
 # save
 features.to_csv(os.path.join(OUTPUT_FOLDER, 'datasetTables', 'habshd.csv'), index=False)
+
+# some scratch code for looking at the mapping of Clinical Visits to T1 LONI visit labels
+# t1 = pd.read_csv(T1_SEARCH)
+# t1 = t1[['Subject', 'Visit', 'Acq Date', 'Age']]
+# t1['ClinicalVisit'] = t1['Visit'].map({'BL': 1, 'M24': 2, 'M48': 3, 'M72': 4})
+
+# merger = habshd[['Med_ID', 'Visit_ID', 'Age']].copy()
+# merger.columns = ['Subject', 'ClinicalVisit', 'AgeTable']
+
+# merged = t1.merge(merger, how='left', on=['Subject', 'ClinicalVisit'])
+# merged['Diff'] = (merged['Age'] - merged['AgeTable']).abs()
+# merged.dropna().sort_values('Diff').tail(20)

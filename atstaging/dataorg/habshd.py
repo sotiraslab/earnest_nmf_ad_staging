@@ -27,7 +27,7 @@ def create_subject_table(amy_search, tau_search, t1_search):
     # select columns
     def select(df):
         cols = ['Image Data ID', 'Subject', 'Description',
-                'Acq Date']
+                'Acq Date', 'Visit']
         tmp = df[cols]
         tmp = tmp.rename(columns={'Image Data ID': 'ImageID', 'Acq Date': 'ScanDate'})
         return tmp
@@ -40,7 +40,10 @@ def create_subject_table(amy_search, tau_search, t1_search):
     amy['Tracer'] = 'FBB'
     tau['Tracer'] = 'P26'
 
-    result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
+    result = link_modalities(tau, amy, t1,
+                             extra_tau_columns=['ImageID'],
+                             extra_amyloid_columns=['ImageID'],
+                             extra_t1_columns=['ImageID', 'Visit'])
     return result
 
 def create_preproc_table(subject_table, download_table):
@@ -63,12 +66,18 @@ def create_preproc_table(subject_table, download_table):
 
 def create_feature_table(preproc_table, habshd_uds, verbose=True):
     
-    # add a visit code for the images
-    # this assumes that most images are taken at the first visit
-    # which seems to be true based on IDA
-    # not the best approach, but seems to be needed since dates are given in the subject datatable
+    # Confirmed that the LONI labels of visits for MRI should match with the
+    # clinical Visits (Visit_ID) defined in HABS-HD
+    # just need to recode
+    # NOTE: only applies for T1!  Amyloid/tau visit IDs in LONI will not map
+    #       to the clinical visits in a straightforward way
     preproc_table = preproc_table.sort_values(['Subject', 'ScanDateTau'])
-    preproc_table['VisitID'] = preproc_table.groupby('Subject').cumcount() + 1
+    preproc_table['VisitID'] = preproc_table['VisitT1'].map(
+        {'BL': 1,
+         'M24': 2,
+         'M48': 3,
+         'M72': 4}
+    )
 
     # add the variables of interest
     features = add_features_by_viscode(preproc_table, habshd_uds, fields=['Age', 'ID_Gender','APOE4_Positivity', '01_AB_FBB_AB_pos', 'CDR_Global', 'CDR_Sum'],

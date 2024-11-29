@@ -2,6 +2,7 @@
 import argparse
 import sys
 
+import numpy as np
 import pandas as pd
 
 from atstaging.config import get, set_config_automatic
@@ -39,6 +40,8 @@ def parse(arguments=None):
                         help='Do not ask for confirmation before proceeding')
     parser.add_argument('--no-slurm', action='store_false', dest='slurm',
                         help="Do not use SLURM and instead run processing jobs serially.")
+    parser.add_argument('-n', '--number', dest='slurm', default=None,
+                        help="Only submit run the first n jobs (used for debugging).")
 
     args = parser.parse_args(arguments)
     return args
@@ -75,12 +78,12 @@ def _report_processing(df):
         amy_proc = True
     if (config_columns['tau_img'] in columns) and (config_columns['tau_tracer'] in columns):
         tau_proc = True
-        
+
     print(f"Processing T1: {str(t1_proc).upper()}")
     print(f"Processing Amyloid-PET: {str(amy_proc).upper()}")
     print(f"Processing Tau-PET: {str(tau_proc).upper()}")
 
-def run_at_preproc_table(table, slurm=True, force=False):
+def run_at_preproc_table(table, slurm=True, force=False, number=None):
 
     set_config_automatic()
 
@@ -112,7 +115,15 @@ def run_at_preproc_table(table, slurm=True, force=False):
         print(f'Cannot understand answer "{ans}"; exiting.')
         sys.exit()
 
+    if number is None:
+        number = np.inf
+
     for i, row in enumerate(df.to_dict(orient="records")):
+
+        if i >= number:
+            print()
+            print("!!! Reached number limit; stopping.")
+            return
 
         # required arguments
         subject = row[columnmapping['subject']]

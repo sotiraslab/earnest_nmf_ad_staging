@@ -9,7 +9,7 @@ usage() {
 	}
 
 # read arguments
-while getopts hi:o:s:S: arg
+while getopts hI:A:a:T:t:S:s:O:U: arg
 do
 	case $arg in
 	h)	usage
@@ -24,7 +24,7 @@ do
 	O)	output=${OPTARG};;
 	U)  setup_script=${OPTARG};;
 	?)	echo ""
-		echo "Unknown arguments passed; exiting."
+		echo "Unknown arguments passed ($arg); exiting."
 		echo ""
 		usage;
 		exit 1;;
@@ -34,15 +34,31 @@ done
 # main
 COMMAND=(
 	$CLI_NAME
-	--t1 $t1_img
-	--amyloid $amyloid
-	--amyloid-tracer $amyloid_tracer
-	--tau $tau
-	--tau-tracer $tau_tracer
 	--sub $subject
 	--ses $session
 	--output $output
+	--t1 $t1_img
 	)
+
+if [[ ! -z $amyloid ]]
+then
+	COMMAND+=('--amyloid' $amyloid)
+fi
+
+if [[ ! -z $amyloid_tracer ]]
+then
+	COMMAND+=('--amyloid_tracer' $amyloid_tracer)
+fi
+
+if [[ ! -z $tau ]]
+then
+	COMMAND+=('--tau' $tau)
+fi
+
+if [[ ! -z $tau_tracer ]]
+then
+	COMMAND+=('--tau_tracer' $tau_tracer)
+fi
 
 echo ""
 echo "Running SLURM setup script at ${setup_script}."

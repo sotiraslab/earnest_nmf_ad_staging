@@ -23,6 +23,8 @@ def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_trac
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
     log_file = os.path.join(log_dir, f"{tag}.slurmlog")
+
+    # required args
     command = [
         "sbatch",
         "-J", tag,
@@ -35,16 +37,23 @@ def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_trac
         f'--account={account}',
         f'--partition={partition}',
         BATCH_SCRIPT_PATH,
-        '-I', t1_img,
-        '-A', amyloid_img,
-        '-a', amyloid_tracer,
-        '-T', tau_img,
-        '-t', tau_tracer,
         '-S', subject,
         '-s', session,
-        '-o', output_directory,
+        '-O', output_directory,
+        '-I', t1_img,
         '-U', setup_script
     ]
+
+    # optional arguments
+    if amyloid_img is not None:
+        command += ['-A', amyloid_img]
+    if amyloid_tracer is not None:
+        command += ['-a', amyloid_tracer]
+    if tau_img is not None:
+        command += ['-T', tau_img]
+    if tau_tracer is not None:
+        command += ['-t', tau_tracer]
+    
     print()
     print('SBATCH call:')
     print(' '.join(command))

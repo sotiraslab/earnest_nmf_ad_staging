@@ -35,12 +35,12 @@ def parse(arguments=None):
     An error will be thrown if at least one of the expected columns is missing."""
 
     parser = argparse.ArgumentParser(usage=usage)
-    parser.add_argument('-i', '--input', required=True, help='Path to input table (CSV).', dest='table')
+    parser.add_argument('table', help='Path to input table (CSV).')
     parser.add_argument('-f', '--force', required=False, action='store_true',
                         help='Do not ask for confirmation before proceeding')
     parser.add_argument('--no-slurm', action='store_false', dest='slurm',
                         help="Do not use SLURM and instead run processing jobs serially.")
-    parser.add_argument('-n', '--number', dest='slurm', default=None,
+    parser.add_argument('-n', '--number', default=None, type=int,
                         help="Only submit run the first n jobs (used for debugging).")
 
     args = parser.parse_args(arguments)
@@ -62,7 +62,7 @@ def _check_input_table_required(df):
                          f'The provided input table is missing one or more required columns: {missing}.')
 
     else:
-        config_columns
+        return config_columns
 
 def _report_processing(df):
     config_columns = get('tablecols')
@@ -89,14 +89,15 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
 
     df = pd.read_csv(table)
     columnmapping = _check_input_table_required(df)
-    nrows = len(df)
+    nrows = len(df) if number is None else min(len(df), number)
+    number_limit_text = '' if number is None else " (number limit applied)"
 
     print()
     print('BATCH PROCESSING')
     print('- - - - - - - - ')
     print()
     print(f"Input table: {table}")
-    print(f"Number of subjects: {nrows}")
+    print(f"Number of subjects: {nrows}" + number_limit_text)
     print(f'Using SLURM: {slurm}')
     _report_processing(df)
 
@@ -147,7 +148,6 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
         print(f'  * tau_img={tau_img}')
         print(f'  * tau_tracer={tau_tracer}')
         print(f'  * output_directory={output_directory}')
-        print()
 
         if slurm:
             at_mri_pipeline_SLURM(

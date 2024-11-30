@@ -37,7 +37,7 @@ COMMAND=(
 	--sub $subject
 	--ses $session
 	--output $output
-	--t1 $t1_img
+	--t1 $t1
 	)
 
 if [[ ! -z $amyloid ]]
@@ -47,7 +47,7 @@ fi
 
 if [[ ! -z $amyloid_tracer ]]
 then
-	COMMAND+=('--amyloid_tracer' $amyloid_tracer)
+	COMMAND+=('--amyloid-tracer' $amyloid_tracer)
 fi
 
 if [[ ! -z $tau ]]
@@ -57,7 +57,7 @@ fi
 
 if [[ ! -z $tau_tracer ]]
 then
-	COMMAND+=('--tau_tracer' $tau_tracer)
+	COMMAND+=('--tau-tracer' $tau_tracer)
 fi
 
 echo ""

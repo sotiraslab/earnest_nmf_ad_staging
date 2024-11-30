@@ -1,6 +1,7 @@
 
 import argparse
 import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -148,6 +149,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
         print(f'  * tau_img={tau_img}')
         print(f'  * tau_tracer={tau_tracer}')
         print(f'  * output_directory={output_directory}')
+        time.sleep(1)
 
         if slurm:
             at_mri_pipeline_SLURM(

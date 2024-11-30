@@ -14,6 +14,7 @@ import os
 
 from atstaging.dataorg.habs import create_preproc_table, create_feature_table
 from atstaging.config import get
+from atstaging.outputs import setup_outputs_folder
 
 # INPUTS (see docstring above)
 TAU_DOWNLOADS = '/scratch/tom.earnest/HABS/images/ftp/'
@@ -21,6 +22,8 @@ AMY_DOWNLOADS = '/scratch/tom.earnest/HABS/images/pib/'
 T1_DOWNLOADS = '/scratch/tom.earnest/HABS/images/mprage/'
 TABULAR_DIRECTORY = '/scratch/tom.earnest/HABS/tabular/'
 OUTPUT_FOLDER = get('output_directory')
+
+setup_outputs_folder(OUTPUT_FOLDER)
 
 preproc_table = create_preproc_table(TAU_DOWNLOADS, AMY_DOWNLOADS, T1_DOWNLOADS)
 preproc_table.insert(0, 'DataSet', 'HABS')

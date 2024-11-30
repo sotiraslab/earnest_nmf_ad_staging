@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_subject='Subject', b_date='Date', b_name='Visit',
-                         gap_allowed='180D', drop_missing=False, include_gap_cols=True):
+                         gap_allowed='365D', drop_missing=False, include_gap_cols=True):
     # b_subject column gets renamed to a_subject, which is confusing
     # pulling this out as a variable to indicate the destination name for subject
     subject = a_subject

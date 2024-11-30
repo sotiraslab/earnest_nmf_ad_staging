@@ -19,6 +19,9 @@ def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_trac
     account = get('slurm', 'account')
     partition = get('slurm', 'partition')
 
+    if not os.path.isdir(output_directory):
+        os.mkdir(output_directory)
+
     log_dir = os.path.join(output_directory, 'logs')
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)

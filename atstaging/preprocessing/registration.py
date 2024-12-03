@@ -20,7 +20,8 @@ def _ants_registration_outputs(prefix):
         'affine': prefix + "0GenericAffine.mat",
         'warp': prefix + "1Warp.nii.gz",
         'registered': prefix + "Warped.nii.gz",
-        'invwarp': prefix + "1InverseWarped.nii.gz",
+        'invwarp': prefix + "1InverseWarp.nii.gz",
+        'invwarped': prefix + "InverseWarped.nii.gz",
         'fullwarp': prefix + '1FullWarp.nii.gz'
         }
     return outputs

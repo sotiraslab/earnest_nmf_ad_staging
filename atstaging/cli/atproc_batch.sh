@@ -31,6 +31,9 @@ do
 	esac
 done
 
+# unbuffer Python
+export PYTHONUNBUFFERED=1
+
 # main
 COMMAND=(
 	$CLI_NAME

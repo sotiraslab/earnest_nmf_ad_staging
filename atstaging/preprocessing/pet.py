@@ -213,12 +213,14 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_
 
         # variables
         ANTSPATH = get('ants')
+        C3D_AFFINE_TOOL = get('c3d_affine_tool')
+        FSLPATH = get('fsl')
+        FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
         PREFIX = os.path.join(WORKINGDIR, '_temp_output')
         OUTNAMES = _ants_registration_outputs(PREFIX)
         REFERENCE = mni_brain if mni_brain is not None else get('mni152_brain')
 
         # software
-        ants_registration = os.path.join(ANTSPATH, 'antsRegistrationSyNQuick.sh')
         ants_applytransforms = os.path.join(ANTSPATH, 'antsApplyTransforms')
         ants_imagemath = os.path.join(ANTSPATH, 'ImageMath')
 
@@ -227,17 +229,41 @@ def register_pet_image(pet, t1, brainmask, warp, suvr_reference_mask=None, muse_
         print('~~~~~'  + Style.RESET_ALL)
 
         # rigid registration
+
+        # ----> Registration
+        rigidregisted = OUTNAMES['rigidregistered']
+        affine = OUTNAMES['affine']
+
         command = [
-            ants_registration,
-            '-d', '3',
-            '-m', pet,
-            '-f', t1,
-            '-o', PREFIX,
-            '-t', 'r'
+            FLIRT,
+            '-in', pet,
+            '-ref', t1,
+            '-out', rigidregisted,
+            '-omat', affine,
+            '-dof', '6',
+            '-cost', 'mutualinfo',
+            '-v'
             ]
 
         print()
         print('>>> Running rigid registration of PET to MRI:')
+        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+        print('- - -')
+        execute(command)
+        print('- - -')
+
+        # ----> Covert FSL affine to ANTs
+        command = [
+            C3D_AFFINE_TOOL,
+            '-ref', t1,
+            '-src', pet,
+            affine,
+            '-fsl2ras',
+            '-oitk', affine
+        ]
+
+        print()
+        print('>>> Converting affine from FSL to ANTs format:')
         print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
         print('- - -')
         execute(command)

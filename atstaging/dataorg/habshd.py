@@ -30,13 +30,13 @@ def create_subject_table(amy_search, tau_search, t1_search, tabular_folder):
     # we explicitly filter those out here
     # load all subjects
     searches = [
-        'HD 1 African',
-        'HD 1 Mexican',
-        'HD 1 Non',
-        'HD 2 Mexican',
-        'HD 2 Non',
-        'HD 3 Mexican',
-        'HD 3 Non']
+        'HD_1_African',
+        'HD_1_Mexican',
+        'HD_1_Non',
+        'HD_2_Mexican',
+        'HD_2_Non',
+        'HD_3_Mexican',
+        'HD_3_Non']
     habshd = pd.concat([load_csv_by_match(tabular_folder, s) for s in searches])
     subjects = habshd['Med_ID'].unique()
 

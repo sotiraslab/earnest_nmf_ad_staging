@@ -22,9 +22,9 @@ from atstaging.config import get
 from atstaging.outputs import setup_outputs_folder
 
 # INPUTS (see docstring above)
-TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_tau_10102024_10_10_2024.csv'
-AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_amy_10102024_10_10_2024.csv'
-T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_10_10_2024.csv'
+TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_pi2620_12_05_2024.csv'
+AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_fbb_12_05_2024.csv'
+T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_12_05_2024.csv'
 DOWNLAD_FOLDER = '/scratch/tom.earnest/HABS-HD/images/HABS_HD'
 TABULAR_FOLDER = '/scratch/tom.earnest/HABS-HD/tabular/'
 USE_CACHED = True
@@ -45,7 +45,7 @@ habshd = pd.concat([load_csv_by_match(TABULAR_FOLDER, t) for t in tables])
 setup_outputs_folder(OUTPUT_FOLDER)
 cachedir = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 downloads = load_loni_downloads_with_caching('habshd', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
-subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH)
+subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH, tabular_folder=TABULAR_FOLDER)
 preproc_table = create_preproc_table(subject_table=subject_table, download_table=downloads)
 preproc_table.insert(0, 'DataSet', 'HABS-HD')
 features = create_feature_table(preproc_table=preproc_table, habshd_uds=habshd, verbose=True)

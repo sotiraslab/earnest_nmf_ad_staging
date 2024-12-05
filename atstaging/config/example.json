@@ -11,6 +11,12 @@
     "output_directory": "/path/to/output/folder",
     "overwrite_preproc": false,
     "quick": true,
+    "smoothing": {
+        "do_smoothing": true,
+        "x": "10",
+        "y": "10",
+        "z": "10"
+    },
     "slurm": {
         "time": "12:00:00",
         "nodes": "1",

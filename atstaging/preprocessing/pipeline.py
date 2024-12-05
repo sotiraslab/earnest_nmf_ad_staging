@@ -309,6 +309,16 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     end_command('qc-checkerboard')
 
     # # # # # # # #
+    # PET - SMOOTHING
+    # # # # # # # # 
+
+    do_smoothing = get('smoothing.do_smoothing')
+    smooth_x = get('smoothing.x')
+    smooth_y = get('smoothing.y')
+    smooth_z = get('smoothing.z')
+    target_fwhm = (smooth_x, smooth_y, smooth_z) if do_smoothing else None
+
+    # # # # # # # #
     # AMYLOID
     # # # # # # # #
 
@@ -321,14 +331,14 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         
         # preregistration
         # ---> dcm2niix, coreg, avg, smoothing
-        amy_smoothed = amynamer.get_path('smoothed')
+        amy_prereg = amynamer.get_path('preregistration')
 
-        if not os.path.exists(amy_smoothed) or overwrite:
+        if not os.path.exists(amy_prereg) or overwrite:
             print()
             tsp('Creating pre-regsitration image for amyloid.')
 
             begin_command('amyloid-prereg')
-            out = prepare_registration_pet(amyloid_img, out_smoothed=amy_smoothed)
+            out = prepare_registration_pet(amyloid_img, out_smoothed=amy_prereg, target_fwhm=target_fwhm)
             AMYINFO.update(out)
             end_command('amyloid-prereg')
         else:
@@ -349,7 +359,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             
             begin_command('amyloid-registration')
             
-            out = register_pet_image(pet=amy_smoothed,
+            out = register_pet_image(pet=amy_prereg,
                             t1=preskullstrip,
                             brainmask=brainmask,
                             warp=fullwarp,
@@ -407,14 +417,14 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         
         # preregistration
         # ---> dcm2niix, coreg, avg, smoothing
-        tau_smoothed = taunamer.get_path('smoothed')
+        tau_prereg = taunamer.get_path('preregistration')
 
-        if not os.path.exists(tau_smoothed) or overwrite:
+        if not os.path.exists(tau_prereg) or overwrite:
             print()
             tsp('Creating pre-regsitration image for tau.')
 
             begin_command('tau-prereg')
-            info = prepare_registration_pet(tau_img, out_smoothed=tau_smoothed)
+            info = prepare_registration_pet(tau_img, out_smoothed=tau_prereg, target_fwhm=target_fwhm)
             TAUINFO.update(info)
             end_command('tau-prereg')
         else:
@@ -435,7 +445,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             
             begin_command('tau-registration')
             
-            info = register_pet_image(pet=tau_smoothed,
+            info = register_pet_image(pet=tau_prereg,
                             t1=preskullstrip,
                             brainmask=brainmask,
                             warp=fullwarp,

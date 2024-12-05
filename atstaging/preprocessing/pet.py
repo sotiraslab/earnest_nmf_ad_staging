@@ -94,8 +94,8 @@ def _is_dynamic(pet):
 
 def prepare_registration_pet(pet, out_nifti=None,
                              out_realign=None, out_average=None,
-                             out_smoothed=None, target_fwhm=(10, 10, 10)):
-    outputs = [out_nifti, out_realign, out_average, out_smoothed]
+                             out_final=None, target_fwhm=(10, 10, 10)):
+    outputs = [out_nifti, out_realign, out_average, out_final]
     if all([x is None for x in outputs]):
         raise ValueError('At least one output must be specified for PET pre-registration.')
     
@@ -178,18 +178,22 @@ def prepare_registration_pet(pet, out_nifti=None,
             shutil.copy(TEMPIMAGE, out_average)
 
         # smoothing
-        print()
-        print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')
-        print('- - -')
-        smoothstats = iterative_smoothing(TEMPIMAGE, TEMPIMAGE, target_fwhm=target_fwhm,
-                                          start_fwhm=(0, 0, 0), stepsize=0.5,
-                                          tolerance=0.5, max_iterations=75,
-                                          automask=True, difMAD=True, verbose=True)
-        INFO.update(smoothstats)
-        print('- - -')
+        if target_fwhm is None:
+            print()
+            print('>>> Not target FWHM supplied; not smoothing.')
+        else:
+            print()
+            print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')
+            print('- - -')
+            smoothstats = iterative_smoothing(TEMPIMAGE, TEMPIMAGE, target_fwhm=target_fwhm,
+                                              start_fwhm=(0, 0, 0), stepsize=0.5,
+                                              tolerance=0.5, max_iterations=75,
+                                              automask=True, difMAD=True, verbose=True)
+            INFO.update(smoothstats)
+            print('- - -')
 
-        if out_smoothed:
-            shutil.copy(TEMPIMAGE, out_smoothed)
+        if out_final:
+            shutil.copy(TEMPIMAGE, out_final)
 
         print()
         print('PET pre-registration steps completed.')

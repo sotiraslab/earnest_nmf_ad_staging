@@ -100,7 +100,7 @@ class ATPreprocPETNamer(BIDSOutputNamer):
             'nifti': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-nifti_pet.nii.gz',
             'realigned': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-realigned_pet.nii.gz',
             'averaged': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-averaged_pet.nii.gz',
-            'smoothed': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-smoothed10mm_pet.nii.gz',
+            'preregistration': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-preregistration_pet.nii.gz',
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-MNI152NLin6ASym_desc-registered_pet.nii.gz',
             'rigid': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-t1_desc-rigid_pet.nii.gz',
             'origsuvr': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-suvr_pet.nii.gz',

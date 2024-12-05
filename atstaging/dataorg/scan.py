@@ -13,7 +13,8 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     link_modalities,
     report_download_coverage,
-    report_feature_distribution)
+    report_feature_distribution,
+    report_missingness)
 
 def create_subject_table(amy_search, tau_search, t1_search):
 
@@ -145,6 +146,8 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     # filter columns
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']
     grouped_small = grouped[keep_columns].copy()
+
+    report_missingness(grouped_small)
 
     # add dataset assignment
     feature_table = assign_training_validation(grouped_small)

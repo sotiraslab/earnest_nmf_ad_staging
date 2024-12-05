@@ -16,7 +16,8 @@ from atstaging.dataorg.utils import (
     link_modalities,
     load_csv_by_match,
     report_download_coverage,
-    report_feature_distribution
+    report_feature_distribution,
+    report_missingness
     )
 
 def create_subject_table(amy_search, tau_search, t1_search, tabular_folder):
@@ -127,6 +128,8 @@ def create_feature_table(preproc_table, habshd_uds, verbose=True):
     # filter columns
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']
     features = features[keep_columns].copy()
+
+    report_missingness(features)
 
     # assign training/validation 
     final = assign_training_validation(features)

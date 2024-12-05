@@ -3,14 +3,26 @@ import functools
 import json
 from operator import getitem
 import os
-import warnings
 
 from colorama import Fore, Style
 
 CONFIG = {}
 CONFIG_FILE = ''
 
+def assert_config_is_set():
+    if CONFIG:
+        return True
+    else:
+        msg = ('Configuration file is not set; either a specified '
+               'config file was unable to be loaded or '
+               'no configuration file was able to be selected automatically. '
+               'Please add a file to the config directory (atstaging/config), filling in the '
+               'entries provided in "example.json", and set the "AUTOUSE" entry to true.'
+               'Find the project README for more information about using the configuration file.')
+        raise RuntimeError(msg)
+
 def get(*args):
+    assert_config_is_set()
     try:
         return functools.reduce(getitem, args, CONFIG)
     except KeyError:
@@ -56,6 +68,7 @@ def read_example_config():
     return config
 
 def report_configuration():
+    assert_config_is_set()
 
     print()
     print(Fore.GREEN + '----- CURRENT CONFIGURATION -----' + Style.RESET_ALL)
@@ -89,6 +102,14 @@ def screen_config_against_example(config, config_path):
     if missing:
         raise RuntimeError(f'Missing keys detected for configuration file which is being used ({config_path}): {missing}')
 
+def set_config(src=None):
+    if src is None:
+        set_config_automatic()
+    elif os.path.isfile(src):
+        update_config(src)
+    else:
+        set_config_by_name(src)
+
 def set_config_by_name(name):
     if not name.endswith('.json'):
         name += '.json'
@@ -101,17 +122,11 @@ def set_config_automatic():
     for file in files:
 
         config = read_config_file(file)
-        if not config['use']:
+        if not config['AUTOUSE']:
             continue
         update_config(file)
 
-    if not CONFIG:
-        m = ('No configuration file found; please add '
-             'a file to atstaging/config, filling in the '
-             'entries provided in "example.json". '
-             'Find the project README for more information '
-             'about using the configuration file.')
-        warnings.warn(RuntimeWarning(m))
+    assert_config_is_set()
 
 def update_config(file):
 
@@ -123,3 +138,7 @@ def update_config(file):
     screen_config_against_example(config, file)
     CONFIG.update(config)
     CONFIG_FILE = file
+
+    cname = os.path.basename(CONFIG_FILE)
+    print()
+    print('Using configuration: ' + Fore.CYAN + Style.BRIGHT + cname + Style.RESET_ALL)

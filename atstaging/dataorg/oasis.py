@@ -15,6 +15,7 @@ from atstaging.dataorg.utils import (
     bin_cdr,
     get_bids_entities,
     link_modalities,
+    report_download_coverage,
     report_missingness,
     report_feature_distribution
     )
@@ -110,11 +111,7 @@ def create_preproc_table(amyloid_conversion_csv, tau_conversion_csv, mri_convers
     # record the baseline date
     linked['BaselineDate'] = basedate
  
-    # since we are starting from the download records,
-    # this already meets the "preproc_table" format
-    # and has all the paths included
-    print()
-    print('All observations in tracer table have been downloaded.')
+    report_download_coverage(linked)
 
     return linked
 

@@ -18,17 +18,23 @@ import pandas as pd
 
 from atstaging.dataorg.habshd import create_subject_table, create_preproc_table, create_feature_table
 from atstaging.dataorg.utils import load_csv_by_match, load_loni_downloads_with_caching
-from atstaging.config import get
+from atstaging.config import get, set_config
 from atstaging.outputs import setup_outputs_folder
 
 # INPUTS (see docstring above)
 TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_pi2620_12_05_2024.csv'
 AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_fbb_12_05_2024.csv'
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_12_05_2024.csv'
-DOWNLAD_FOLDER = '/scratch/tom.earnest/HABS-HD/images/HABS_HD'
+DOWNLAD_FOLDER = '/home/aris_data/HABS-HD/images/HABS_HD'
 TABULAR_FOLDER = '/scratch/tom.earnest/HABS-HD/tabular/'
-USE_CACHED = True
+USE_CACHED = False
+
+# SETUP
+set_config()
 OUTPUT_FOLDER = get('output_directory')
+setup_outputs_folder(OUTPUT_FOLDER)
+
+# MAIN
 
 # load HABS-HD subject tables
 tables = [
@@ -41,8 +47,6 @@ tables = [
     'HD_3_Non']
 habshd = pd.concat([load_csv_by_match(TABULAR_FOLDER, t) for t in tables])
 
-# MAIN
-setup_outputs_folder(OUTPUT_FOLDER)
 cachedir = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 downloads = load_loni_downloads_with_caching('habshd', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
 subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH, tabular_folder=TABULAR_FOLDER)

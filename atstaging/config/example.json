@@ -1,4 +1,5 @@
 {
+    "AUTOUSE": true,
     "afni": "path/to/afni/bin",
     "ants": "path/to/ants/bin",
     "deepmrseg_env": "DeepMRSeg",
@@ -35,6 +36,5 @@
         "output_directory": "OutputDirectory",
         "subject": "Subject",
         "session": "Session"
-    },
-    "use": true
+    }
 }

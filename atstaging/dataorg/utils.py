@@ -407,9 +407,9 @@ def read_loni_collection_folder(folder):
 def report_download_coverage(preproc_table, amy_paths='PathAmyloid', tau_paths='PathTau', t1_paths='PathT1'):
     df = preproc_table
 
-    present_tau = ~df['PathTau'].isna()
-    present_amyloid = ~df['PathAmyloid'].isna()
-    present_t1 = ~df['PathT1'].isna()
+    present_tau = ~df[tau_paths].isna()
+    present_amyloid = ~df[amy_paths].isna()
+    present_t1 = ~df[t1_paths].isna()
 
     print()
     print('DOWNLOAD COVERAGE')

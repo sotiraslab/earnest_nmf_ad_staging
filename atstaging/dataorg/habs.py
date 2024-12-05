@@ -10,7 +10,8 @@ from atstaging.dataorg.utils import (
     link_modalities, 
     load_csv_by_match,
     report_download_coverage,
-    report_feature_distribution)
+    report_feature_distribution,
+    report_missingness)
 
 def parse_habs_fields(image_path):
     name = os.path.basename(image_path)
@@ -91,7 +92,8 @@ def create_feature_table(preproc_table, habs_tabular_directory, verbose=True):
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']
     features_small = features[keep_columns]
 
-     # add dataset assignment
+    # add dataset assignment
+    report_missingness(features_small)
     output = assign_training_validation(features_small)
 
     if verbose:

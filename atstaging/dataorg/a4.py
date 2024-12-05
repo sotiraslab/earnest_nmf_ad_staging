@@ -8,6 +8,7 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     bin_cdr,
     link_modalities,
+    report_download_coverage,
     report_feature_distribution,
     report_missingness,
 )
@@ -45,7 +46,9 @@ def create_preproc_table(fbp_directory, ftp_directory, t1_directory,
     )
     linked = linked.sort_values(['Subject', 'VisitTau'])
     linked['BASEDATE'] = basedate
-    
+
+    report_download_coverage(linked)
+
     return linked
 
 def create_feature_table(preproc, path_a4_subjinfo, path_a4_petva, path_a4_cdr, basedate):

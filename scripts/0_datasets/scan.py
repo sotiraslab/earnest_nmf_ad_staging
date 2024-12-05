@@ -17,7 +17,7 @@ import os
 
 from atstaging.dataorg.utils import load_loni_downloads_with_caching
 from atstaging.dataorg.scan import create_subject_table, create_preproc_table, create_feature_table
-from atstaging.config import get
+from atstaging.config import get, set_config
 from atstaging.outputs import setup_outputs_folder
 
 import pandas as pd
@@ -29,13 +29,15 @@ T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/scan_t1_092424_10_28_2024.c
 DOWNLAD_FOLDER = '/scratch/tom.earnest/SCAN/images/SCAN'
 NACC_DATASET = '/scratch/tom.earnest/SCAN/tabular/investigator_nacc66_atsubset.csv'
 USE_CACHED = True
-OUTPUT_FOLDER = get('output_directory')
 
-# MAIN
+# SETUP
+set_config()
+OUTPUT_FOLDER = get('output_directory')
 setup_outputs_folder(OUTPUT_FOLDER)
 cachedir = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 nacc_uds = pd.read_csv(NACC_DATASET)
 
+# MAIN
 # preprocessing table
 downloads = load_loni_downloads_with_caching('scan', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
 subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH)

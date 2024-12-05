@@ -78,11 +78,13 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    overwrite = get('overwrite_preproc')
+    overwrite_pet = get('overwrite_pet')
+    overwrite_t1 = get('overwrite_t1')
 
     print()
     print(Fore.RED + Style.BRIGHT + 'STATUS' + Style.RESET_ALL)
-    print(f'  - Overwriting existing outputs? {overwrite}')
+    print(f'  - Overwriting existing T1 outputs? {overwrite_t1}')
+    print(f'  - Overwriting existing PET outputs? {overwrite_pet}')
     print(f'  - Image is DICOM? {is_dicom}')
     print(f'  - Output exists? {os.path.isdir(output_directory)}')
 
@@ -182,7 +184,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     # "preskullstripping" steps
     #  ---> reorientation, bias correction
     preskullstrip = t1namer.get_path('preskullstrip')
-    if not os.path.exists(preskullstrip) or overwrite:
+    if not os.path.exists(preskullstrip) or overwrite_t1:
 
         print()
         tsp('Running pre-skullstripping steps.')
@@ -206,7 +208,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     brainmask = t1namer.get_path('brainmask')
     brain = t1namer.get_path('brain')
 
-    if not os.path.exists(brainmask) or overwrite:
+    if not os.path.exists(brainmask) or overwrite_t1:
 
         print()
         tsp('Running skullstripping.')
@@ -220,7 +222,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         print()
         tsp('Existing brain mask; not rerunning.')
 
-    if not os.path.exists(brain) or overwrite:
+    if not os.path.exists(brain) or overwrite_t1:
         print()
         tsp('Generating skullstripped brain image.')
         tsp(f'Source (T1): {preskullstrip}')
@@ -237,7 +239,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     jacobian = t1namer.get_path('jacobian')
     registered = t1namer.get_path('registered')
 
-    if not os.path.exists(fullwarp) or overwrite:
+    if not os.path.exists(fullwarp) or overwrite_t1:
 
         print()
         tsp('Registering brain to MNI template.')
@@ -255,7 +257,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         print()
         tsp('Existing registration outputs, not rerunning.')
 
-    if not os.path.exists(jacobian) or overwrite:
+    if not os.path.exists(jacobian) or overwrite_t1:
 
         print()
         tsp('Creating Jacobian Determinant image.')
@@ -265,7 +267,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         create_jacobian_determinant_image(fullwarp, jacobian)
         end_command('jacobian')
 
-    if not os.path.exists(registered) or overwrite:
+    if not os.path.exists(registered) or overwrite_t1:
 
         mni_brain = get('mni152_brain')
 
@@ -333,7 +335,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         # ---> dcm2niix, coreg, avg, smoothing
         amy_prereg = amynamer.get_path('preregistration')
 
-        if not os.path.exists(amy_prereg) or overwrite:
+        if not os.path.exists(amy_prereg) or overwrite_pet:
             print()
             tsp('Creating pre-regsitration image for amyloid.')
 
@@ -353,7 +355,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         amy_suvr = amynamer.get_path('origsuvr')
         amy_stats = amynamer.get_path('musestats')
         
-        if not os.path.exists(amy_registered) or overwrite:
+        if not os.path.exists(amy_registered) or overwrite_pet:
             print()
             tsp('Registering PET image')
             
@@ -377,7 +379,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             print()
             tsp('Existing registered image for amyloid detected; not rerunning.')
 
-        if (not os.path.exists(amystats) or overwrite) and len(AMYINFO):
+        if (not os.path.exists(amystats) or overwrite_pet) and len(AMYINFO):
             with open(amystats, 'w') as f:
                 json.dump(AMYINFO, f, indent=4)
 
@@ -419,7 +421,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         # ---> dcm2niix, coreg, avg, smoothing
         tau_prereg = taunamer.get_path('preregistration')
 
-        if not os.path.exists(tau_prereg) or overwrite:
+        if not os.path.exists(tau_prereg) or overwrite_pet:
             print()
             tsp('Creating pre-regsitration image for tau.')
 
@@ -439,7 +441,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tau_suvr = taunamer.get_path('origsuvr')
         tau_stats = taunamer.get_path('musestats')
         
-        if not os.path.exists(tau_registered) or overwrite:
+        if not os.path.exists(tau_registered) or overwrite_pet:
             print()
             tsp('Registering PET image')
             
@@ -463,7 +465,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             print()
             tsp('Existing registered image for tau detected; not rerunning.')
 
-        if (not os.path.exists(taustats) or overwrite) and len(TAUINFO):
+        if (not os.path.exists(taustats) or overwrite_pet) and len(TAUINFO):
             with open(taustats, 'w') as f:
                 json.dump(TAUINFO, f, indent=4)
 

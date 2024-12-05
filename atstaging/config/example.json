@@ -9,7 +9,8 @@
     "amy_preproc_keep": ["registered"],
     "tau_preproc_keep": ["registered"],
     "output_directory": "/path/to/output/folder",
-    "overwrite_preproc": false,
+    "overwrite_pet": false,
+    "overwrite_t1": false,
     "quick": true,
     "smoothing": {
         "do_smoothing": true,

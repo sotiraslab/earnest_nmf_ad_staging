@@ -14,22 +14,38 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     bin_cdr,
     link_modalities,
+    load_csv_by_match,
     report_download_coverage,
     report_feature_distribution
     )
 
-def create_subject_table(amy_search, tau_search, t1_search):
+def create_subject_table(amy_search, tau_search, t1_search, tabular_folder):
 
     amy = pd.read_csv(amy_search)
     tau = pd.read_csv(tau_search)
     t1 = pd.read_csv(t1_search)
 
     # select columns
+    # For HABS-HD, there are more images available than subjects in the clinical tables
+    # we explicitly filter those out here
+    # load all subjects
+    searches = [
+        'HD 1 African',
+        'HD 1 Mexican',
+        'HD 1 Non',
+        'HD 2 Mexican',
+        'HD 2 Non',
+        'HD 3 Mexican',
+        'HD 3 Non']
+    habshd = pd.concat([load_csv_by_match(tabular_folder, s) for s in searches])
+    subjects = habshd['Med_ID'].unique()
+
     def select(df):
         cols = ['Image Data ID', 'Subject', 'Description',
                 'Acq Date', 'Visit']
         tmp = df[cols]
         tmp = tmp.rename(columns={'Image Data ID': 'ImageID', 'Acq Date': 'ScanDate'})
+        tmp = tmp[tmp['Subject'].isin(subjects)]
         return tmp
 
     amy = select(amy)

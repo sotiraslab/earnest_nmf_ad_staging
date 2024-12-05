@@ -196,7 +196,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         reorient_image(starting_image, 'RPI', preskullstrip)
         end_command('reorient')
 
-        end_command('debias')
+        begin_command('debias')
         run_N4_bias_correction(preskullstrip, preskullstrip)
         end_command('debias')
 
@@ -314,10 +314,10 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     # PET - SMOOTHING
     # # # # # # # # 
 
-    do_smoothing = get('smoothing.do_smoothing')
-    smooth_x = get('smoothing.x')
-    smooth_y = get('smoothing.y')
-    smooth_z = get('smoothing.z')
+    do_smoothing = get('smoothing', 'do_smoothing')
+    smooth_x = get('smoothing', 'x')
+    smooth_y = get('smoothing', 'y')
+    smooth_z = get('smoothing', 'z')
     target_fwhm = (smooth_x, smooth_y, smooth_z) if do_smoothing else None
 
     # # # # # # # #
@@ -340,7 +340,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             tsp('Creating pre-regsitration image for amyloid.')
 
             begin_command('amyloid-prereg')
-            out = prepare_registration_pet(amyloid_img, out_smoothed=amy_prereg, target_fwhm=target_fwhm)
+            out = prepare_registration_pet(amyloid_img, out_final=amy_prereg, target_fwhm=target_fwhm)
             AMYINFO.update(out)
             end_command('amyloid-prereg')
         else:
@@ -415,7 +415,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         taustats = taunamer.get_path('petstats')
         
         print()
-        tsp('Beginnging with amyloid-PET processing...')
+        tsp('Beginnging with tau-PET processing...')
         
         # preregistration
         # ---> dcm2niix, coreg, avg, smoothing
@@ -426,7 +426,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             tsp('Creating pre-regsitration image for tau.')
 
             begin_command('tau-prereg')
-            info = prepare_registration_pet(tau_img, out_smoothed=tau_prereg, target_fwhm=target_fwhm)
+            info = prepare_registration_pet(tau_img, out_final=tau_prereg, target_fwhm=target_fwhm)
             TAUINFO.update(info)
             end_command('tau-prereg')
         else:
@@ -490,7 +490,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         end_command('qc-registration')
     else:
         print()
-        tsp("No tau image or tau tracer provided; not doing amyloid processing.")
+        tsp("No tau image or tau tracer provided; not doing tau processing.")
 
     # # # # # # # #
     # CLEANUP

@@ -180,7 +180,7 @@ def prepare_registration_pet(pet, out_nifti=None,
         # smoothing
         if target_fwhm is None:
             print()
-            print('>>> Not target FWHM supplied; not smoothing.')
+            print('>>> No target FWHM supplied; not smoothing.')
         else:
             print()
             print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')

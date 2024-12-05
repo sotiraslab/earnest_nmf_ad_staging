@@ -49,6 +49,12 @@ def read_config_file(path):
         config = json.load(f)
     return config
 
+def read_example_config():
+    path = os.path.join(get_config_dir(), 'example.json')
+    with open(path, 'r') as f:
+        config = json.load(f)
+    return config
+
 def report_configuration():
 
     print()
@@ -64,6 +70,24 @@ def report_configuration():
 
     print(Fore.GREEN + '---------------------------------' + Style.RESET_ALL)
     print(Style.RESET_ALL)
+
+def screen_config_against_example(config, config_path):
+    example = read_example_config()
+    missing = []
+    def _check_keys(d1, d2, keystring='', missing=missing):
+        for k, v in d1.items():
+            new_keystring = keystring + '.' + k
+            if k not in d2.keys():
+                missing.append(new_keystring)
+                continue
+
+            if isinstance(v, dict):
+                _check_keys(v, d2[k], keystring=new_keystring)
+
+    _check_keys(example, config)
+
+    if missing:
+        raise RuntimeError(f'Missing keys detected for configuration file which is being used ({config_path}): {missing}')
 
 def set_config_by_name(name):
     if not name.endswith('.json'):
@@ -96,5 +120,6 @@ def update_config(file):
     CONFIG.update({})
     CONFIG_FILE = ''
     config = read_config_file(file)
+    screen_config_against_example(config, file)
     CONFIG.update(config)
     CONFIG_FILE = file

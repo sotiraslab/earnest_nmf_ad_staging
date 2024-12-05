@@ -65,7 +65,6 @@ def report_configuration():
     print(Fore.GREEN + '---------------------------------' + Style.RESET_ALL)
     print(Style.RESET_ALL)
 
-
 def set_config_by_name(name):
     if not name.endswith('.json'):
         name += '.json'

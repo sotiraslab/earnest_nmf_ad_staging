@@ -6,7 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from atstaging.config import get, set_config_automatic
+from atstaging.config import get, set_config_automatic, set_config_by_name
 from atstaging.cli._slurm_pipeline import at_mri_pipeline_SLURM
 from atstaging.preprocessing.pipeline import at_mri_pipeline
 
@@ -37,6 +37,8 @@ def parse(arguments=None):
 
     parser = argparse.ArgumentParser(usage=usage)
     parser.add_argument('table', help='Path to input table (CSV).')
+    parser.add_argument('-c', '--config', default=None,
+                        help="Name of a configuration file (.json not required).")
     parser.add_argument('-f', '--force', required=False, action='store_true',
                         help='Do not ask for confirmation before proceeding')
     parser.add_argument('--no-slurm', action='store_false', dest='slurm',
@@ -84,9 +86,13 @@ def _report_processing(df):
     print(f"Processing Amyloid-PET: {str(amy_proc).upper()}")
     print(f"Processing Tau-PET: {str(tau_proc).upper()}")
 
-def run_at_preproc_table(table, slurm=True, force=False, number=None):
+def run_at_preproc_table(table, slurm=True, force=False, number=None, config=None):
 
-    set_config_automatic()
+    if config is not None:
+        set_config_by_name(config)
+    else:
+        set_config_automatic()
+    from atstaging.config import CONFIG_FILE
 
     df = pd.read_csv(table)
     columnmapping = _check_input_table_required(df)
@@ -100,6 +106,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
     print(f"Input table: {table}")
     print(f"Number of subjects: {nrows}" + number_limit_text)
     print(f'Using SLURM: {slurm}')
+    print(f'Configuration file being used for ALL images: {CONFIG_FILE}')
     _report_processing(df)
 
     ans = 'n'
@@ -149,6 +156,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
         print(f'  * tau_img={tau_img}')
         print(f'  * tau_tracer={tau_tracer}')
         print(f'  * output_directory={output_directory}')
+        print(f'  * config={config}')
 
         if slurm:
             at_mri_pipeline_SLURM(
@@ -160,6 +168,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
                 amyloid_tracer=amyloid_tracer,
                 tau_img=tau_img,
                 tau_tracer=tau_tracer,
+                config=config
                 )
         else:
             at_mri_pipeline(
@@ -171,6 +180,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None):
                 amyloid_tracer=amyloid_tracer,
                 tau_img=tau_img,
                 tau_tracer=tau_tracer,
+                config=config
             )
         time.sleep(1)
 

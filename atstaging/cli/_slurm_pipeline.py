@@ -2,13 +2,19 @@
 
 import os
 
-from atstaging.config import get, get_slurm_setup_script
+from atstaging.config import get, get_slurm_setup_script, set_config_by_name, set_config_automatic
 from atstaging.preprocessing.execute import execute
 
 BATCH_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'atproc_batch.sh')
 
-def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_tracer,
-                          subject, session, output_directory):
+def at_mri_pipeline_SLURM(subject, session, t1_img, output_directory, amyloid_img=None, amyloid_tracer=None,
+                          tau_img=None, tau_tracer=None, config=None):
+    
+    if config is not None:
+        set_config_by_name(config)
+    else:
+        set_config_automatic()
+
     tag = f"sub-{subject}_ses-{session}"
     setup_script = get_slurm_setup_script()
     
@@ -56,7 +62,9 @@ def at_mri_pipeline_SLURM(t1_img, amyloid_img, amyloid_tracer, tau_img, tau_trac
         command += ['-T', tau_img]
     if tau_tracer is not None:
         command += ['-t', tau_tracer]
-    
+    if config is not None:
+        command += ['-C', config]
+
     print()
     print('SBATCH call:')
     print(' '.join(command))

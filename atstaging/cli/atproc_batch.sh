@@ -67,7 +67,7 @@ fi
 
 if [[ ! -z $config ]]
 then
-	COMMAND+=('--config', $config)
+	COMMAND+=('--config' $config)
 fi
 
 echo ""

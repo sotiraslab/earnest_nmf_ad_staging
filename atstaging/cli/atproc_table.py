@@ -12,7 +12,7 @@ from atstaging.preprocessing.pipeline import at_mri_pipeline
 
 def parse(arguments=None):
 
-    usage = """
+    description = """
 
     Initiate batch processing of subjects from an input table.
     The input table must provide the following information for each subject (i.e., in each row).
@@ -35,7 +35,8 @@ def parse(arguments=None):
 
     An error will be thrown if at least one of the expected columns is missing."""
 
-    parser = argparse.ArgumentParser(usage=usage)
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('table', help='Path to input table (CSV).')
     parser.add_argument('-c', '--config', default=None,
                         help="Name of a configuration file (.json not required).")

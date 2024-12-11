@@ -16,6 +16,7 @@ with open(path.join(this_directory, 'atstaging', 'version.py'), encoding='utf-8'
 
 requirements = [
     'colorama',
+    'matplotlib',
     'nibabel',
     'nilearn',
     'pandas'

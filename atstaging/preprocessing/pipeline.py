@@ -5,6 +5,7 @@ import os
 import time
 
 from colorama import Fore, Style
+import pandas as pd
 
 from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
@@ -138,7 +139,9 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     PATHS['Session'] = session
     PATHS['PathT1'] = t1_img
     PATHS['PathAmyloid'] = amyloid_img
+    PATHS['TracerAmyloid'] = amyloid_tracer
     PATHS['PathTau'] = tau_img
+    PATHS['TracerTau'] = tau_tracer
 
     for name in t1namer.namestore.keys():
         PATHS['t1_' + name] = t1namer.get_path(name)
@@ -513,3 +516,15 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     print()
 
     return PATHS
+
+def paths_folder_to_dataframe(paths_folder):
+    files = [os.path.join(paths_folder, x) for x in os.listdir(paths_folder) if x.endswith('.json')]
+    rows = []
+    for file in files:
+        with open(file, 'rb') as f:
+            data = json.load(f)
+            rows.append(data)
+
+    df = pd.DataFrame(rows)
+    df = df.sort_values(['Subject', 'Session'])
+    return df

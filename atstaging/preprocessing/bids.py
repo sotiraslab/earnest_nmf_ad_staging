@@ -82,7 +82,7 @@ class ATPreprocMRINamer(BIDSOutputNamer):
             'warp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-nonlinear_warpfield.nii.gz',
             'jacobian': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_jacobian.nii.gz',
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
-            'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-nonlinear_T1w.nii.gz',
+            'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-registered_T1w.nii.gz',
             'muse': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-muse_seg.nii.gz',
             'volumes': 'sub-{SUBJECT}_ses-{SESSION}_desc-musevolumes_table.csv',
             'petreference': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-petreference_mask.nii.gz',

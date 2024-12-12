@@ -9,6 +9,8 @@ def deletion_table_from_pathtable(folder):
     paths_folder = os.path.join(folder_paths)
     pathtable = paths_folder_to_dataframe(paths_folder=paths_folder)
 
+    
+
 def delete_preproc_outputs_by_key(folder, keys, modality=None, manual_search=False):
 
     ...

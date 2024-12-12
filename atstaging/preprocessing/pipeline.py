@@ -279,7 +279,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tsp('Creating brain image warped to MNI space.')
 
         begin_command('apply warp')
-        apply_transform(brain, mni_brain, fullwarp, registered)
+        apply_transform(brain, mni_brain, mri2mni_transformation_file, registered)
         end_command('apply warp')
 
     # segmentation

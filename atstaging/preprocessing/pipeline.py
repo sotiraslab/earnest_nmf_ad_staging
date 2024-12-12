@@ -90,6 +90,15 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
 
     report_configuration()
 
+    # screen MRI2MNI transformation
+    mri2mni_transformation = get('mri2mni_transformation')
+    if mri2mni_transformation in['t', 'r', 'a']:
+        is_linear_transformation = True
+    elif mri2mni_transformation in ['s', 'sr', 'so']:
+        is_linear_transformation = False
+    else:
+        raise ValueError(f'Transformation type {mri2mni_transformation} not recognized by this pipeline.')
+
     print()
     print(Fore.MAGENTA + Style.BRIGHT + ' * * * * BEGINNING PREPROCESSING * * * *' + Style.RESET_ALL)
 
@@ -235,11 +244,13 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
 
     # registration
     # ---> registration, warp concatenation, jacobian determinant
+    affine = t1namer.get_path('affine')
     fullwarp = t1namer.get_path('fullwarp')
-    jacobian = t1namer.get_path('jacobian')
     registered = t1namer.get_path('registered')
 
-    if not os.path.exists(fullwarp) or overwrite_t1:
+    mri2mni_transformation_file = affine if is_linear_transformation else fullwarp
+
+    if not os.path.exists(mri2mni_transformation_file) or overwrite_t1:
 
         print()
         tsp('Registering brain to MNI template.')
@@ -247,25 +258,15 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         begin_command('registration')
         registration_mni_pipeline(brain=brain,
                                   quick=get('quick'),
-                                  transformation='s',
+                                  transformation=mri2mni_transformation,
+                                  out_affine=affine,
                                   out_fullwarp=fullwarp,
-                                  out_jacobian=jacobian,
                                   out_registered=registered)
         end_command('registration')
 
     else:
         print()
         tsp('Existing registration outputs, not rerunning.')
-
-    if not os.path.exists(jacobian) or overwrite_t1:
-
-        print()
-        tsp('Creating Jacobian Determinant image.')
-        tsp(f'Source (warpfield): {fullwarp}')
-
-        begin_command('jacobian')
-        create_jacobian_determinant_image(fullwarp, jacobian)
-        end_command('jacobian')
 
     if not os.path.exists(registered) or overwrite_t1:
 
@@ -350,7 +351,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         # registration
         # ---> registration, SUVR calculation
         amy_registered = amynamer.get_path('registered')
-        amy_warp = amynamer.get_path('fullwarp')
+        amy_pet2mni = amynamer.get_path('fullmat') if is_linear_transformation else amynamer.get_path('fullwarp')
         amy_rigid = amynamer.get_path('rigid')
         amy_suvr = amynamer.get_path('origsuvr')
         amy_stats = amynamer.get_path('musestats')
@@ -364,12 +365,12 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             out = register_pet_image(pet=amy_prereg,
                             t1=preskullstrip,
                             brainmask=brainmask,
-                            warp=fullwarp,
+                            mri2mni_transform=mri2mni_transformation_file,
                             muse_segmentation=segmentation,
                             suvr_reference_mask=petreference,
                             mni_brain=mni_brain,
                             out_registered=amy_registered,
-                            out_warp=amy_warp,
+                            out_pet2mni=amy_pet2mni,
                             out_rigid_reg=amy_rigid,
                             out_suvr=amy_suvr,
                             out_regional_suvrs=amy_stats)
@@ -436,7 +437,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         # registration
         # ---> registration, SUVR calculation
         tau_registered = taunamer.get_path('registered')
-        tau_warp = taunamer.get_path('fullwarp')
+        tau_pet2mni = taunamer.get_path('fullmat') if is_linear_transformation else taunamer.get_path('fullwarp')
         tau_rigid = taunamer.get_path('rigid')
         tau_suvr = taunamer.get_path('origsuvr')
         tau_stats = taunamer.get_path('musestats')
@@ -450,12 +451,12 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             info = register_pet_image(pet=tau_prereg,
                             t1=preskullstrip,
                             brainmask=brainmask,
-                            warp=fullwarp,
+                            mri2mni_transform=mri2mni_transformation_file,
                             muse_segmentation=segmentation,
                             suvr_reference_mask=petreference,
                             mni_brain=mni_brain,
                             out_registered=tau_registered,
-                            out_warp=tau_warp,
+                            out_pet2mni=tau_pet2mni,
                             out_rigid_reg=tau_rigid,
                             out_suvr=tau_suvr,
                             out_regional_suvrs=tau_stats)

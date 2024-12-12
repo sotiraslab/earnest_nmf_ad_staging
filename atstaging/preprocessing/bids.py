@@ -104,6 +104,7 @@ class ATPreprocPETNamer(BIDSOutputNamer):
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-MNI152NLin6ASym_desc-registered_pet.nii.gz',
             'rigid': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-t1_desc-rigid_pet.nii.gz',
             'origsuvr': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-suvr_pet.nii.gz',
+            'fullmat': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_from-pet_to-MNI152NLin6ASym_desc-fullmat_transform.mat',
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_from-pet_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'brain': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-brain_pet.nii.gz',
             'musestats': 'sub-{SUBJECT}_ses-{SESSION}_trc-{TRACER}_space-pet_desc-musestats_table.csv',

@@ -26,6 +26,21 @@ def _ants_registration_outputs(prefix):
         }
     return outputs
 
+def _cleanup(OUTNAMES):
+     # cleanup
+    # this is removing all the temporary images created in the PREFIX directory
+    # the user-specified outputs should already be moved
+    print()
+    print('>>> Removing temporary files.')
+    print('- - -')
+    for key, value in OUTNAMES.items():
+        msg = 'NOT FOUND'
+        if os.path.exists(value):
+            msg = 'REMOVED'
+            os.remove(value)
+        print(f'  - "{key}": {value} [{msg}]')
+    print('- - -')
+
 def _copy_outputs(prefix, out_registered=None, out_affine=None,
                   out_warp=None):
 
@@ -83,12 +98,23 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
                               out_registered=None, out_affine=None, out_warp=None,
                               out_fullwarp=None, out_jacobian=None):
 
-    make_full_warp = out_fullwarp or out_jacobian
+    # determine transformation type
+    if transformation in ['t', 'r', 'a']:
+        is_linear_transformation = True
+    elif transformation in ['s', 'sr', 'so']:
+        is_linear_transformation = False
+    else:
+        raise ValueError(f'Transformation type {transformation} not recognized by this pipeline.')
+    
+    make_full_warp = (out_fullwarp or out_jacobian) and not is_linear_transformation
+
+    # determine if anything needs to be done
     outputs = [out_registered, out_affine, out_warp, out_fullwarp]
     if all(x is None for x in outputs):
         warnings.warn(RuntimeWarning('MRI registration: no outputs selected, exiting!'))
         return
 
+    # set paths
     ANTSPATH = get('ants')
     REFERENCE = mni_brain if mni_brain is not None else get('mni152_brain')
 
@@ -97,6 +123,11 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     WORKINGDIR = os.path.dirname(os.path.abspath(brain))
     PREFIX = os.path.join(WORKINGDIR, '_temp_output')
     OUTNAMES = _ants_registration_outputs(PREFIX)
+
+    # MAIN
+    # # # # # #
+
+    # REGISTRATION
 
     basecommand = 'antsRegistrationSyNQuick.sh' if quick else 'antsRegistrationSyN.sh'
     fullcommand = os.path.join(ANTSPATH, basecommand)
@@ -127,9 +158,12 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     print('>>> Copying outputs to selected destinations. ')
     _copy_outputs(PREFIX, out_registered=out_registered,
                   out_warp=out_warp, out_affine=out_affine)
+    
+    # NONLINEAR WARP EXTRA STEPS
 
     # we can exit if the fullwarp/jacobian images are not being created
     if not make_full_warp:
+        _cleanup(OUTNAMES=OUTNAMES)
         print('Completed!')
         return
 
@@ -154,17 +188,8 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
                                       out_jacobian=out_jacobian)
     print('- - -')
 
-    # cleanup
-    # this is removing all the temporary images created in the PREFIX directory
-    # the user-specified outputs should already be moved
-    print()
-    print('>>> Removing temporary files.')
-    print('- - -')
-    for key, value in OUTNAMES.items():
-        print(f'  - "{key}": {value}')
-        if os.path.exists(value):
-            os.remove(value)
-    print('- - -')
+    # remove temporary files
+    _cleanup(OUTNAMES=OUTNAMES)
 
     print('Completed!')
 

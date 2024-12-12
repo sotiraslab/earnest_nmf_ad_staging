@@ -1,14 +1,14 @@
 {
     "AUTOUSE": true,
     "afni": "path/to/afni/bin",
+    "amy_preproc_keep": ["registered"],
     "ants": "path/to/ants/bin",
-    "deepmrseg_env": "DeepMRSeg",
     "c3d_affine_tool": "/path/to/c3d_affine_tool",
+    "deepmrseg_env": "DeepMRSeg",
     "fsl": "/usr/local/fsl",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "muse", "volumes", "qc-skullstrip", "qc-checkerboard"],
-    "amy_preproc_keep": ["registered"],
-    "tau_preproc_keep": ["registered"],
+    "mri2mni_transformation": "s",
     "output_directory": "/path/to/output/folder",
     "overwrite_pet": false,
     "overwrite_t1": false,
@@ -36,5 +36,6 @@
         "output_directory": "OutputDirectory",
         "subject": "Subject",
         "session": "Session"
-    }
+    },
+    "tau_preproc_keep": ["registered"]
 }

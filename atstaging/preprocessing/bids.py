@@ -4,7 +4,14 @@ from pathlib import Path
 
 class BIDSOutputNamer:
 
-    def __init__(self, subject, session, modality='', directory=''):
+    def __init__(self, subject: str, session: str, modality: str = '', directory: str = ''):
+        
+        if not subject.isalnum():
+            raise ValueError(f'BIDS subject must only contain numbers and letters: {subject}')
+        
+        if not session.isalnum():
+            raise ValueError(f'BIDS session must only contain numbers and letters: {session}')
+
         self.subject = subject
         self.session = session
         self.modality = modality

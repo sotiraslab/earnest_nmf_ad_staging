@@ -1,9 +1,11 @@
 
 import argparse
 from collections import Counter
+import glob
 import os
 from os.path import join as pjoin
 import re
+import shutil
 
 import pandas as pd
 
@@ -12,6 +14,7 @@ from atstaging.preprocessing.pipeline import paths_folder_to_dataframe
 
 TAU_TRACERS = ['FTP', 'M62', 'P26']
 AMY_TRACERS = ['FBP', 'PIB', 'FBB', 'NAV']
+DELETION_ROUTINES = ['anat', 'pet']
 
 def bids_files_value_count(files):
     names = [os.path.basename(f) for f in files]
@@ -20,29 +23,130 @@ def bids_files_value_count(files):
 
     counter = Counter(names)
     longest_name = max([len(name) for name in counter.keys()])
-    print('----------')
     for k, v in counter.items():
-        print(k + (' ' * (longest_name - len(k))) + ' : ' + str(v))
-    print('----------')
-    
-def delete_files_with_report(files, dry_run=False):
-    
-    ...
+        print('  ' + k + (' ' * (longest_name - len(k))) + ' : ' + str(v))
 
+def _delete_empty_directories(directory):
 
-def delete_preproc_by_keys(preproc_dir, keys, modality=None, refresh=False):
+    if not os.path.isdir(directory):
+        return
+
+    children = os.listdir(directory)
+    if children:
+        return
+    
+    os.rmdir(directory)
+    parent = os.path.dirname(directory)
+    _delete_empty_directories(parent)
+    
+def delete_files_with_report(to_delete, dry_run=False, remove_empty_dirs=True, mode='os.remove'):
+
+    if not len(to_delete):
+        print()
+        print('No files provided, exiting.')
+    
+    print()
+    print('DATA DELETION')
+    print('~~~~~~~~~~~~~')
+    print(f'Number of items to delete: {len(to_delete)}')
+    print('Unique item descriptors:')
+    bids_files_value_count(to_delete)
+    print()
+
+    if dry_run:
+        ans = input('This is a dry run; no files will actually be deleted.  Proceed? [y/n]')
+    else:
+        ans = input('This is NOT a dry run.  Files will be deleted if proceeding! Proceed? [y/n]')
+
+    while True:
+        if ans == 'y':
+            break
+        elif ans == 'n':
+            return
+        else:
+            ans = input('Answer not recognized; please enter "y" or "n".')
+
+    deletion_func = None
+    if mode == 'os.remove':
+        deletion_func = os.remove
+    elif mode == 'shutil.rmtree':
+        deletion_func = shutil.rmtree
+    else:
+        raise ValueError('`mode` must be "os.remove" or "shutil.rmtree".')
 
     print()
-    print("Deleting files by keys")
+    for i, path in enumerate(to_delete):
+        pct = round(((i+1) / len(to_delete)) * 100, 2)
+        header = '<DRYRUN> ' if dry_run else ''
+        print(f'{header}Removing {path}... ({i+1}/{len(to_delete)}) [{pct}%]')
+
+        if not dry_run:
+            deletion_func(path)
+            parent_directory = os.path.dirname(path)
+            if remove_empty_dirs:
+                _delete_empty_directories(parent_directory)
+
+def delete_preproc_by_bids(preproc_dir, names, values, same_file=False, dry_run=False, remove_empty_dirs=True):
+
+    print()
+    print("DELETING FILES BY BIDS")
+    print('----------------------')
+
+    if isinstance(names, str):
+        names = [names]
+    if isinstance(values, str):
+        values = [values]
+
+    if len(names) != len(values):
+        raise ValueError('Must provide the same number of BIDS names and values.  User provided lengths are '
+                         f'{len(names)} and {len(values)}, repsectively.')
+    
+    targets = []
+    for name, value in zip(names, values):
+        print(f'>>> Finding files matching {name}-{value}.')
+        files = glob.glob(f'*/*/*/*{name}-{value}*', root_dir=preproc_dir)
+        files = [os.path.join(preproc_dir, file) for file in files]
+        targets.append(files)
+
+    if same_file:
+        print('>>> Filtering files to only include ones matching all provided patterns.')
+        as_sets = [set(target) for target in targets]
+        intersect = list(set.intersection(*as_sets))
+        
+        if not intersect:
+            print('!!! No files found matching all patterns; exiting.')
+            return
+        
+        delete_files_with_report(to_delete=intersect,
+                                 dry_run=dry_run,
+                                 remove_empty_dirs=remove_empty_dirs,
+                                 mode='os.remove')
+        
+    else:
+        for name, value, files in zip(names, values, targets):
+            title = f'============= NAME: {name}, VALUE: {value} ============='
+            end = '=' * len(title)
+            print()
+            print(title)
+            if files:
+                delete_files_with_report(files, dry_run=dry_run, remove_empty_dirs=remove_empty_dirs, mode='os.remove')
+            else:
+                print(f'No files matching the provided name-value pair; skipping.')
+                continue
+            print(end)
+
+def delete_preproc_by_keys(preproc_dir, keys, modality=None, refresh=False,
+                           dry_run=False, remove_empty_dirs=True):
+
+    print()
+    print("DELETING FILES BY KEYS")
     print('----------------------')
 
     if not refresh:
-        print()
         print('>>> Loading paths JSON information from paths folder.')
         paths_folder= pjoin(preproc_dir, 'paths')
         pathtable = paths_folder_to_dataframe(paths_folder=paths_folder)
     else:
-        print()
         print('>>> Manually creating path table by directory search.')
         pathtable = recreate_paths_table(preproc_dir)
 
@@ -52,15 +156,38 @@ def delete_preproc_by_keys(preproc_dir, keys, modality=None, refresh=False):
     print('>>> Beginning deletion of files by key.')
 
     for key in keys:
+        title = f'================= KEY: {key} ================='
+        end = '=' * len(title)
         print()
-        print(f'. . . . KEY={key} . . . .')
+        print(title)
         if key in pathtable.columns:
             files = pathtable[key]
-            delete_files_with_report(files)
+            delete_files_with_report(files, dry_run=dry_run, remove_empty_dirs=remove_empty_dirs)
         else:
             print(f'Pathtable has no entry for key "{key}" - skipping.')
             continue
-        print(f'. . . . . . . . . . . . .')
+        print(end)
+
+def delete_preproc_by_routine(preproc_dir, routine, dry_run=False, remove_empty_dirs=True):
+
+    print()
+    print("DELETING FILES BY ROUTINE")
+    print('-------------------------')
+
+    files = []
+
+    if routine == 'pet':
+        print('>>> Deleting all PET outputs for all subjects.')
+        files = glob.glob('*/*/pet', root_dir=preproc_dir)
+        files = [os.path.join(preproc_dir, file) for file in files]
+    elif routine == 'anat':
+        print('>>> Deleting all anatomical outputs for all subjects.')
+        files = glob.glob('*/*/anat', root_dir=preproc_dir)
+        files = [os.path.join(preproc_dir, file) for file in files]
+    else:
+        raise ValueError(f'Routine "{routine}" unrecognized; must be one of "{DELETION_ROUTINES}"')
+    
+    delete_files_with_report(to_delete=files, dry_run=dry_run, remove_empty_dirs=remove_empty_dirs, mode='shutil.rmtree')
 
 def recreate_paths_table(processing_dir):
 
@@ -131,6 +258,8 @@ def parse():
 
     # major arguments / affects everything
     parser.add_argument('folder', help='Directory with preprocessing outputs.')
+    parser.add_argument('-D', '--dryrun', help='Dry run: nothing is actually deleted.', action='store_true')
+    parser.add_argument('-E', '--empty', help='Remove empty directories created during deletion.', action='store_true')
     
     # mode == key
     parser.add_argument('-k', '--keys', help='For key deletion mode, key names of file to delete. One or more can be supplied.',
@@ -143,9 +272,11 @@ def parse():
                         required=False, action='store_true')
     
     # mode == bids
-    parser.add_argument('-x', '--bids-name', help='For bids deletion mode, name of the BIDS field [NAME-VALUE].')
-    parser.add_argument('-y', '--bids-value', help='For bids deletion mode, name of the BIDS value [NAME-VALUE].')
-    parser.add_argument('--bids-regex', help='For bids deletion mode, interpret key as a regex expression.')
+    parser.add_argument('-x', '--bids-name', help='For bids deletion mode, name of the BIDS field [NAME-VALUE].',
+                        action='append')
+    parser.add_argument('-y', '--bids-value', help='For bids deletion mode, name of the BIDS value [NAME-VALUE].',
+                        action='append')
+    parser.add_argument('--bids-samefile', help='Look for all the patterns to be matched in the same file.  Otherwise, patterns are interpreted separately.', action='store_true')
     
     # mode == routine
     parser.add_argument('-r', '--routine', help='Use a specified routine for deleting images.')
@@ -153,9 +284,59 @@ def parse():
     args = parser.parse_args()
     return args
 
-def main():
+def _screen_args(args):
 
+    meets_keysmode = args.keys is not None
+
+    meets_bidsmode = False
+    if args.bids_name is not None and args.bids_value is not None:
+        meets_bidsmode = True
+    elif args.bids_name is None and args.bids_value is None:
+        meets_bidsmode = False
+    else:
+        raise ValueError('Must provide both BIDS name (-x, --bids-name) and value (-y, --bids-value), '
+                         'not one or the other.')
+
+    meets_routinemode = args.routine is not None
+
+    allmodes = [meets_keysmode, meets_bidsmode, meets_routinemode]
+    if sum(allmodes) == 0:
+        raise ValueError('Must supply arguments for file deletion method; see usage for more details.')
+    elif sum(allmodes) > 1:
+        raise ValueError('Arguments supplied for more than one deletion mode; only one can be provided per call.')
+    
+    mode = ['keys', 'bids', 'routine'][allmodes.index(True)]
+    return mode
+
+def main():
     args = parse()
+    mode = _screen_args(args)
+
+    if mode == 'keys':
+        delete_preproc_by_keys(
+            preproc_dir=args.folder,
+            keys=args.keys,
+            modality=args.keys_modality,
+            refresh=args.keys_refresh,
+            dry_run=args.dryrun,
+            remove_empty_dirs=args.empty,
+        )
+    elif mode == 'bids':
+        delete_preproc_by_bids(
+            preproc_dir=args.folder,
+            names=args.bids_name,
+            values=args.bids_value,
+            same_file=args.bids_samefile,
+            dry_run=args.dryrun,
+            remove_empty_dirs=args.empty,
+        )
+    elif mode == 'routine':
+        delete_preproc_by_routine(
+            preproc_dir=args.folder,
+            routine=args.routine,
+            dry_run=args.dryrun,
+            remove_empty_dirs=args.empty
+        )
 
 
     

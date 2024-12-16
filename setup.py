@@ -35,8 +35,10 @@ setup(name='atstaging',
       long_description=long_description,
       long_description_content_type='text/markdown',
       entry_points = {
-        'console_scripts': ['atproc_subject=atstaging.cli.atproc_subject:main',
-                            'atproc_table=atstaging.cli.atproc_table:main',
-                            'catalogue_loni=atstaging.cli.catalogue_loni:main'],
+        'console_scripts': [
+            'atproc_delete=atstaging.cli.atproc_delete:main',
+            'atproc_subject=atstaging.cli.atproc_subject:main',
+            'atproc_table=atstaging.cli.atproc_table:main',
+            'catalogue_loni=atstaging.cli.catalogue_loni:main'],
         }
       )

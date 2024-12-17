@@ -4,6 +4,7 @@ from collections import Counter
 import glob
 import os
 from os.path import join as pjoin
+import pprint
 import re
 import shutil
 
@@ -76,10 +77,18 @@ def delete_files_with_report(to_delete, dry_run=False, remove_empty_dirs=True, m
 
     print()
     for i, path in enumerate(to_delete):
+        # printing helper
         pct = round(((i+1) / len(to_delete)) * 100, 2)
         header = '<DRYRUN> ' if dry_run else ''
-        print(f'{header}Removing {path}... ({i+1}/{len(to_delete)}) [{pct}%]')
+        pct_str = f'({i+1}/{len(to_delete)}) [{pct}%]'
 
+        # file not found - skip
+        if not os.path.exists(path):
+            print(f'Path {path} not found; skipping. {pct_str}')
+            continue
+        
+        # file found
+        print(f'{header}Removing {path}... {pct_str}')
         if not dry_run:
             deletion_func(path)
             parent_directory = os.path.dirname(path)
@@ -131,7 +140,7 @@ def delete_preproc_by_bids(preproc_dir, names, values, same_file=False, dry_run=
             if files:
                 delete_files_with_report(files, dry_run=dry_run, remove_empty_dirs=remove_empty_dirs, mode='os.remove')
             else:
-                print(f'No files matching the provided name-value pair; skipping.')
+                print('No files matching the provided name-value pair; skipping.')
                 continue
             print(end)
 
@@ -270,6 +279,7 @@ def parse():
     parser.add_argument('--keys-modality', help=h, required=False, default=None)
     parser.add_argument('--keys-refresh', help='Manually find the images matching keys, rather than using the paths folder JSON files',
                         required=False, action='store_true')
+    parser.add_argument('--keys-list', help='List the acceptable keys and the images they target', action='store_true')
     
     # mode == bids
     parser.add_argument('-x', '--bids-name', help='For bids deletion mode, name of the BIDS field [NAME-VALUE].',
@@ -285,6 +295,10 @@ def parse():
     return args
 
 def _screen_args(args):
+
+    meets_keyslist_mode = args.keys_list
+    if meets_keyslist_mode:
+        return "keys-list"
 
     meets_keysmode = args.keys is not None
 
@@ -312,9 +326,30 @@ def main():
     args = parse()
     mode = _screen_args(args)
 
+    if mode == 'keys-list':
+        print()
+        print('T1 Keys')
+        print('-------------------------------')
+        namer = ATPreprocMRINamer(subject='SUB', session='SES', modality='anat')
+        pprint.pprint(namer.namestore, sort_dicts=False)
+
+        print()
+        print('PET Keys')
+        print('-------------------------------')
+        namer = ATPreprocPETNamer(subject='SUB', session='SES', tracer='TRC', modality='pet')
+        pprint.pprint(namer.namestore, sort_dicts=False)
+
+        print()
+        print('NOTE: For T1 keys, prepend "t1_"; for amyloid, prepend "amyloid_"; '
+              'for tau, prepend "tau_".  Or instead, use the `--keys-modality` argument.')
+
+        return
+    
+    folder = os.path.abspath(args.folder)
+
     if mode == 'keys':
         delete_preproc_by_keys(
-            preproc_dir=args.folder,
+            preproc_dir=folder,
             keys=args.keys,
             modality=args.keys_modality,
             refresh=args.keys_refresh,
@@ -323,7 +358,7 @@ def main():
         )
     elif mode == 'bids':
         delete_preproc_by_bids(
-            preproc_dir=args.folder,
+            preproc_dir=folder,
             names=args.bids_name,
             values=args.bids_value,
             same_file=args.bids_samefile,
@@ -332,7 +367,7 @@ def main():
         )
     elif mode == 'routine':
         delete_preproc_by_routine(
-            preproc_dir=args.folder,
+            preproc_dir=folder,
             routine=args.routine,
             dry_run=args.dryrun,
             remove_empty_dirs=args.empty

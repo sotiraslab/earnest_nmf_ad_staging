@@ -183,7 +183,7 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None, config=Non
                 tau_tracer=tau_tracer,
                 config=config
             )
-        time.sleep(1)
+        time.sleep(0.5)
 
 def main():
     args = parse()

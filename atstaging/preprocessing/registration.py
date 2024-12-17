@@ -43,20 +43,38 @@ def _cleanup(OUTNAMES):
 
 def _copy_outputs(prefix, out_registered=None, out_affine=None,
                   out_warp=None):
+    
+    prefixdir = os.path.dirname(prefix)
+
+    print()
+    print('Files in temporary directory:')
+    for file in os.listdir(prefixdir):
+        print(f'  - {file}')
 
     outputs = _ants_registration_outputs(prefix)
     affine  = outputs['affine']
     warp = outputs['warp']
     registered = outputs['registered']
 
-    if os.path.isfile(affine) and out_affine is not None:
-        shutil.move(affine, out_affine)
+    def _verbose_move(src, dest):
+        print()
+        print('COPYFILE')
+        print('Source: ', src)
+        print('Destination: ', dest)
+        if not os.path.exists(src):
+            print('!! FAILURE: Source not found.')
+        else:
+            shutil.move(src, dest)
+            print('!! SUCCESS.')
 
-    if os.path.isfile(warp) and out_warp is not None:
-        shutil.move(warp, out_warp)
+    if out_affine is not None:
+        _verbose_move(affine, out_affine)
 
-    if os.path.isfile(registered) and out_registered is not None:
-        shutil.move(registered, out_registered)
+    if out_warp is not None:
+        _verbose_move(warp, out_warp)
+
+    if out_registered is not None:
+        _verbose_move(registered, out_registered)
 
 def apply_transform(moving, fixed, warp, output):
 

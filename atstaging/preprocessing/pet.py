@@ -383,7 +383,7 @@ def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
 
 def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mask=None, muse_segmentation=None,
                        mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_pet2mni=None,
-                       out_petbrain=None, out_regional_suvrs=None, rigid_reg_method='ants'):
+                       out_petbrain=None, out_regional_suvrs=None, rigid_reg_method='fsl'):
     
     # check if outputs being created
     outputs = [out_registered, out_rigid_reg, out_pet2mni, out_petbrain, out_suvr, out_regional_suvrs]

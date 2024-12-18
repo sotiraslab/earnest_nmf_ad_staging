@@ -315,7 +315,7 @@ def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
         # variables
         ANTSPATH = get('ants')
         PREFIX = os.path.join(WORKINGDIR, '_temp_output')
-        ANTS_REGISTRATION = os.path.join(ANTSPATH, 'antsRegistrationSyNQuick.sh')
+        ANTS_REGISTRATION = os.path.join(ANTSPATH, 'antsRegistrationSyN.sh')
 
         command = [
             ANTS_REGISTRATION,
@@ -323,8 +323,7 @@ def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
             '-m', pet,
             '-f', t1,
             '-o', PREFIX,
-            '-t', 'r',
-            '-v', '1'
+            '-t', 'r'
             ]
         
         print()

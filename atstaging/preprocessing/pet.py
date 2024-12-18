@@ -208,6 +208,102 @@ def prepare_registration_pet(pet, out_nifti=None,
 
         return INFO
     
+# def rigid_pet_registration(pet, t1, out_transformation=None, out_registered=None):
+
+#     if out_transformation is None and out_registered is None:
+#         raise ValueError('Either `out_transformation` or `out_registered` must be provided.')
+
+#     FSLPATH = get('fsl')
+#     FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
+#     CONVERT_XFM = os.path.join(FSLPATH, 'bin', 'convert_xfm')
+#     SCHEDULE3D_DOF3 = os.path.join(FSLPATH, 'etc', 'flirtsch', 'sch3Dtrans_3dof')
+
+#     with tempfile.TemporaryDirectory() as WORKINGDIR:
+
+#         # Stage 1: DOF3
+#         img_dof3 = os.path.join(WORKINGDIR, 'stage1_dof3_img.nii.gz')
+#         mat_dof3 = os.path.join(WORKINGDIR, 'stage1_dof3_xfm.mat')
+        
+#         command = [
+#             FLIRT,
+#             '-in', pet,
+#             '-ref', t1,
+#             '-out', img_dof3,
+#             '-omat', mat_dof3,
+#             '-cost', 'mutualinfo',
+#             '-searchcost', 'mutualinfo',
+#             '-schedule', SCHEDULE3D_DOF3,
+#             '-v'
+#             ]
+
+#         print()
+#         print('>>> STAGE 1: PET > MRI coregistration; DOF=3')
+#         print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+#         print('- - -')
+#         execute(command)
+#         print('- - -')
+
+#         # Stage 2: DOF6
+#         img_dof6 = os.path.join(WORKINGDIR, 'stage2_dof6_img.nii.gz')
+#         mat_dof6 = os.path.join(WORKINGDIR, 'stage2_dof6_xfm.mat')
+        
+#         command = [
+#             FLIRT,
+#             '-in', img_dof3,
+#             '-ref', t1,
+#             '-out', img_dof6,
+#             '-omat', mat_dof6,
+#             '-cost', 'mutualinfo',
+#             '-searchcost', 'mutualinfo',
+#             '-dof', '6',
+#             '-v'
+#             ]
+
+#         print()
+#         print('>>> STAGE 2: PET > MRI coregistration; DOF=6')
+#         print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+#         print('- - -')
+#         execute(command)
+#         print('- - -')
+
+#         # Stage 3: Combining transformation
+#         if out_transformation is None:
+#             out_transformation = os.path.join(WORKINGDIR, 'stage3_full_xfm.mat')
+
+#         command = [
+#             CONVERT_XFM,
+#             '-omat', out_transformation,
+#             '-concat', mat_dof6, mat_dof3
+#             ]
+        
+#         print()
+#         print('>>> STAGE 3: Concatenating DOF=3 and DOF=6 transformations')
+#         print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+#         print('- - -')
+#         execute(command)
+#         print('- - -')
+
+#         # Stage 4: Apply combined transformation
+#         if out_registered is None:
+#             out_registered = os.path.join(WORKINGDIR, 'stage4_img.nii.gz')
+
+#         command = [
+#             FLIRT,
+#             '-in', pet,
+#             '-ref', t1,
+#             '-out', out_registered,
+#             '-init', out_transformation,
+#             '-applyxfm',
+#             '-v'
+#             ]
+
+#         print()
+#         print('>>> STAGE 4: Applying full transformation matrix')
+#         print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+#         print('- - -')
+#         execute(command)
+#         print('- - -')
+
 def rigid_pet_registration(pet, t1, out_transformation=None, out_registered=None):
 
     if out_transformation is None and out_registered is None:
@@ -215,94 +311,28 @@ def rigid_pet_registration(pet, t1, out_transformation=None, out_registered=None
 
     FSLPATH = get('fsl')
     FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
-    CONVERT_XFM = os.path.join(FSLPATH, 'bin', 'convert_xfm')
-    SCHEDULE3D_DOF3 = os.path.join(FSLPATH, 'etc', 'flirtsch', 'sch3Dtrans_3dof')
+    
+    command = [
+        FLIRT,
+        '-in', pet,
+        '-ref', t1,
+        '-out', out_registered,
+        '-omat', out_transformation,
+        '-cost', 'mutualinfo',
+        '-searchrx', '-60', '60',
+        '-searchry', '-60', '60',
+        '-searchrz', '-60', '60',
+        '-dof', '6',
+        '-v'
+        ]
+    
+    print()
+    print('>>> FLIRT; PET > MRI coregistration; DOF=6')
+    print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+    print('- - -')
+    execute(command)
+    print('- - -')
 
-    with tempfile.TemporaryDirectory() as WORKINGDIR:
-
-        # Stage 1: DOF3
-        img_dof3 = os.path.join(WORKINGDIR, 'stage1_dof3_img.nii.gz')
-        mat_dof3 = os.path.join(WORKINGDIR, 'stage1_dof3_xfm.mat')
-        
-        command = [
-            FLIRT,
-            '-in', pet,
-            '-ref', t1,
-            '-out', img_dof3,
-            '-omat', mat_dof3,
-            '-cost', 'mutualinfo',
-            '-searchcost', 'mutualinfo',
-            '-schedule', SCHEDULE3D_DOF3,
-            '-v'
-            ]
-
-        print()
-        print('>>> STAGE 1: PET > MRI coregistration; DOF=3')
-        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
-        print('- - -')
-        execute(command)
-        print('- - -')
-
-        # Stage 2: DOF6
-        img_dof6 = os.path.join(WORKINGDIR, 'stage2_dof6_img.nii.gz')
-        mat_dof6 = os.path.join(WORKINGDIR, 'stage2_dof6_xfm.mat')
-        
-        command = [
-            FLIRT,
-            '-in', img_dof3,
-            '-ref', t1,
-            '-out', img_dof6,
-            '-omat', mat_dof6,
-            '-cost', 'mutualinfo',
-            '-searchcost', 'mutualinfo',
-            '-dof', '6',
-            '-v'
-            ]
-
-        print()
-        print('>>> STAGE 2: PET > MRI coregistration; DOF=6')
-        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
-        print('- - -')
-        execute(command)
-        print('- - -')
-
-        # Stage 3: Combining transformation
-        if out_transformation is None:
-            out_transformation = os.path.join(WORKINGDIR, 'stage3_full_xfm.mat')
-
-        command = [
-            CONVERT_XFM,
-            '-omat', out_transformation,
-            '-concat', mat_dof6, mat_dof3
-            ]
-        
-        print()
-        print('>>> STAGE 3: Concatenating DOF=3 and DOF=6 transformations')
-        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
-        print('- - -')
-        execute(command)
-        print('- - -')
-
-        # Stage 4: Apply combined transformation
-        if out_registered is None:
-            out_registered = os.path.join(WORKINGDIR, 'stage4_img.nii.gz')
-
-        command = [
-            FLIRT,
-            '-in', pet,
-            '-ref', t1,
-            '-out', out_registered,
-            '-init', out_transformation,
-            '-applyxfm',
-            '-v'
-            ]
-
-        print()
-        print('>>> STAGE 4: Applying full transformation matrix')
-        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
-        print('- - -')
-        execute(command)
-        print('- - -')
 
 def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mask=None, muse_segmentation=None,
                        mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_pet2mni=None,

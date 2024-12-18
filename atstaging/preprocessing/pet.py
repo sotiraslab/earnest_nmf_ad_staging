@@ -304,13 +304,43 @@ def prepare_registration_pet(pet, out_nifti=None,
 #         execute(command)
 #         print('- - -')
 
-def rigid_pet_registration(pet, t1, out_transformation=None, out_registered=None):
+def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
 
-    if out_transformation is None and out_registered is None:
-        raise ValueError('Either `out_transformation` or `out_registered` must be provided.')
+    # MAIN
+    with tempfile.TemporaryDirectory() as WORKINGDIR:
+
+        print()
+        print(f'>>> Created temporary working directory: {WORKINGDIR}')
+
+        # variables
+        ANTSPATH = get('ants')
+        PREFIX = os.path.join(WORKINGDIR, '_temp_output')
+        ANTS_REGISTRATION = os.path.join(ANTSPATH, 'antsRegistrationSyNQuick.sh')
+
+        command = [
+            ANTS_REGISTRATION,
+            '-d', '3',
+            '-m', pet,
+            '-f', t1,
+            '-o', PREFIX,
+            '-t', 'r'
+            ]
+        
+        print()
+        print('>>> ANTs; PET > MRI coregistration; DOF=6')
+        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+        print('- - -')
+        execute(command)
+        print('- - -')
+
+        shutil.move(PREFIX + "0GenericAffine.mat", out_transformation)
+        shutil.move(PREFIX + "Warped.nii.gz", out_registered)
+
+def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
 
     FSLPATH = get('fsl')
     FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
+    C3D_AFFINE_TOOL = get('c3d_affine_tool')
     
     command = [
         FLIRT,
@@ -333,16 +363,37 @@ def rigid_pet_registration(pet, t1, out_transformation=None, out_registered=None
     execute(command)
     print('- - -')
 
+    # convert FSL to ANTs format
+    command = [
+            C3D_AFFINE_TOOL,
+            '-ref', t1,
+            '-src', pet,
+            out_transformation,
+            '-fsl2ras',
+            '-oitk', out_transformation
+        ]
+
+    print()
+    print('>>> Converting PET2MRI linear transformation matrix from FSL to ANTs format:')
+    print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
+    print('- - -')
+    execute(command)
+    print('- - -')
+
 
 def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mask=None, muse_segmentation=None,
                        mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_pet2mni=None,
-                       out_petbrain=None, out_regional_suvrs=None):
+                       out_petbrain=None, out_regional_suvrs=None, rigid_reg_method='ants'):
     
     # check if outputs being created
     outputs = [out_registered, out_rigid_reg, out_pet2mni, out_petbrain, out_suvr, out_regional_suvrs]
     if all(x is None for x in outputs):
         warnings.warn(RuntimeWarning('MRI registration: no outputs selected, exiting!'))
         return
+    
+    # check arguments
+    if rigid_reg_method.lower() not in ['ants', 'fsl']:
+        raise ValueError(f'`rigid_reg_method` must be "ants" or "fsl", not "{rigid_reg_method}"')
     
     # initialize dict with information about this process
     INFO = {}
@@ -358,7 +409,6 @@ def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mas
 
         # variables
         ANTSPATH = get('ants')
-        C3D_AFFINE_TOOL = get('c3d_affine_tool')
         PREFIX = os.path.join(WORKINGDIR, '_temp_output')
         OUTNAMES = _registration_outputs(PREFIX)
         REFERENCE = mni_brain if mni_brain is not None else get('mni152_brain')
@@ -380,24 +430,10 @@ def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mas
         print()
         print('>>> Starting rigid registration routine')
 
-        rigid_pet_registration(pet=pet, t1=t1, out_transformation=pet2mri_transform, out_registered=rigidregisted)
-
-        # ----> Covert FSL affine to ANTs
-        command = [
-            C3D_AFFINE_TOOL,
-            '-ref', t1,
-            '-src', pet,
-            pet2mri_transform,
-            '-fsl2ras',
-            '-oitk', pet2mri_transform
-        ]
-
-        print()
-        print('>>> Converting PET2MRI linear transformation matrix from FSL to ANTs format:')
-        print('    ' + Fore.YELLOW + ' '.join(command) + Style.RESET_ALL)
-        print('- - -')
-        execute(command)
-        print('- - -')
+        if rigid_reg_method == 'ants':
+            rigid_pet_registration_ANTs(pet=pet, t1=t1, out_transformation=pet2mri_transform, out_registered=rigidregisted)
+        elif rigid_reg_method == 'fsl':
+            rigid_pet_registration_FSL(pet=pet, t1=t1, out_transformation=pet2mri_transform, out_registered=rigidregisted)
 
         # compute SUVR
         rigidregisted = OUTNAMES['rigidregistered']

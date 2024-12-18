@@ -323,7 +323,8 @@ def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
             '-m', pet,
             '-f', t1,
             '-o', PREFIX,
-            '-t', 'r'
+            '-t', 'r',
+            '-v', '1'
             ]
         
         print()

@@ -33,12 +33,14 @@ import os
 import nibabel as nib
 import pandas as pd
 
-from atstaging.config import get
+from atstaging.config import get, set_config
 from atstaging.dataorg.oasis import oasis3_image_list, oasis_table_pull_PET_frames
+
+set_config('main')
 
 OASIS3_FOLDER = '/ceph/chpc/rcif_datasets/oasis/OASIS3'
 OASIS3AV1451_FOLDER = '/ceph/chpc/rcif_datasets/oasis/OASIS3AV1451'
-OASIS_COPY_DIRECTORY = '/scratch/tom.earnest/OASIS'
+OASIS_COPY_DIRECTORY = '/scratch/tom.earnest/oasis3_frame_selection'
 OVERWRITE_COPY = False
 OUTPUT_FOLDER = get('output_directory')
 USE_CACHE = True
@@ -147,7 +149,7 @@ print('~~~~~~~~~~~~~~~~~~~')
 
 t1_outfolder = os.path.join(OASIS_COPY_DIRECTORY, 't1')
 
-if not os.path.isdir(t1_outfolder):
+if not os.path.isdir(t1_outfolder) and not DRY_RUN:
     os.mkdir(t1_outfolder)
 
 images = []
@@ -165,9 +167,12 @@ for i, (_, row) in enumerate(mri_downloads_filtered.iterrows()):
         print(f'    * Not overwriting existing image at {newpath}')
         continue
     
-    print(f'    * Writing image to destination: {newpath}')
-    nii = nib.load(imgpath)
-    nib.save(nii, newpath)
+    if not DRY_RUN:
+        print(f'    * Writing image to destination: {newpath}')
+        nii = nib.load(imgpath)
+        nib.save(nii, newpath)
+    else:
+        print(f'    * DRYRUN: Image would be saved at {newpath}')
 
 
 mri_conversion = pd.DataFrame(images)

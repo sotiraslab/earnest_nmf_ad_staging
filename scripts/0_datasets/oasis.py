@@ -28,7 +28,7 @@ OASIS3_CENTILOID = '/ceph/chpc/rcif_datasets/oasis/OASIS3/OASIS3_data_files/SCAN
 BASEDATE = pd.Timestamp(year=2001, month=1, day=1)
 
 # SETUP
-set_config()
+set_config('main')
 OUTPUT_FOLDER = get('output_directory')
 setup_outputs_folder(OUTPUT_FOLDER)
 

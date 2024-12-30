@@ -27,12 +27,12 @@ from atstaging.outputs import setup_outputs_folder
 
 # INPUTS (see docstring above)
 IMAGE_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_all3_10282024_10_29_2024.csv'
-DOWNLAD_FOLDER = '/scratch/tom.earnest/ADNI/images/ADNI/'
-TABULAR_FOLDER = '/scratch/tom.earnest/ADNI/tabular/'
+DOWNLAD_FOLDER = '/ceph/chpc/shared/aristeidis_sotiras_group/tom.earnest_scratch/ADNI/images/ADNI'
+TABULAR_FOLDER = '/ceph/chpc/shared/aristeidis_sotiras_group/tom.earnest_scratch/ADNI/tabular'
 USE_CACHED = True
 
 # SETUP
-set_config()
+set_config('main')
 OUTPUT_FOLDER = get('output_directory')
 setup_outputs_folder(OUTPUT_FOLDER)
 CACHEDIR = os.path.join(OUTPUT_FOLDER, 'downloadLists')

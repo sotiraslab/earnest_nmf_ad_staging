@@ -17,13 +17,13 @@ from atstaging.config import get, set_config
 from atstaging.outputs import setup_outputs_folder
 
 # INPUTS (see docstring above)
-TAU_DOWNLOADS = '/scratch/tom.earnest/HABS/images/ftp/'
-AMY_DOWNLOADS = '/scratch/tom.earnest/HABS/images/pib/'
-T1_DOWNLOADS = '/scratch/tom.earnest/HABS/images/mprage/'
-TABULAR_DIRECTORY = '/scratch/tom.earnest/HABS/tabular/'
+TAU_DOWNLOADS = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/images/ftp'
+AMY_DOWNLOADS = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/images/pib'
+T1_DOWNLOADS = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/images/mprage'
+TABULAR_DIRECTORY = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/tabular/'
 
 # SETUP
-set_config()
+set_config('main')
 OUTPUT_FOLDER = get('output_directory')
 setup_outputs_folder(OUTPUT_FOLDER)
 

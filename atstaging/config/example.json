@@ -1,5 +1,5 @@
 {
-    "AUTOUSE": true,
+    "AUTOUSE": false,
     "afni": "path/to/afni/bin",
     "amy_preproc_keep": ["registered"],
     "ants": "path/to/ants/bin",

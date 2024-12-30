@@ -25,12 +25,12 @@ from atstaging.outputs import setup_outputs_folder
 TAU_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_pi2620_12_05_2024.csv'
 AMY_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_search_fbb_12_05_2024.csv'
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_12_05_2024.csv'
-DOWNLAD_FOLDER = '/home/aris_data/HABS-HD/images/HABS_HD'
-TABULAR_FOLDER = '/scratch/tom.earnest/HABS-HD/tabular/'
-USE_CACHED = False
+DOWNLAD_FOLDER = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS-HD/images/HABS_HD'
+TABULAR_FOLDER = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS-HD/tabular'
+USE_CACHED = True
 
 # SETUP
-set_config()
+set_config('main')
 OUTPUT_FOLDER = get('output_directory')
 setup_outputs_folder(OUTPUT_FOLDER)
 

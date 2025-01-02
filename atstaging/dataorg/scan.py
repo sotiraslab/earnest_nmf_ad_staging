@@ -16,38 +16,129 @@ from atstaging.dataorg.utils import (
     report_feature_distribution,
     report_missingness)
 
-def create_subject_table(amy_search, tau_search, t1_search):
+def create_subject_table(pet_search, mri_search):
 
-    amy = pd.read_csv(amy_search)
-    tau = pd.read_csv(tau_search)
-    t1 = pd.read_csv(t1_search)
+    # NOTE: these are the CSVs generated from a search record on LONI
+    # not the collection CSV
 
-    # explicilty omit rsFMRI scans - error that these were added
-    t1 = t1.loc[~ t1['Description'].str.contains('rsfmri', case=False), :].copy()
+    # SEARCH_PET
+    # ----------
+
+    # Run the following search:
+    #     - Tick Study Date to show in results
+    #     - Tick Image ID to show in results
+    #     - Tick Original and Pre-processed
+    #     - Tick PET for modality
+    #     - Tick Radiopharmaceutical to show in results
+
+    # SEARCH_MRI
+    # ----------
+
+    # Run the following search:
+    #     - Tick Study Date to show in results
+    #     - Tick Image ID to show in results
+    #     - Tick Original and Pre-processed
+    #     - Tick MRI for modality
+    #     - Tick Weighting to show in results
+
+    # rough collection of names
+    FBP_NAMES = [
+        'Florbetapir F^18^',
+        'Florbetapir',
+        'florbetapir'
+        ]
+    FBB_NAMES = [
+        'Florbetaben',
+        'Florbetaben F^18^',
+        'FBB',
+        'FLORBETABEN',
+        '18F-Florbetaben'
+        ]
+    PIB_NAMES = [
+        'Pittsburgh compound B C^11^',
+        'PIB',
+        '[11C]PIB',
+        'Pittsburgh compound B',
+        'PiB C-11'
+        ]
+    NAV_NAMES = [
+        '[18F]NAV-4694',
+        '[18F] NAV-4694'
+        'NAV-4694'
+        ]
+    FTP_NAMES = [
+        'AV1451',
+        'T807 F^18^',
+        'AV 1451',
+        'FLORTAUCIPIR',
+        'T80',
+        '[18F]Flortaucipir'
+        ]
+    M62_NAMES = [
+        'MK-6240',
+        '[18-F] MK-6240',
+        '[18F] MK-6240',
+        'M62',
+        'MK-6240 F-18',
+        'MK6240'
+        ]
+    P26_NAMES = [
+        'PI-2620',
+        'P26',
+        'PI2620'
+        ]
+
+    # load data
+    pet = pd.read_csv(pet_search)
+    mri = pd.read_csv(mri_search)
+
+    # data wrangling for pet
+    pet['Study Date'] = pd.to_datetime(pet['Study Date'])
+    pet = pet.sort_values(['Subject ID', 'Study Date', 'Type'])
+    pet['Imaging Protocol'] = pet.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
+    pet = pet[pet['Type'].eq('Original')].copy()
+
+    # get the tracer
+    proto = pet['Imaging Protocol'].str.removeprefix('Radiopharmaceutical=').str.strip().copy()
+    pet['Tracer'] = pd.Series(dtype='str')
+    pet.loc[proto.isin(FBP_NAMES), 'Tracer'] = 'FBP'
+    pet.loc[proto.isin(FBB_NAMES), 'Tracer'] = 'FBB'
+    pet.loc[proto.isin(PIB_NAMES), 'Tracer'] = 'PIB'
+    pet.loc[proto.isin(NAV_NAMES), 'Tracer'] = 'NAV'
+
+    pet.loc[proto.isin(FTP_NAMES), 'Tracer'] = 'FTP'
+    pet.loc[proto.isin(M62_NAMES), 'Tracer'] = 'M62'
+    pet.loc[proto.isin(P26_NAMES), 'Tracer'] = 'P26'
+
+    pet = pet[~pet['Tracer'].isna()].copy()
+
+    # separate into amyloid and tau
+    amy = pet.loc[pet['Tracer'].isin(['FBP', 'FBB', 'PIB', 'NAV'])].copy()
+    tau = pet.loc[pet['Tracer'].isin(['FTP', 'M62', 'P26'])].copy()
+
+    # data wrangling for mri
+    mri['Study Date'] = pd.to_datetime(mri['Study Date'])
+    mri = mri[
+        mri['Imaging Protocol'].eq('Weighting=T1') |
+        mri['Description'].str.lower().str.contains('mprage')
+        ].copy()
+    mri = mri.loc[~ mri['Description'].str.contains('rsfmri', case=False), :].copy()
+    mri = mri.loc[~ mri['Description'].str.contains('mapping', case=False), :].copy()
+
 
     # select columns
     def select(df):
-        cols = ['Image Data ID', 'Subject', 'Description',
-                'Acq Date']
+        cols = ['Image ID', 'Subject ID', 'Description',
+                'Study Date']
+        if 'Tracer' in df.columns:
+            cols += ['Tracer']
         tmp = df[cols]
-        tmp = tmp.rename(columns={'Image Data ID': 'ImageID', 'Acq Date': 'ScanDate'})
+        tmp = tmp.rename(columns={'Image ID': 'ImageID', 'Study Date': 'ScanDate', 'Subject ID': 'Subject'})
         return tmp
 
     amy = select(amy)
     tau = select(tau)
-    t1 = select(t1)
-
-    # label tracers
-    amy['Tracer'] = amy['Description'].map(
-        {'AV Co-registered, Averaged, 50-70': 'FBP',
-         'FBB Co-registered, Averaged, 90-110': 'FBB',
-         'PIB Co-registered, Averaged, 40-60': 'PIB',
-         'NAV Coreg, Avg, Rigid Reg to Std Img/Vox Size, 50-70': 'NAV'}
-        )
-    tau['Tracer'] = tau['Description'].map(
-        {'T80 Co-registered, Averaged, 80-100': 'FTP',
-         'M62 Co-registered, Averaged, 90-110': 'M62',
-         'P26 Co-registered, Averaged, 45-75': 'P26'})
+    t1 = select(mri)
 
     result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
     return result
@@ -107,7 +198,7 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     by_imaging = merged.groupby(['Subject', 'TauAmyloidMeanDate'])['GapToVisitAbs'].idxmin()
     grouped = merged.loc[by_imaging, :]
 
-    # Recoding 
+    # Recoding
 
     # >>> Age
     birthage = pd.to_datetime(

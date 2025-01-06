@@ -9,6 +9,10 @@ def _dircreate(*args):
 
 def setup_outputs_folder(directory):
     _dircreate(directory)
-    _dircreate(directory, 'downloadLists')
     _dircreate(directory, 'datasetTables')
+    _dircreate(directory, 'downloadLists')
+    _dircreate(directory, 'masterTables')
+    _dircreate(directory, 'preprocessing')
+    _dircreate(directory, 'preprocessing', 'images')
+    _dircreate(directory, 'preprocessing', 'preproc_tables')
     _dircreate(directory, 'searches')

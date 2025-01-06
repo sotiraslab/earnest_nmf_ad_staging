@@ -7,6 +7,7 @@ import pandas as pd
 from atstaging.dataorg.utils import (
     add_features_by_viscode,
     assign_training_validation, 
+    bin_cdr,
     link_modalities, 
     load_csv_by_match,
     report_download_coverage,
@@ -83,10 +84,7 @@ def create_feature_table(preproc_table, habs_tabular_directory, verbose=True):
     features['AmyloidPositive'] = features['PIB_FS_SUVR_Group'].eq('PIB+').astype(float)
     features['CDR'] = features['CDR_Global']
     features['CDRSumBoxes'] = features['CDR_SB']
-    features['CDRBinned'] = features['CDR']
-    features.loc[features['CDR'].ge(1.0), 'CDRBinned'] = 1.0
-    features['CDRBinned'] = features['CDRBinned'].map({0.0: '0.0', 0.5: '0.5', 1.0: '1.0+'})
-    features['CDR'].value_counts()
+    features['CDRBinned'] = bin_cdr(features['CDR'])
 
     # filter columns
     keep_columns = list(preproc_table.columns) + ['Age', 'SexMale', 'HasE4', 'AmyloidPositive', 'CDR', 'CDRSumBoxes', 'CDRBinned']

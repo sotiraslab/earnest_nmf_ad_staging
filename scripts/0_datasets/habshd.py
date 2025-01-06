@@ -51,7 +51,7 @@ cachedir = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 downloads = load_loni_downloads_with_caching('habshd', cachedir=cachedir, download_folder=DOWNLAD_FOLDER, use_cached=USE_CACHED)
 subject_table = create_subject_table(AMY_SEARCH, TAU_SEARCH, T1_SEARCH, tabular_folder=TABULAR_FOLDER)
 preproc_table = create_preproc_table(subject_table=subject_table, download_table=downloads)
-preproc_table.insert(0, 'DataSet', 'HABS-HD')
+preproc_table.insert(0, 'DataSet', 'HABSHD')
 features = create_feature_table(preproc_table=preproc_table, habshd_uds=habshd, verbose=True)
 
 # save

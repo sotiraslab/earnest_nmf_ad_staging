@@ -40,4 +40,5 @@ features = create_feature_table(
     oasis3_cdr=OASIS3_CDR,
     oasis3_centiloid=OASIS3_CENTILOID,
     basedate=BASEDATE)
+features.insert(0, 'DataSet', 'OASIS')
 features.to_csv(os.path.join(OUTPUT_FOLDER, 'datasetTables', 'oasis.csv'), index=False)

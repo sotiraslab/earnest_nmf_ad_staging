@@ -146,9 +146,12 @@ def create_subject_table(pet_search, mri_search):
 def create_preproc_table(subject_table, download_table):
 
     df = subject_table
-    df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
-    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
-    df['ImageIDT1'] = df['ImageIDT1'].str.replace('D', 'I')
+    df['ImageIDTau'] = df['ImageIDTau'].astype(int).astype(str).str.replace('D', 'I')
+    df.loc[~df['ImageIDTau'].str.startswith('I'), 'ImageIDTau'] = 'I' + df['ImageIDTau']
+    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].astype(int).astype(str).str.replace('D', 'I')
+    df.loc[~df['ImageIDAmyloid'].str.startswith('I'), 'ImageIDAmyloid'] = 'I' + df['ImageIDAmyloid']
+    df['ImageIDT1'] = df['ImageIDT1'].astype(int).astype(str).str.replace('D', 'I')
+    df.loc[~df['ImageIDT1'].str.startswith('I'), 'ImageIDT1'] = 'I' + df['ImageIDT1']
 
     mapper = download_table['Path']
     mapper.index = download_table['ImageID']

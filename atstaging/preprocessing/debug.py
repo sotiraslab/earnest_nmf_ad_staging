@@ -82,6 +82,7 @@ def run_dependency_check():
 
     count = 0
     total = len(checks)
+    at_least_one_failure = False
     print()
     for name, func in checks.items():
         success, metadata = func()
@@ -90,8 +91,14 @@ def run_dependency_check():
         print(f'* {name}: ({response})')
         if not success:
             print(f'    > {metadata}')
+            at_least_one_failure = True
 
         count += success
     color = Fore.GREEN if count == total else Fore.RED
     print(color + str(count) + Style.RESET_ALL + ' / ' + str(total) + ' passed')
     print(Fore.CYAN + '-' * 25 + Style.RESET_ALL)
+
+    if at_least_one_failure:
+        raise ValueError('Dependency check failed (see above).')
+
+

@@ -61,7 +61,7 @@ print()
 print('TOTAL:', len(preproc_table))
 
 # save
-outpath = os.path.join(OUTPUTDIRECTORY, 'preprocessing', 'preproc_tables', 'test_subset.csv')
+outpath = os.path.join(OUTPUTDIRECTORY, 'preprocessing', 'preproc_tables', 'mini_processing_30each.csv')
 print()
 print(f'Saving preproc table at {outpath}.')
 preproc_table.to_csv(outpath, index=False)

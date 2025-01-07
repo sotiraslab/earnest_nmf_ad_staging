@@ -10,7 +10,7 @@ import pandas as pd
 from .bias_correction import run_N4_bias_correction
 from .bids import ATPreprocMRINamer, ATPreprocPETNamer
 from .conversion import run_dcm2niix
-from .qc import (
+from .qc_images import (
     pet_mni_registration_qc_image,
     pet_t1_registration_qc_image,
     registration_checkerboard_qc_image,

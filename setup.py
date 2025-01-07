@@ -37,6 +37,7 @@ setup(name='atstaging',
       entry_points = {
         'console_scripts': [
             'atproc_delete=atstaging.cli.atproc_delete:main',
+            'atproc_qc=atstaging.cli.atproc_qc:main',
             'atproc_subject=atstaging.cli.atproc_subject:main',
             'atproc_table=atstaging.cli.atproc_table:main',
             'catalogue_loni=atstaging.cli.catalogue_loni:main'],

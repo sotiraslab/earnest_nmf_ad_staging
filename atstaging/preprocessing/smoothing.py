@@ -109,7 +109,18 @@ def iterative_smoothing(imgpath, outpath, target_fwhm=(8, 8, 8),
         print(f'Estimated smoothess {orig_fwhm} is already smoother than target {tuple(target_fwhm)}; ',
               'no smoothing applied.')
         nib.save(orig_nii, outpath)
-        return
+        info = {'original_fwhm_x': orig_fwhm[0],
+                'original_fwhm_y': orig_fwhm[1],
+                'original_fwhm_z': orig_fwhm[2],
+                'final_fwhm_x': orig_fwhm[0],
+                'final_fwhm_y': orig_fwhm[1],
+                'final_fwhm_z': orig_fwhm[2],
+                'kernel_x': 0,
+                'kernel_y': 0,
+                'kernel_z': 0,
+                'target_fwhm': target_fwhm,
+                'smoothing_applied': False}
+        return info
 
     c = 0
     xyz_cycle = it.cycle([0, 1, 2])
@@ -167,6 +178,7 @@ def iterative_smoothing(imgpath, outpath, target_fwhm=(8, 8, 8),
             'kernel_x': current_filter[0],
             'kernel_y': current_filter[1],
             'kernel_z': current_filter[2],
-            'target_fwhm': target_fwhm,}
+            'target_fwhm': target_fwhm,
+            'smoothing_applied': True}
 
     return info

@@ -526,5 +526,5 @@ def paths_folder_to_dataframe(paths_folder):
             rows.append(data)
 
     df = pd.DataFrame(rows)
-    df = df.sort_values(['Subject', 'Session'])
+    df = df.sort_values(['Subject', 'Session']).reset_index(drop=True)
     return df

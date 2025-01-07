@@ -19,7 +19,7 @@ from .qc import (
     )
 from .pet import prepare_registration_pet, register_pet_image
 from .reorient import reorient_image
-from .registration import apply_transform, create_jacobian_determinant_image, registration_mni_pipeline
+from .registration import apply_transform, registration_mni_pipeline
 from .segmentation import segmentation_pipeline
 from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
 
@@ -319,9 +319,9 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     # # # # # # # # 
 
     do_smoothing = get('smoothing', 'do_smoothing')
-    smooth_x = get('smoothing', 'x')
-    smooth_y = get('smoothing', 'y')
-    smooth_z = get('smoothing', 'z')
+    smooth_x = float(get('smoothing', 'x'))
+    smooth_y = float(get('smoothing', 'y'))
+    smooth_z = float(get('smoothing', 'z'))
     target_fwhm = (smooth_x, smooth_y, smooth_z) if do_smoothing else None
 
     # # # # # # # #

@@ -191,20 +191,22 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     if out_fullwarp is None:
         out_fullwarp = OUTNAMES['fullwarp']
 
-    print()
-    print('>>> Creating concatenated transform file.')
-    print('- - -')
-    create_fullwarp_image(brain, REFERENCE, affine=OUTNAMES['affine'],
-                          warp=OUTNAMES['warp'], out_fullwarp=out_fullwarp)
-    print('- - -')
+    if out_fullwarp is not None:
+        print()
+        print('>>> Creating concatenated transform file.')
+        print('- - -')
+        create_fullwarp_image(brain, REFERENCE, affine=OUTNAMES['affine'],
+                            warp=OUTNAMES['warp'], out_fullwarp=out_fullwarp)
+        print('- - -')
 
-    # create jacobian determinant image
-    print()
-    print('>>> Creating Jacobian determinant image.')
-    print('- - -')
-    create_jacobian_determinant_image(fullwarp=out_fullwarp,
-                                      out_jacobian=out_jacobian)
-    print('- - -')
+    if out_jacobian is not None:
+        # create jacobian determinant image
+        print()
+        print('>>> Creating Jacobian determinant image.')
+        print('- - -')
+        create_jacobian_determinant_image(fullwarp=out_fullwarp,
+                                          out_jacobian=out_jacobian)
+        print('- - -')
 
     # remove temporary files
     _cleanup(OUTNAMES=OUTNAMES)

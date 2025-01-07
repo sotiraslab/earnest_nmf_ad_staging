@@ -15,7 +15,7 @@ from atstaging.preprocessing.pipeline import paths_folder_to_dataframe
 
 TAU_TRACERS = ['FTP', 'M62', 'P26']
 AMY_TRACERS = ['FBP', 'PIB', 'FBB', 'NAV']
-DELETION_ROUTINES = ['anat', 'pet']
+DELETION_ROUTINES = ['anat', 'pet', 'extra']
 
 def bids_files_value_count(files):
     names = [os.path.basename(f) for f in files]
@@ -193,6 +193,20 @@ def delete_preproc_by_routine(preproc_dir, routine, dry_run=False, remove_empty_
         print('>>> Deleting all anatomical outputs for all subjects.')
         files = glob.glob('*/*/anat', root_dir=preproc_dir)
         files = [os.path.join(preproc_dir, file) for file in files]
+    elif routine == 'extra':
+        print('>>> Deleting non-pipeline files.')
+        # get a list of all images to keep
+        paths_folder= pjoin(preproc_dir, 'paths')
+        pathtable = paths_folder_to_dataframe(paths_folder=paths_folder)
+        melted = pathtable.melt(id_vars=['Subject', 'Session'], var_name='Image', value_name='Path')
+        keepimages = list(melted['Path'])
+
+        # list of images to delete
+        files = glob.glob('*/*/*/*', root_dir=preproc_dir)
+        files = [os.path.join(preproc_dir, file) for file in files]
+
+        # filter out
+        files = [file for file in files if file not in keepimages]
     else:
         raise ValueError(f'Routine "{routine}" unrecognized; must be one of "{DELETION_ROUTINES}"')
     

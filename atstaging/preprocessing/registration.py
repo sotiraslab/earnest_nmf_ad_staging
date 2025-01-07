@@ -56,7 +56,7 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
     warp = outputs['warp']
     registered = outputs['registered']
 
-    def _verbose_move(src, dest):
+    def _verbose_copy(src, dest):
         print()
         print('COPYFILE')
         print('Source: ', src)
@@ -64,17 +64,17 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
         if not os.path.exists(src):
             print('!! FAILURE: Source not found.')
         else:
-            shutil.move(src, dest)
+            shutil.copy(src, dest)
             print('!! SUCCESS.')
 
     if out_affine is not None:
-        _verbose_move(affine, out_affine)
+        _verbose_copy(affine, out_affine)
 
     if out_warp is not None:
-        _verbose_move(warp, out_warp)
+        _verbose_copy(warp, out_warp)
 
     if out_registered is not None:
-        _verbose_move(registered, out_registered)
+        _verbose_copy(registered, out_registered)
 
 def apply_transform(moving, fixed, warp, output):
 

@@ -19,6 +19,7 @@ requirements = [
     'matplotlib',
     'nibabel',
     'nilearn',
+    'openpyxl',
     'pandas'
 ]
 

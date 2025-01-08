@@ -10,6 +10,7 @@ import datetime as dt
 import os
 import re
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 
@@ -146,6 +147,61 @@ def _symlink(src, dest):
         tmp = dest + '.new'
         os.symlink(src, tmp)
         os.replace(tmp, dest)
+
+def create_imagestats(preproc_dir, paths_table,
+                      include=('t1_fullwarp', 't1_registered', 'amyloid_origsuvr', 'amyloid_registered', 'tau_origsuvr', 'tau_registered'),
+                      zcols=('Min', 'Max', 'Mean', 'NonZeroMin', 'NonZeroMax', 'NonZeroMean'),
+                      verbose=True):
+    
+    vprint = print if verbose else lambda *args, **kwargs: None
+
+    vprint()
+    vprint('COMPUTING IMAGE STATISTICS')
+    vprint('--------------------------')
+        
+    output = []
+    total = len(paths_table) * len(include)
+
+    for c, column in enumerate(include):
+
+        vprint()
+        vprint(f'*** *** *** IMAGE KEY: {column} [{c+1}/{len(include)}] *** *** ***')
+        vprint()
+            
+        rows = []
+        
+        for i, index in enumerate(paths_table.index):
+
+            sub = paths_table.loc[index, 'Subject']
+            ses = paths_table.loc[index, 'Session']
+            
+            pct = round(((i + 1)/total) * 100, 2)
+            vprint(f'  > #{i}, Index={index}, Subject={sub}, Session={ses} [{pct}%]')
+            
+            row = {}
+            row['Subject'] = sub
+            row['Session'] = ses
+            row['Index'] = index
+
+            try:
+                imginfo = imagestats(paths_table.loc[index, column])
+            except Exception as e:
+                print('* FAILURE: Error while processing image.')
+                print('!!! !!! !!! !!!')
+                print(repr(e))
+                print('!!! !!! !!! !!!')
+            row.update(imginfo)
+
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+        for col in zcols:
+            newcol = 'Z' + col
+            df[newcol] = (df[col] - df[col].mean()) / df[col].std()
+            
+        output.append(df)
+
+    return output
     
 def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='update', backup=True, missing_str='<MISSING>'):
     # fixed variables
@@ -255,13 +311,12 @@ def create_epilogues(preproc_dir, extension='.slurmlog'):
     epilogues = pd.DataFrame(rows)
     return epilogues
 
-# main qc script
-
-def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=True):
+def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=True, rerun_imagestats=False):
 
     QC_DIR = os.path.join(preproc_dir, 'qc')
     PATH_FILECOUNTS = os.path.join(QC_DIR, 'filecounts.csv')
     PATH_EPILOGUES = os.path.join(QC_DIR, 'epilogues.csv')
+    PATH_IMAGESTATS = os.path.join(QC_DIR, 'imagestats.xlsx')
 
     print()
     print('QC Setup')
@@ -302,4 +357,56 @@ def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=T
         missing_str='<MISSING>'
     )
     print(f'> Done.  [see {QC_DIR}]')
+
+    print()
+    print('> Creating descriptive statistics for images.')
+    if os.path.isfile(PATH_IMAGESTATS) and not rerun_imagestats:
+        print('> Existing image statistics found; not rerunning.')
+    else:
+        include=('t1_fullwarp', 't1_registered', 'amyloid_origsuvr', 'amyloid_registered', 'tau_origsuvr', 'tau_registered')
+        zcols=('Min', 'Max', 'Mean', 'NonZeroMin', 'NonZeroMax', 'NonZeroMean')
+        tables = create_imagestats(
+            preproc_dir=preproc_dir,
+            paths_table=paths_table,
+            zcols=zcols,
+            include=include)
+        write_imagestats_excel(
+            output=tables,
+            sheetnames=include,
+            destination=PATH_IMAGESTATS
+        )
+    print(f'> Done.  [{PATH_IMAGESTATS}]')
     
+def imagestats(nifti_path):
+    
+    nii = nib.load(nifti_path)
+    data = nii.get_fdata()
+    nonzero = np.where(data == 0, np.nan, data)
+    shape = {i:nii.shape[i] for i in range(len(nii.shape))}
+
+    # setup return data
+    res = {}
+
+    res['Path'] = nifti_path
+    res['Basename'] = os.path.basename(nifti_path)
+
+    for k, v in shape.items():
+        res[f"Dim{k}"] = v
+
+    res['Min'] = data.min()
+    res['Max'] = data.max()
+    res['Mean'] = data.mean()
+    res['Voxels'] = data.size
+
+    res['NonZeroMin'] = np.nanmin(nonzero)
+    res['NonZeroMax'] = np.nanmax(nonzero)
+    res['NonZeroMean'] = np.nanmean(nonzero)
+    res['NonZeroVoxels'] = np.sum(~ np.isnan(nonzero))
+
+    return res
+
+def write_imagestats_excel(output, sheetnames, destination):
+        
+    with pd.ExcelWriter(destination) as writer:
+        for df, name in zip(output, sheetnames):
+            df.to_excel(writer, sheet_name=name, index=False)

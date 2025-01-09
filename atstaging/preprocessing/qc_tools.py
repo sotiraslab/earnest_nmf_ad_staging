@@ -202,6 +202,50 @@ def create_imagestats(preproc_dir, paths_table,
         output.append(df)
 
     return output
+
+def create_musestats(paths_table, pettype):
+
+    pettype = pettype.lower()
+    if pettype == 'a':
+        pettype = 'amyloid'
+    if pettype == 't':
+        pettype = 'tau'
+    if pettype not in ['amyloid', 'tau']:
+        raise ValueError('`pettype` must be "amyloid" or "tau"')
+
+    # load the MUSE stats for each subject
+    muse_column = f'{pettype}_musestats'
+    dfs = []
+
+    for index in paths_table.index:
+
+        sub = paths_table.loc[index, 'Subject']
+        ses = paths_table.loc[index, 'Session']
+        muse_path = paths_table.loc[index, muse_column]
+
+        try:
+            muse = pd.read_csv(muse_path)
+            muse = muse[['Name', 'MUSEVolume', 'MUSEAverage']]
+            muse.insert(0, 'Subject', sub)
+            muse.insert(1, 'Session', ses)
+            dfs.append(muse)
+        except Exception as e:
+            print()
+            print(f'* FAILURE: Error while loading stats for Subject={sub}, Session={ses}.')
+            print('!!! !!! !!! !!!')
+            print(repr(e))
+            print('!!! !!! !!! !!!')
+
+    # create dataframe with all stats and reshape from long to wide
+    allmuse = pd.concat(dfs)
+    allmuse = allmuse.pivot(columns='Name', index=['Subject', 'Session'], values=['MUSEVolume', 'MUSEAverage'])
+    coltype = allmuse.columns.get_level_values(0)
+    region = allmuse.columns.get_level_values(1)
+    allmuse.columns = region + coltype.map({'MUSEVolume': '_VOLUME', 'MUSEAverage': '_SUVR'})
+    allmuse = allmuse[sorted(allmuse.columns)]
+    allmuse = allmuse.reset_index()
+
+    return allmuse
     
 def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='update', backup=True, missing_str='<MISSING>'):
     # fixed variables
@@ -317,6 +361,8 @@ def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=T
     PATH_FILECOUNTS = os.path.join(QC_DIR, 'filecounts.csv')
     PATH_EPILOGUES = os.path.join(QC_DIR, 'epilogues.csv')
     PATH_IMAGESTATS = os.path.join(QC_DIR, 'imagestats.xlsx')
+    PATH_MUSEAMYLOID = os.path.join(QC_DIR, 'musestats_amyloid.csv')
+    PATH_MUSETAU = os.path.join(QC_DIR, 'musestats_tau.csv')
 
     print()
     print('QC Setup')
@@ -376,6 +422,18 @@ def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=T
             destination=PATH_IMAGESTATS
         )
     print(f'> Done.  [{PATH_IMAGESTATS}]')
+
+    print()
+    print('> Creating table of MUSE statistics for amyloid..')
+    amystats = create_musestats(paths_table=paths_table, pettype='amyloid')
+    amystats.to_csv(PATH_MUSEAMYLOID, index=False)
+    print(f'> Done.  [{PATH_MUSEAMYLOID}]')
+
+    print()
+    print('> Creating table of MUSE statistics for tau..')
+    taustats = create_musestats(paths_table=paths_table, pettype='tau')
+    taustats.to_csv(PATH_MUSETAU, index=False)
+    print(f'> Done.  [{PATH_MUSETAU}]')
     
 def imagestats(nifti_path):
     

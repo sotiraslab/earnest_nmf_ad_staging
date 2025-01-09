@@ -367,6 +367,7 @@ def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=T
     print()
     print('QC Setup')
     print('--------')
+    print(f'Directory: {preproc_dir}')
 
     print()
     print('> Loading image paths from paths sub folder...')
@@ -424,13 +425,13 @@ def setup_qc(preproc_dir, screenshot_save_behavior='update', screenshot_backup=T
     print(f'> Done.  [{PATH_IMAGESTATS}]')
 
     print()
-    print('> Creating table of MUSE statistics for amyloid..')
+    print('> Creating table of MUSE statistics for amyloid.')
     amystats = create_musestats(paths_table=paths_table, pettype='amyloid')
     amystats.to_csv(PATH_MUSEAMYLOID, index=False)
     print(f'> Done.  [{PATH_MUSEAMYLOID}]')
 
     print()
-    print('> Creating table of MUSE statistics for tau..')
+    print('> Creating table of MUSE statistics for tau.')
     taustats = create_musestats(paths_table=paths_table, pettype='tau')
     taustats.to_csv(PATH_MUSETAU, index=False)
     print(f'> Done.  [{PATH_MUSETAU}]')

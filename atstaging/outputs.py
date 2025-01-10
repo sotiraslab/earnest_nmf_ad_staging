@@ -9,6 +9,8 @@ def _dircreate(*args):
 
 def setup_outputs_folder(directory):
     _dircreate(directory)
+    _dircreate(directory, 'amyloidpetnet')
+    _dircreate(directory, 'amyloidpetnet', 'modeltmp')
     _dircreate(directory, 'datasetTables')
     _dircreate(directory, 'downloadLists')
     _dircreate(directory, 'plots')

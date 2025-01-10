@@ -9,9 +9,11 @@ dependencies = [
     "colorama",
     "matplotlib",
     "nibabel",
+    "nifti_overlay",
     "nilearn",
     "openpyxl",
-    "pandas"
+    "pandas",
+    "seaborn"
 ]
 dynamic = ["version"]
 requires-python = ">= 3.10"

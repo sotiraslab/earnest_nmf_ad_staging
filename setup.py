@@ -18,9 +18,11 @@ requirements = [
     'colorama',
     'matplotlib',
     'nibabel',
+    'nifti_overlay',
     'nilearn',
     'openpyxl',
-    'pandas'
+    'pandas',
+    'seaborn'
 ]
 
 setup(name='atstaging',

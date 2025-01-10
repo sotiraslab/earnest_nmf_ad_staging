@@ -11,6 +11,7 @@ def setup_outputs_folder(directory):
     _dircreate(directory)
     _dircreate(directory, 'datasetTables')
     _dircreate(directory, 'downloadLists')
+    _dircreate(directory, 'plots')
     _dircreate(directory, 'masterTables')
     _dircreate(directory, 'preprocessing')
     _dircreate(directory, 'preprocessing', 'images')

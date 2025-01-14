@@ -250,7 +250,6 @@ def create_musestats(paths_table, pettype):
 def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='update', backup=True, missing_str='<MISSING>'):
     # fixed variables
     qc_img_cols = [col for col in paths_table.columns if 'qc-' in col]
-    padding = len(str(len(paths_table)))
     qctable_name = 'screenshotQC'
     qctable_savepath = os.path.join(output_dir, f'{qctable_name}.csv')
     backup_dir = os.path.join(output_dir, "backup")
@@ -267,7 +266,6 @@ def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='upd
     
         sub = paths_table.loc[index, 'Subject']
         ses = paths_table.loc[index, 'Session']
-        ipad = str(index).zfill(padding)
     
         row = {}
         row['Subject'] = sub
@@ -280,7 +278,7 @@ def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='upd
                 os.mkdir(linkdir)
     
             src = paths_table.loc[index, col]
-            dest = os.path.join(linkdir, f"{ipad}_sub-{sub}_ses-{ses}.png")
+            dest = os.path.join(linkdir, f"sub-{sub}_ses-{ses}.png")
     
             if os.path.isfile(src):
                 row[f'{col}_PASS'] = np.nan

@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 from atstaging.config import get, set_config
-from atstaging.outputs import setup_outputs_folder
+from atstaging.outputs import load_master, setup_outputs_folder
 
 # Configuration
 set_config('main')
@@ -57,8 +57,7 @@ amy = load_musestats('amyloid', preproc_folder=preproc_folder)
 tau = load_musestats('tau', preproc_folder=preproc_folder)
 
 # Load the master table to get CDR/amyloid information
-master_path = os.path.join(root_output_directory, 'masterTables', 'MASTER.csv')
-master = pd.read_csv(master_path, dtype={'Subject':str, 'Session':str})
+master = load_master()
 
 merger = master[['DataSet', 'Subject', 'Session', 'AmyloidPositive', 'CDRBinned']].copy()
 amy = merger.merge(amy, on=['Subject', 'Session'], how='inner')

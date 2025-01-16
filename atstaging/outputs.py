@@ -36,10 +36,11 @@ def load_master(master_folder=None, filters=True, features=True):
             lenbefore = len(master)
             tmpname = '__Keep__'
             filter_df = pd.read_csv(path, dtype={'Subject': str, 'Session': str, 'Keep': bool})
+            filter_df = filter_df[['Subject', 'Session', 'Keep']].copy()
             filter_df.columns = ['Subject', 'Session', tmpname]
             master = master.merge(filter_df, on=['Subject', 'Session'])
             master = master[master[tmpname]].copy()
-            master = master[[col for col in master.cols if col != tmpname]]
+            master = master[[col for col in master.columns if col != tmpname]]
             lenafter = len(master)
             print(f'    + # Records before: {lenbefore}; after: {lenafter}')
         print('    + Complete')

@@ -211,7 +211,6 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     )
 
     grouped['Age'] = (grouped['TauAmyloidMeanDate'] - birthage).dt.total_seconds() / (60 * 60 * 24 * 365.25)
-    grouped[['Age', 'NACCAGE']]
 
     # >>> Sex
     grouped['SexMale'] = (grouped['SEX'] == 1).astype(float)

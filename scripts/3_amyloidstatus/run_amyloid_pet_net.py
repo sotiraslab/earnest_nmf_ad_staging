@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 from atstaging.config import get, set_config
-from atstaging.outputs import setup_outputs_folder
+from atstaging.outputs import load_master, setup_outputs_folder
 from atstaging.preprocessing.execute import execute
 from atstaging.preprocessing.pipeline import paths_folder_to_dataframe
 
@@ -107,12 +107,11 @@ print(f'> Finished [{nice_output_path}].')
 
 # create version of MASTER with this information added
 print()
-print('> Creating version of MASTER with this information.')
+print('> Creating feature table to add to master.')
 master_folder = os.path.join(output_directory, 'masterTables')
-master = pd.read_csv(os.path.join(master_folder, 'MASTER.csv'), dtype={'Subject':str, 'Session':str})
-master = master.merge(nicetable, on=['Subject', 'Session'], how='left')
-master_output_path = os.path.join(master_folder, 'MASTER_APN.csv')
-master.to_csv(master_output_path, index=False)
+master_output_path = os.path.join(master_folder, 'FEATURE_AMYLOIDPETNET.csv')
+master_version = nicetable.drop(INPUT_AMYLOID_IMAGE, axis=1)
+master_version.to_csv(master_output_path, index=False)
 print(f'> Finished [{master_output_path}].')
 
 # create the diagnostic plot
@@ -218,6 +217,7 @@ def diagnostic_plot_AmyloidPETNet(df):
 
 print()
 print('> Creating diagnostic plot.')
+master = load_master() # this should now have the APN information added
 fig = diagnostic_plot_AmyloidPETNet(master)
 outpath = os.path.join(output_directory, 'amyloidpetnet', f'{RUN_NAME}_plot.png')
 plt.tight_layout()

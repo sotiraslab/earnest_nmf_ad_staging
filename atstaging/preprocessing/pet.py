@@ -349,9 +349,11 @@ def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
         '-out', out_registered,
         '-omat', out_transformation,
         '-cost', 'mutualinfo',
-        '-searchrx', '-60', '60',
-        '-searchry', '-60', '60',
-        '-searchrz', '-60', '60',
+        '-searchrx', '-30', '30',
+        '-searchry', '-30', '30',
+        '-searchrz', '-30', '30',
+        '-coarsesearch', '15',
+        '-finesearch', '2',
         '-dof', '6',
         '-v'
         ]

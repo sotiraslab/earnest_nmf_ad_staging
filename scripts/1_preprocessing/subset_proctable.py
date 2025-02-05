@@ -6,7 +6,7 @@ import os
 import pandas as pd
 
 from atstaging.config import get, set_config
-from atstaging.outputs import setup_outputs_folder
+from atstaging.outputs import load_master, setup_outputs_folder
 
 # config stuff
 set_config('main')
@@ -17,10 +17,7 @@ setup_outputs_folder(OUTPUTDIRECTORY)
 SAMPLE_PER_DATASET = 30
 
 # read in the master dataset
-try:
-    master = pd.read_csv(os.path.join(OUTPUTDIRECTORY, 'masterTables', 'MASTER.csv'))
-except Exception:
-    raise RuntimeError('Unable to load MASTER.csv.  Please check scripts/0_datasets/create_master.py')
+master = load_master()
 
 # filter
 print()

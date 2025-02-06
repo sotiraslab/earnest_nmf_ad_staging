@@ -351,7 +351,7 @@ def link_modalities(tau, amyloid, t1, subject_col='Subject',
 
     return grouped
 
-def load_csv_by_match(directory, pattern):
+def load_csv_by_match(directory, pattern, *args, **kwargs):
 
     output = None
     listdir = os.listdir(directory)
@@ -362,7 +362,7 @@ def load_csv_by_match(directory, pattern):
             break
 
     if output is not None:
-        df = pd.read_csv(output)
+        df = pd.read_csv(output, *args, **kwargs)
         return df
     else:
         raise FileNotFoundError(f'Unable to find file matching "{pattern}" in {directory}')

@@ -127,6 +127,7 @@ def create_feature_table(preproc_table, tabular_folder):
     ques['CDRBinned'] = bin_cdr(ques['CDR'])
     features = add_features_by_date(features, ques, fields=['CDR', 'CDRBinned'], a_subject='Subject', b_subject='Subject',
                                     a_date='TauAmyloidMeanDate', b_date='Date', b_name='CDR', drop_missing=False)
+    features['CDRSumBoxes'] = np.nan
 
     
     report_missingness(features)

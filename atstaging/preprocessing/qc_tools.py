@@ -126,8 +126,6 @@ def _backup(old_qctable, new_qctable, backup_dir, qctable_name):
 
     # Skip case 2: old is the same as most recent backup
     elif (backup_qctable is not None) and old_qctable.equals(backup_qctable):
-        print(backup_qctable)
-        print(old_qctable)
         print()
         print('-> BACKUP: Skipping backup; existing screenshot QC table is equal to most recent backup.')
         return
@@ -175,7 +173,8 @@ def create_imagestats(preproc_dir, paths_table,
             sub = paths_table.loc[index, 'Subject']
             ses = paths_table.loc[index, 'Session']
             
-            pct = round(((i + 1)/total) * 100, 2)
+            z = c * len(paths_table)
+            pct = round(((z + i + 1)/total) * 100, 2)
             vprint(f'  > #{i}, Index={index}, Subject={sub}, Session={ses} [{pct}%]')
             
             row = {}
@@ -282,7 +281,7 @@ def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='upd
     
             if os.path.isfile(src):
                 row[f'{col}_PASS'] = np.nan
-                row[f'{col}_NOTE'] = np.nan
+                row[f'{col}_NOTE'] = ''
                 _symlink(src, dest)
             else:
                 row[f'{col}_PASS'] = missing_str

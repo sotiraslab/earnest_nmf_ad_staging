@@ -306,7 +306,11 @@ def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='upd
     elif (save_behavior == 'update') and (old_qctable is None):
         new_qctable.to_csv(qctable_savepath, index=False)
     elif (save_behavior == 'update') and (old_qctable is not None):
-        new_qctable.update(old_qctable)
+        updater = old_qctable.drop(columns=['Index'])
+        updater = updater.set_index(['Subject', 'Session'])
+        new_qctable = new_qctable.set_index(['Subject', 'Session'])
+        new_qctable.update(updater)
+        new_qctable = new_qctable.reset_index()
         new_qctable.to_csv(qctable_savepath, index=False)
     elif (save_behavior == 'none') and (old_qctable is None):
         new_qctable.to_csv(qctable_savepath, index=False)

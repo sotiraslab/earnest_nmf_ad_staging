@@ -404,16 +404,21 @@ def read_loni_collection_folder(folder):
     concatted = pd.concat(dfs)
     return concatted
 
-def report_download_coverage(preproc_table, amy_paths='PathAmyloid', tau_paths='PathTau', t1_paths='PathT1'):
+def report_download_coverage(preproc_table, amy_paths='PathAmyloid', tau_paths='PathTau', t1_paths='PathT1',
+                             assume_from_na=True):
     df = preproc_table
 
-    present_tau = ~df[tau_paths].isna()
-    present_amyloid = ~df[amy_paths].isna()
-    present_t1 = ~df[t1_paths].isna()
+    present_tau = ~df[tau_paths].isna() if assume_from_na else pd.Series([os.path.isfile(x) for x in df[tau_paths]], index=df.index)
+    present_amyloid = ~df[amy_paths].isna() if assume_from_na else pd.Series([os.path.isfile(x) for x in df[amy_paths]], index=df.index)
+    present_t1 = ~df[t1_paths].isna() if assume_from_na else pd.Series([os.path.isfile(x) for x in df[t1_paths]], index=df.index)
 
     print()
     print('DOWNLOAD COVERAGE')
     print('-----------------')
+    msg = 'NOTE: Assuming non-NA paths exist (assume_from_na).' if assume_from_na else 'NOTE: Ran search to verify paths exists (! assume_from_na)'
+    print()
+    print(msg)
+    print()
     print(f'Scan groups to process: {len(df)}')
     print(f'All modalities available: {sum((present_tau & present_amyloid) & present_t1)}')
     print()

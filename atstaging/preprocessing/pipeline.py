@@ -61,8 +61,6 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     print('-------------------------')
     print(Style.RESET_ALL)
 
-    run_dependency_check()
-
     print()
     print(Fore.RED + Style.BRIGHT + 'INPUTS' + Style.RESET_ALL)
     print(f'  - Date: {str(dt.datetime.now())}')
@@ -162,6 +160,14 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     pathsjson = os.path.join(procpathsdir, f'sub-{subject}_ses-{session}.json')
     with open(pathsjson, 'w') as f:
         json.dump(PATHS, f, indent=4)
+
+    # # # # # # # #
+    # CHECK DEPENDENCIES
+    # # # # # # # #
+
+    # this was moved to right before processing
+    # because failed dependency checks halted processing prior to logging of record in the path table
+    run_dependency_check()
 
     # # # # # # # #
     # T1

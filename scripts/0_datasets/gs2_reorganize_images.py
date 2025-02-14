@@ -96,9 +96,16 @@ for i, (idx, row) in enumerate(convert_single.iterrows()):
     if os.path.isfile(image_dest_path) and not overwrite:
         print('  + Destination image already exists.')
         continue
-
-    Path(image_dest_folder).mkdir(parents=True, exist_ok=True)
-    run_dcm2niix(indir=image, outdir=image_dest_folder, name=image_dest_name, silent=True)
+    
+    try:
+        Path(image_dest_folder).mkdir(parents=True, exist_ok=True)
+        run_dcm2niix(indir=image, outdir=image_dest_folder, name=image_dest_name, silent=True)
+    except Exception as e:
+        print()
+        print('!!! !!! !!! !!!')
+        print('FAILURE: Error while processing image.')
+        print(repr(e))
+        print('!!! !!! !!! !!!')
 
 print('> Converting split images')
 for i, (idx, group) in enumerate(convert_quad.groupby(['QuadGroup'])):
@@ -134,13 +141,20 @@ for i, (idx, group) in enumerate(convert_quad.groupby(['QuadGroup'])):
     if os.path.isfile(image_dest_path) and not overwrite:
         print('  + Destination image already exists.')
         continue
-
-    Path(image_dest_folder).mkdir(parents=True, exist_ok=True)
-    print()
-    print('++++++++++++++')
-    merge_separated_dicom_frames(input_paths=images, output_path=image_dest_path)
-    print('++++++++++++++')
-    print()
+    
+    try:
+        Path(image_dest_folder).mkdir(parents=True, exist_ok=True)
+        print()
+        print('++++++++++++++')
+        merge_separated_dicom_frames(input_paths=images, output_path=image_dest_path)
+        print('++++++++++++++')
+        print()
+    except Exception as e:
+        print()
+        print('!!! !!! !!! !!!')
+        print('FAILURE: Error while processing image.')
+        print(repr(e))
+        print('!!! !!! !!! !!!')
 
 record_df = pd.DataFrame(records)
 record_df.to_csv(output_finallist, index=False)

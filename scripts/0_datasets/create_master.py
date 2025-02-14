@@ -72,7 +72,7 @@ def validate(df, name='< name not provided >'):
     results = []
 
     print()
-    print(f'Validating datset: {name}')
+    print(f'Validating datset: {Fore.YELLOW}{name}{Style.RESET_ALL}')
     print('========')
 
     res = _validate_columns()
@@ -115,6 +115,8 @@ for name, dataset in datasets.items():
 
     # validate
     validate(dataset, name=name)
+
+    print(Fore.YELLOW + str(len(dataset)) + Style.RESET_ALL + ' subjects')
 
     # proceed
     master.append(dataset[MASTER_COLUMNS].copy())

@@ -49,7 +49,7 @@ for folder in dataset_folders:
     fails = (~passing).sum().astype(int)
     total = len(passing)
     print(f'  - Passing: {passes} ({pct(passes, total)}%)')
-    print(f'  - Faliures: {fails} ({pct(fails, total)}%)')
+    print(f'  - Failures: {fails} ({pct(fails, total)}%)')
     print(f'  - Total: {total}')
 
 output = pd.concat(output)

@@ -13,7 +13,7 @@ import warnings
 from colorama import Fore, Style
 
 from atstaging.config import get
-from atstaging.preprocessing.execute import execute
+from atstaging.preprocessing.execute import execute, get_cli_path
 
 def _ants_registration_outputs(prefix):
     outputs = {
@@ -79,7 +79,7 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
 def apply_transform(moving, fixed, warp, output):
 
     command = [
-        'antsApplyTransforms',
+        get_cli_path('antsApplyTransforms'),
         '-d', '3',
         '-i', moving,
         '-r', fixed,
@@ -92,7 +92,7 @@ def apply_transform(moving, fixed, warp, output):
 def create_jacobian_determinant_image(fullwarp, out_jacobian):
 
     command = [
-        'CreateJacobianDeterminantImage',
+        get_cli_path('CreateJacobianDeterminantImage'),
         '3',
         fullwarp,
         out_jacobian
@@ -102,7 +102,7 @@ def create_jacobian_determinant_image(fullwarp, out_jacobian):
 def create_fullwarp_image(moving, reference, affine, warp, out_fullwarp):
 
     command = [
-        'antsApplyTransforms',
+        get_cli_path('antsApplyTransforms'),
         '-d', '3',
         '-i', moving,
         '-r', reference,
@@ -133,7 +133,6 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
         return
 
     # set paths
-    ANTSPATH = get('ants')
     REFERENCE = mni_brain if mni_brain is not None else get('mni152_brain')
 
     # files are created in the directory of the input brain,
@@ -148,7 +147,7 @@ def registration_mni_pipeline(brain, mni_brain=None, quick=True, transformation=
     # REGISTRATION
 
     basecommand = 'antsRegistrationSyNQuick.sh' if quick else 'antsRegistrationSyN.sh'
-    fullcommand = os.path.join(ANTSPATH, basecommand)
+    fullcommand = get_cli_path(basecommand)
     command = [
         fullcommand,
         '-d', '3',

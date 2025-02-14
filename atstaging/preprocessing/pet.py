@@ -16,7 +16,7 @@ import nibabel as nib
 import numpy as np
 
 from atstaging.config import get
-from atstaging.preprocessing.execute import execute
+from atstaging.preprocessing.execute import execute, get_cli_path
 from atstaging.preprocessing.conversion import ecat_to_nifti, run_dcm2niix
 from atstaging.preprocessing.reorient import reorient_image
 from atstaging.preprocessing.segmentation import compute_regional_statistics_MUSE
@@ -213,8 +213,7 @@ def prepare_registration_pet(pet, out_nifti=None,
 #     if out_transformation is None and out_registered is None:
 #         raise ValueError('Either `out_transformation` or `out_registered` must be provided.')
 
-#     FSLPATH = get('fsl')
-#     FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
+#     FLIRT = get_cli_path('flirt')
 #     CONVERT_XFM = os.path.join(FSLPATH, 'bin', 'convert_xfm')
 #     SCHEDULE3D_DOF3 = os.path.join(FSLPATH, 'etc', 'flirtsch', 'sch3Dtrans_3dof')
 
@@ -313,9 +312,8 @@ def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
         print(f'>>> Created temporary working directory: {WORKINGDIR}')
 
         # variables
-        ANTSPATH = get('ants')
         PREFIX = os.path.join(WORKINGDIR, '_temp_output')
-        ANTS_REGISTRATION = os.path.join(ANTSPATH, 'antsRegistrationSyN.sh')
+        ANTS_REGISTRATION = get_cli_path('antsRegistrationSyN.sh')
 
         command = [
             ANTS_REGISTRATION,
@@ -338,9 +336,8 @@ def rigid_pet_registration_ANTs(pet, t1, out_transformation, out_registered):
 
 def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
 
-    FSLPATH = get('fsl')
-    FLIRT = os.path.join(FSLPATH, 'bin', 'flirt')
-    C3D_AFFINE_TOOL = get('c3d_affine_tool')
+    FLIRT = get_cli_path('flirt')
+    C3D_AFFINE_TOOL = get_cli_path('c3d_affine_tool')
     
     command = [
         FLIRT,
@@ -410,14 +407,13 @@ def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mas
         print(f'>>> Created temporary working directory: {WORKINGDIR}')
 
         # variables
-        ANTSPATH = get('ants')
         PREFIX = os.path.join(WORKINGDIR, '_temp_output')
         OUTNAMES = _registration_outputs(PREFIX)
         REFERENCE = mni_brain if mni_brain is not None else get('mni152_brain')
 
         # software
-        ants_applytransforms = os.path.join(ANTSPATH, 'antsApplyTransforms')
-        ants_imagemath = os.path.join(ANTSPATH, 'ImageMath')
+        ants_applytransforms = get_cli_path('antsApplyTransforms')
+        ants_imagemath = get_cli_path('ImageMath')
 
         print()
         print(Fore.BLUE + Style.BRIGHT + 'PET Registration')
@@ -600,8 +596,7 @@ def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mas
 
 def run_mcflirt(inimg, outimg):
 
-    FSLDIR = get('fsl')
-    mcflirt = os.path.join(FSLDIR, 'bin', 'mcflirt')
+    mcflirt = get_cli_path('mcflirt')
     command = [mcflirt,
                '-in', inimg,
                '-out', outimg,

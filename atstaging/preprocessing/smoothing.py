@@ -16,8 +16,7 @@ import tempfile
 import nibabel as nib
 from nilearn.image import smooth_img
 
-from atstaging.config import get
-from atstaging.preprocessing.execute import execute
+from atstaging.preprocessing.execute import execute, get_cli_path
 
 def _get_next_smoothing_dimension(measured, target, xyz_cycle, tolerance=0.5):
     smoothness_complete = _smoothness_achieved_by_dimension(measured, target, tolerance)
@@ -48,8 +47,7 @@ def _get_next_smoothing_filter(current_filter, stepsize, measured, target, xyz_c
 def apply_3dFWHMx(imgpath, automask=True, difMAD=True, verbose=False):
 
     with tempfile.TemporaryDirectory() as WORKINGDIR:
-        AFNIPATH= get('afni')
-        PROG = os.path.join(AFNIPATH, '3dFWHMx')
+        PROG = get_cli_path('3dFWHMx')
         OUTPUT = os.path.join(WORKINGDIR, '3dfwhm.txt')
         command = [PROG,
                    '-input', imgpath,

@@ -1,13 +1,9 @@
 {
     "AUTOUSE": false,
-    "afni": "path/to/afni/bin",
     "amy_preproc_keep": ["registered"],
     "amyloidpetnet_directory": "/path/to/AmyloidPETNet",
     "amyloidpetnet_env": "p3.7torch1.8",
-    "ants": "path/to/ants/bin",
-    "c3d_affine_tool": "/path/to/c3d_affine_tool",
     "deepmrseg_env": "DeepMRSeg",
-    "fsl": "/usr/local/fsl",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "muse", "volumes", "qc-skullstrip", "qc-checkerboard"],
     "mri2mni_transformation": "s",

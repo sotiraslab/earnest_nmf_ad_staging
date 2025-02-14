@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 
 def execute(cmd, shell=False, verbose=True, env=None):
@@ -17,3 +18,6 @@ def execute(cmd, shell=False, verbose=True, env=None):
     return_code = popen.wait()
     if return_code:
         raise subprocess.CalledProcessError(return_code, cmd)
+
+def get_cli_path(command):
+    return shutil.which(command)

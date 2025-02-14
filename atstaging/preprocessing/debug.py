@@ -7,35 +7,36 @@ Created on Fri Sep  6 15:48:46 2024
 """
 
 from importlib.util import find_spec
-import os
 import subprocess
 
 from colorama import Fore, Style
 
 from atstaging.config import get
+from atstaging.preprocessing.execute import get_cli_path
 
 def _run(command):
     return subprocess.run(
         command,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+        stderr=subprocess.STDOUT
+        )
 
-def _check_which_command(command):
-    process = _run(['which', command])
+def _check_command_returns(command):
+    if isinstance(command, str):
+        command = [command]
+    process = _run(command)
     return process.returncode == 0, process
 
 def check_afni():
-    afni = get('afni')
-    command = os.path.join(afni, 'afni')
-    return _check_which_command(command)
+    path = get_cli_path('afni')
+    return path is not None, 'Checked for path with `atstaging.preprocessing.execute.get_cli_path()`'
 
 def check_ants():
-    ants = get('ants')
-    command = os.path.join(ants, 'antsRegistration')
-    return _check_which_command(command)
+    path = get_cli_path('antsRegistration')
+    return path is not None, 'Checked for path with `atstaging.preprocessing.execute.get_cli_path()`'
 
 def check_conda():
-    return _check_which_command('conda')
+    return _check_command_returns(['which', 'conda'])
 
 def check_deepmrseg():
     env = get('deepmrseg_env')
@@ -48,9 +49,8 @@ def check_deepmrseg():
     return process.returncode == 0, process
 
 def check_fsl():
-    fsl = get('fsl')
-    command = os.path.join(fsl, 'bin', 'fsl')
-    return _check_which_command(command)
+    path = get_cli_path('fsl')
+    return path is not None, 'Checked for path with `atstaging.preprocessing.execute.get_cli_path()`'
 
 def check_packages():
 

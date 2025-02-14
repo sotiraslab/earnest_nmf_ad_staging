@@ -9,6 +9,7 @@ Created on Thu Sep 19 10:48:35 2024
 import datetime as dt
 import os
 import re
+import warnings
 
 import nibabel as nib
 import numpy as np
@@ -340,7 +341,8 @@ def create_epilogues(preproc_dir, extension='.slurmlog'):
         end = re.search('End Slurm Epilogue', logtext)
         
         if (not start) or (not end):
-            raise RuntimeError(f'Unable to parse SLURM epilogue for log {log}.')
+            warnings.warn(f'Unable to parse SLURM epilogue for log {log}.', RuntimeWarning)
+            continue
         
         epilogue = logtext[start.start():end.end()]
         colon_lines = [line for line in epilogue.splitlines() if ' : ' in line]

@@ -336,7 +336,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
 
     if PROCESS_AMY:
         AMYINFO = {}
-        amystats = amynamer.get_path('petstats')
+        amy_petstats = amynamer.get_path('petstats')
 
         print()
         tsp('Beginnging with amyloid-PET processing...')
@@ -363,7 +363,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         amy_pet2mni = amynamer.get_path('fullmat') if is_linear_transformation else amynamer.get_path('fullwarp')
         amy_rigid = amynamer.get_path('rigid')
         amy_suvr = amynamer.get_path('origsuvr')
-        amy_stats = amynamer.get_path('musestats')
+        amy_regional_suvrs = amynamer.get_path('musestats')
         
         if not os.path.exists(amy_registered) or overwrite_pet:
             print()
@@ -382,15 +382,15 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
                             out_pet2mni=amy_pet2mni,
                             out_rigid_reg=amy_rigid,
                             out_suvr=amy_suvr,
-                            out_regional_suvrs=amy_stats)
+                            out_regional_suvrs=amy_regional_suvrs)
             AMYINFO.update(out)
             end_command('amyloid-registration')
         else:
             print()
             tsp('Existing registered image for amyloid detected; not rerunning.')
 
-        if (not os.path.exists(amystats) or overwrite_pet) and len(AMYINFO):
-            with open(amystats, 'w') as f:
+        if (not os.path.exists(amy_petstats) or overwrite_pet) and len(AMYINFO):
+            with open(amy_petstats, 'w') as f:
                 json.dump(AMYINFO, f, indent=4)
 
         # amyloid QC images
@@ -401,17 +401,32 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         print()
         tsp('Generating QC images')
 
-        begin_command('qc-suvr')
-        suvr_qc_image(amy_suvr, output=suvr_qc)
-        end_command('qc-suvr')
+        # Some of these images are dependent on files which byproducts of the registration routine
+        # They may not be present if the user didn't specify they are kept in their config
+        # so some if/else checks are done to verify.
+        # alternative would be to force the rerunning of the PET registration part
+        if os.path.isfile(amy_suvr):
+            begin_command('qc-suvr')
+            suvr_qc_image(amy_suvr, output=suvr_qc)
+            end_command('qc-suvr')
+        else:
+            tsp('Skipping QC-SUVR image (native space SUVR image not saved).')
 
-        begin_command('qc-coregistration')
-        pet_t1_registration_qc_image(registeredpet=amy_rigid, t1=preskullstrip, output=coreg_qc)
-        end_command('qc-coregistration')
+        if os.path.isfile(amy_rigid) and os.path.isfile(preskullstrip):
+            begin_command('qc-coregistration')
+            pet_t1_registration_qc_image(registeredpet=amy_rigid, t1=preskullstrip, output=coreg_qc)
+            end_command('qc-coregistration')
+        else:
+            tsp('Skipping QC-SUVR image (coregistrered PET image not saved).')
 
-        begin_command('qc-registration')
-        pet_mni_registration_qc_image(registeredpet=amy_registered, mni=mni_brain, output=petreg_qc)
-        end_command('qc-registration')
+        # this one should actually always work, but keep if/else for redundancy
+        if os.path.isfile(amy_registered):
+            begin_command('qc-registration')
+            pet_mni_registration_qc_image(registeredpet=amy_registered, mni=mni_brain, output=petreg_qc)
+            end_command('qc-registration')
+        else:
+            tsp('Skipping QC-SUVR image (MNI registered PET image not available).')
+
     else:
         print()
         tsp("No amyloid image or amyloid tracer provided; not doing amyloid processing.")
@@ -422,7 +437,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
 
     if PROCESS_TAU:
         TAUINFO = {}
-        taustats = taunamer.get_path('petstats')
+        tau_petstats = taunamer.get_path('petstats')
         
         print()
         tsp('Beginnging with tau-PET processing...')
@@ -449,7 +464,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tau_pet2mni = taunamer.get_path('fullmat') if is_linear_transformation else taunamer.get_path('fullwarp')
         tau_rigid = taunamer.get_path('rigid')
         tau_suvr = taunamer.get_path('origsuvr')
-        tau_stats = taunamer.get_path('musestats')
+        tau_regional_suvrs = taunamer.get_path('musestats')
         
         if not os.path.exists(tau_registered) or overwrite_pet:
             print()
@@ -468,15 +483,15 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
                             out_pet2mni=tau_pet2mni,
                             out_rigid_reg=tau_rigid,
                             out_suvr=tau_suvr,
-                            out_regional_suvrs=tau_stats)
+                            out_regional_suvrs=tau_regional_suvrs)
             TAUINFO.update(info)
             end_command('tau-registration')
         else:
             print()
             tsp('Existing registered image for tau detected; not rerunning.')
 
-        if (not os.path.exists(taustats) or overwrite_pet) and len(TAUINFO):
-            with open(taustats, 'w') as f:
+        if (not os.path.exists(tau_petstats) or overwrite_pet) and len(TAUINFO):
+            with open(tau_petstats, 'w') as f:
                 json.dump(TAUINFO, f, indent=4)
 
         # tau QC images
@@ -484,20 +499,32 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         coreg_qc = taunamer.get_path('qc-coregistration')
         petreg_qc = taunamer.get_path('qc-registration')
 
-        print()
-        tsp('Generating QC images')
+        # Some of these images are dependent on files which byproducts of the registration routine
+        # They may not be present if the user didn't specify they are kept in their config
+        # so some if/else checks are done to verify.
+        # alternative would be to force the rerunning of the PET registration part
+        if os.path.isfile(tau_suvr):
+            begin_command('qc-suvr')
+            suvr_qc_image(tau_suvr, output=suvr_qc)
+            end_command('qc-suvr')
+        else:
+            tsp('Skipping QC-SUVR image (native space SUVR image not saved).')
 
-        begin_command('qc-suvr')
-        suvr_qc_image(tau_suvr, output=suvr_qc)
-        end_command('qc-suvr')
+        if os.path.isfile(tau_rigid) and os.path.isfile(preskullstrip):
+            begin_command('qc-coregistration')
+            pet_t1_registration_qc_image(registeredpet=tau_rigid, t1=preskullstrip, output=coreg_qc)
+            end_command('qc-coregistration')
+        else:
+            tsp('Skipping QC-SUVR image (coregistrered PET image not saved).')
 
-        begin_command('qc-coregistration')
-        pet_t1_registration_qc_image(registeredpet=tau_rigid, t1=preskullstrip, output=coreg_qc)
-        end_command('qc-coregistration')
+        # this one should actually always work, but keep if/else for redundancy
+        if os.path.isfile(tau_registered):
+            begin_command('qc-registration')
+            pet_mni_registration_qc_image(registeredpet=tau_registered, mni=mni_brain, output=petreg_qc)
+            end_command('qc-registration')
+        else:
+            tsp('Skipping QC-SUVR image (MNI registered PET image not available).')
 
-        begin_command('qc-registration')
-        pet_mni_registration_qc_image(registeredpet=tau_registered, mni=mni_brain, output=petreg_qc)
-        end_command('qc-registration')
     else:
         print()
         tsp("No tau image or tau tracer provided; not doing tau processing.")

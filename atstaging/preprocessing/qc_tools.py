@@ -306,9 +306,26 @@ def create_screenshotQC(preproc_dir, paths_table, output_dir, save_behavior='upd
         new_qctable.to_csv(qctable_savepath, index=False)
     elif (save_behavior == 'update') and (old_qctable is None):
         new_qctable.to_csv(qctable_savepath, index=False)
+
+    # this is probably the most important case, which has caused most bugs
+    # updating the new table with old QC information
     elif (save_behavior == 'update') and (old_qctable is not None):
+
+        # index is removed, as that depends on the number of subjects submitted
         updater = old_qctable.drop(columns=['Index'])
+
+        # we need an actual reindex/merge on Subject/Session
         updater = updater.set_index(['Subject', 'Session'])
+
+        # detect & remove MISSING entries in old table, in case they have been generated now
+        score_cols = [col for col in updater.columns if col.endswith('_PASS')]
+        notes_cols = [col for col in updater.columns if col.endswith('_NOTE')]
+        for col in score_cols:
+            updater[col] = pd.to_numeric(updater[col], errors='coerce')
+        for col in notes_cols:
+            updater.loc[updater[col].eq(missing_str), col] = np.nan
+
+        # join the old and new
         new_qctable = new_qctable.set_index(['Subject', 'Session'])
         new_qctable.update(updater)
         new_qctable = new_qctable.reset_index()

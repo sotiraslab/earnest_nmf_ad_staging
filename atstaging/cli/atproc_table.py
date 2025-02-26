@@ -163,25 +163,25 @@ def run_at_preproc_table(table, slurm=True, force=False, number=None, config=Non
             at_mri_pipeline_SLURM(
                 subject=str(subject),
                 session=str(session),
-                output_directory=str(output_directory),
-                t1_img=str(t1_img),
-                amyloid_img=str(amyloid_img),
-                amyloid_tracer=str(amyloid_tracer),
-                tau_img=str(tau_img),
-                tau_tracer=str(tau_tracer),
-                config=str(config)
+                output_directory=output_directory,
+                t1_img=t1_img,
+                amyloid_img=amyloid_img,
+                amyloid_tracer=amyloid_tracer,
+                tau_img=tau_img,
+                tau_tracer=tau_tracer,
+                config=config
                 )
         else:
             at_mri_pipeline(
                 subject=str(subject),
                 session=str(session),
-                output_directory=str(output_directory),
-                t1_img=str(t1_img),
-                amyloid_img=str(amyloid_img),
-                amyloid_tracer=str(amyloid_tracer),
-                tau_img=str(tau_img),
-                tau_tracer=str(tau_tracer),
-                config=str(config)
+                output_directory=output_directory,
+                t1_img=t1_img,
+                amyloid_img=amyloid_img,
+                amyloid_tracer=amyloid_tracer,
+                tau_img=tau_img,
+                tau_tracer=tau_tracer,
+                config=config
             )
         time.sleep(0.5)
 

@@ -6,9 +6,9 @@ import pandas as pd
 from atstaging.dataorg.utils import link_modalities
 
 # VARIABLES
-PET_SEARCH = '/Users/earnestt1234/Downloads/idaSearch_10_28_2024.csv'
-T1_SEARCH = '/Users/earnestt1234/Downloads/idaSearch_10_14_2024.csv'
-OUTPUT_DIRECTORY = '/Users/earnestt1234/Desktop'
+PET_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_pet_search.csv'
+T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_mri_search.csv'
+OUTPUT_DIRECTORY = '/scratch/tom.earnest/atstaging/searches/'
 
 # load data
 pet_search = pd.read_csv(PET_SEARCH)
@@ -31,9 +31,18 @@ def filter_adni_t1(t1_search, add_columns=False):
                 'smartbrain',
                 'T2',
                 'fmri',
-                'average dc']
+                'average dc',
+                'cal ',
+                'Cal Head 24',
+                'ASSET Cal',
+                '8hrbrain',
+                't1_fl2d_sag',
+                'Take off auto send',
+                'AXIAL RFORMAT 1',
+               ]
     pat = '|'.join(unwanted)
     t1 = t1[~t1['Description'].str.contains(pat, case=False, regex=True)]
+    t1 = t1[~t1['Description'].eq('CORONAL')]
 
     # sort the dataset
     t1['Study Date'] = pd.to_datetime(t1['Study Date'])
@@ -137,14 +146,14 @@ def save_loni_search_field(series, outfile):
     text = ','.join(series)
     with open(outfile, 'w') as f:
         f.write(text)
+        f.write('\n')
 
 a = merged['Image IDTau'].astype(int).astype(str)
 t = merged['Image IDAmyloid'].astype(int).astype(str)
 n = merged['Image IDT1'].astype(int).astype(str)
 
-save_loni_search_field(a, os.path.join(OUTPUT_DIRECTORY, 'tau_ids.txt'))
-save_loni_search_field(t, os.path.join(OUTPUT_DIRECTORY, 'amyloid_ids.txt'))
-save_loni_search_field(n, os.path.join(OUTPUT_DIRECTORY, 't1_ids.txt'))
-
+save_loni_search_field(a, os.path.join(OUTPUT_DIRECTORY, 'adni_tau_ids.txt'))
+save_loni_search_field(t, os.path.join(OUTPUT_DIRECTORY, 'adni_amyloid_ids.txt'))
+save_loni_search_field(n, os.path.join(OUTPUT_DIRECTORY, 'adni_t1_ids.txt'))
 
 save_loni_search_field(pd.concat([a, t, n]), os.path.join(OUTPUT_DIRECTORY, 'all_ids.txt'))

@@ -60,3 +60,11 @@ for dataset in datasets:
     outpath = os.path.join(OUTPUTDIRECTORY, 'preprocessing', 'preproc_tables', f'{dataset}.csv')
     sub.to_csv(outpath, index=False)
     print(f'Done.  [{outpath}]')
+
+    # HABSHD gets split in 2 cuz its so big
+    if dataset == 'HABSHD':
+        hlen = len(sub) // 2
+        sub1 = sub.iloc[:hlen, :].copy()
+        sub2 = sub.iloc[hlen:, :].copy()
+        sub1.to_csv(os.path.join(OUTPUTDIRECTORY, 'preprocessing', 'preproc_tables', f'{dataset}_half1.csv'), index=False)
+        sub2.to_csv(os.path.join(OUTPUTDIRECTORY, 'preprocessing', 'preproc_tables', f'{dataset}_half2.csv'), index=False)

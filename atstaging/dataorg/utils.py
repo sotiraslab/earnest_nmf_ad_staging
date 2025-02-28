@@ -85,16 +85,17 @@ def apply_amyloid_pos_filter(df, subject_col='Subject', positivity_col='AmyloidP
     return df.groupby(subject_col, as_index=False, group_keys=False)[df.columns].apply(amyfilter)
 
 def assign_training_validation(df, omit_non_ad_training=True, subject='Subject',
-                               date='TauAmyloidMeanDate'):
+                               date='TauAmyloidMeanDate', positivity_col='AmyloidPositive',
+                               destination_col='Division'):
     df = df.sort_values([subject, date])
     baseline = df.groupby(subject)[date].idxmin()
 
     training_type = np.where(df['TracerAmyloid'].eq('FBP') & df['TracerTau'].eq('FTP'), 'Training', 'Validation')
     visit_type = np.where(df.index.isin(baseline.values), 'Baseline', 'Followup')
-    df['Division'] = visit_type + training_type
+    df[destination_col] = visit_type + training_type
 
     if omit_non_ad_training:
-        df = df.loc[~(df['Division'].eq('BaselineTraining') & (df['CDR'].ge(0.5) | df['CDR'].isna()) & df['AmyloidPositive'].eq(0.0)), :].copy()
+        df = df.loc[~(df[destination_col].eq('BaselineTraining') & (df['CDR'].ge(0.5) | df['CDR'].isna()) & df[positivity_col].eq(0.0)), :].copy()
 
     return df
 

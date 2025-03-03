@@ -1,6 +1,7 @@
 import os
 
 from colorama import Fore, Style
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from atstaging.config import get, set_config
@@ -134,3 +135,72 @@ outpath = os.path.join(OUTPUTDIRECTORY, 'masterTables', 'MASTER.csv')
 print()
 print(f'Saving master dataset at "{outpath}".')
 master.to_csv(outpath, index=False)
+
+# master plot
+def age_visit_plot(df):
+
+    # configuration
+    COLORS = {
+        'ADNI': 'yellowgreen',
+        'A4': 'steelblue',
+        'OASIS': 'burlywood',
+        'HABSHD': 'slategray',
+        'HABS': 'firebrick',
+        'GS1': 'plum',
+        'GS2': 'darkviolet',
+        'SCAN': 'darkblue'
+    }
+    AGEMIN = 40
+    AGEMAX = 100
+
+    fig = plt.figure(figsize=(8, 8))
+    
+    # assign group number
+    df['GroupNo'] = df.groupby('Subject', sort=False).ngroup()
+    df['Color'] = df['DataSet'].map(COLORS)
+    
+    # dots
+    for index, frame in df.groupby('DataSet', sort=False):
+        x = frame['Age']
+        y = frame['GroupNo']
+        color = frame['Color'].values[0]
+        dataset = frame['DataSet'].values[0]
+    
+        plt.scatter(x, y, color=color, alpha=0.7, zorder=2, edgecolor='none', label=dataset)
+    
+    # lines
+    for index, frame in df.groupby('Subject', sort=False):
+        x = frame['Age']
+        y = frame['GroupNo']
+        color = frame['Color'].values[0]
+        
+        plt.plot(x, y, color=color, alpha=0.5, zorder=1)
+    
+    plt.legend()
+    plt.xlim(AGEMIN, AGEMAX)
+    plt.grid()
+    plt.xlabel('Age')
+    plt.ylabel('Subject Index')
+
+    return fig
+
+print()
+print('Creating spaghetti plots...')
+
+# output directory
+odir = os.path.join(OUTPUTDIRECTORY, 'plots', 'master_spaghetti')
+if not os.path.isdir(odir):
+    os.mkdir(odir)
+
+# overall figure
+fig = age_visit_plot(master)
+opath = os.path.join(odir, 'alldatasets.png')
+fig.savefig(opath, dpi=300)
+
+# by dataset
+for dataset in master['DataSet'].unique():
+    df = master[master['DataSet'].eq(dataset)].copy()
+    fig = age_visit_plot(df)
+    opath = os.path.join(odir, f'{dataset}.png')
+    fig.savefig(opath, dpi=300)
+print(f'Done [{odir}]')

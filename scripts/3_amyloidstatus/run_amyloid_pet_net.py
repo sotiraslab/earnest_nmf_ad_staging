@@ -165,7 +165,7 @@ def diagnostic_plot_AmyloidPETNet(df):
             ys = data['APNLogit']
             xs = jitter_ys(ys, xcenter=col1_center, spread=column_halfwidth)
             color = np.where(ys < 0, 'blue', 'red')
-            ax.scatter(xs, ys, c=color, edgecolors='blue')
+            ax.scatter(xs, ys, c=color, edgecolors='blue', alpha=0.4)
             tn = (ys < 0).sum()
             fp = (ys >= 0).sum()
         else:
@@ -178,7 +178,7 @@ def diagnostic_plot_AmyloidPETNet(df):
             ys = data['APNLogit']
             xs = jitter_ys(ys, xcenter=col2_center, spread=column_halfwidth)
             color = np.where(ys < 0, 'blue', 'red')
-            ax.scatter(xs, ys, c=color, edgecolors='red')
+            ax.scatter(xs, ys, c=color, edgecolors='red', alpha=0.4)
             tp = (ys >= 0).sum()
             fn = (ys < 0).sum()
         else:
@@ -191,7 +191,7 @@ def diagnostic_plot_AmyloidPETNet(df):
             ys = data['APNLogit']
             xs = jitter_ys(ys, xcenter=col3_center, spread=column_halfwidth)
             color = np.where(ys < 0, 'blue', 'red')
-            ax.scatter(xs, ys, c=color)
+            ax.scatter(xs, ys, c=color,  alpha=0.4)
     
         label = f'{dataset}\n[{tp}/{tn}/{fp}/{fn}]'
         labels.append(label)

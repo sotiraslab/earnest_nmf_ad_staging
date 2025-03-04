@@ -186,6 +186,7 @@ def age_visit_plot(df):
 
 print()
 print('Creating spaghetti plots...')
+plotdata = master.copy().sort_values('Age')
 
 # output directory
 odir = os.path.join(OUTPUTDIRECTORY, 'plots', 'master_spaghetti')
@@ -193,13 +194,13 @@ if not os.path.isdir(odir):
     os.mkdir(odir)
 
 # overall figure
-fig = age_visit_plot(master)
+fig = age_visit_plot(plotdata)
 opath = os.path.join(odir, 'alldatasets.png')
 fig.savefig(opath, dpi=300)
 
 # by dataset
-for dataset in master['DataSet'].unique():
-    df = master[master['DataSet'].eq(dataset)].copy()
+for dataset in plotdata['DataSet'].unique():
+    df = plotdata[plotdata['DataSet'].eq(dataset)].copy()
     fig = age_visit_plot(df)
     opath = os.path.join(odir, f'{dataset}.png')
     fig.savefig(opath, dpi=300)

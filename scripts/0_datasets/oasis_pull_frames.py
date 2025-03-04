@@ -40,6 +40,7 @@ set_config('main')
 
 OASIS3_FOLDER = '/ceph/chpc/rcif_datasets/oasis/OASIS3'
 OASIS3AV1451_FOLDER = '/ceph/chpc/rcif_datasets/oasis/OASIS3AV1451'
+OASIS3AV1451LONG_FOLDER = '/ceph/chpc/rcif_datasets/oasis/OASIS3AV1451L'
 OASIS_COPY_DIRECTORY = '/scratch/tom.earnest/oasis3_frame_selection'
 OVERWRITE_COPY = False
 OUTPUT_FOLDER = get('output_directory')
@@ -53,6 +54,7 @@ CACHEDIR = os.path.join(OUTPUT_FOLDER, 'downloadLists')
 # # # # # # # # # #
 oasis3_downloads = oasis3_image_list(OASIS3_FOLDER, cache_dir=CACHEDIR, use_cache=USE_CACHE, cache_tag='oasis3')
 oasis3av1451_downloads = oasis3_image_list(OASIS3AV1451_FOLDER, cache_dir=CACHEDIR, use_cache=USE_CACHE, cache_tag='oasis3av1451')
+oasis3av1451LONG_downloads = oasis3_image_list(OASIS3AV1451LONG_FOLDER, cache_dir=CACHEDIR, use_cache=USE_CACHE, cache_tag='oasis3av1451LONG')
 
 # PART 2: PULL THE FRAMES OF INTEREST FOR TAU
 # # # # # # # # # #
@@ -60,10 +62,13 @@ oasis3av1451_downloads = oasis3_image_list(OASIS3AV1451_FOLDER, cache_dir=CACHED
 # NOTE: "DRY_RUN" will not do the copying, so needs to be set to False in order to actually prepare images
 #       but can be useful for developing/debugging
 
+# 3/3/2025: Added to get longitudinal tau images as well as BL
+alltau_downloads = pd.concat([oasis3av1451_downloads, oasis3av1451LONG_downloads])
+
 # start with tau - this is a smaller number of images, and can be used to limit the amyloid search to only
 # people with tau
 tau_conversion = oasis_table_pull_PET_frames(
-    table=oasis3av1451_downloads,
+    table=alltau_downloads,
     output_directory=os.path.join(OASIS_COPY_DIRECTORY, 'tau'),
     dry_run=DRY_RUN,
     overwrite=OVERWRITE_COPY
@@ -72,7 +77,7 @@ tau_conversion = oasis_table_pull_PET_frames(
 # handle duplicate images in tau
 # there are a few people who have a full dynamic image and one with 6 frames, which both appear usable
 # we take the dynamic one
-tau_conversion = tau_conversion.sort_values(['sub', 'ses', 'src_shape']).groupby('sub').head(1)
+tau_conversion = tau_conversion.sort_values(['sub', 'ses', 'src_shape']).groupby(['sub', 'ses']).head(1)
 
 # save the record
 tau_conversion.to_csv(os.path.join(OUTPUT_FOLDER, 'downloadLists', 'oasis3_tau_conversion.csv'), index=False)
@@ -104,7 +109,7 @@ merge = tau_joiner.merge(amy_joiner, how='left', on='sub', suffixes=['_tau', '_a
 merge = merge[~merge['ses_amyloid'].isna()]
 merge['delta'] = (merge['ses_tau'] - merge['ses_amyloid']).abs()
 
-group = merge.loc[merge.groupby('sub')['delta'].idxmin().values, :]
+group = merge.loc[merge.groupby(['sub', 'ses_tau'])['delta'].idxmin().values, :]
 group = group.loc[group['delta'].le(365), :]
 
 amy_downloads['id'] = amy_downloads['sub'] + amy_downloads['ses'].str.lstrip('d').astype(int).astype(str)
@@ -135,7 +140,7 @@ merge_mri = pet_joiner.merge(mri_joiner, how='left', on='sub', suffixes=['_pet',
 merge_mri = merge_mri[~merge_mri['ses_mri'].isna()]
 merge_mri['delta'] = (merge_mri['ses_pet'] - merge_mri['ses_mri']).abs()
 
-group_mri = merge_mri.loc[merge_mri.groupby('sub')['delta'].idxmin().values, :]
+group_mri = merge_mri.loc[merge_mri.groupby(['sub', 'ses_tau'])['delta'].idxmin().values, :]
 group_mri = group_mri.loc[group_mri['delta'].le(365), :]
 
 mri_downloads['id'] = mri_downloads['sub'] + mri_downloads['ses'].str.lstrip('d').astype(int).astype(str)

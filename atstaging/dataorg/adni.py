@@ -21,24 +21,25 @@ from atstaging.dataorg.utils import (
     report_missingness
 )
 
-def create_subject_table_from_combined_search(image_search):
-    df = pd.read_csv(image_search)
-
-    amy = df.loc[df['Description'].eq('AV45 Co-registered, Averaged') |
-                 df['Description'].eq('FBB Co-registered, Averaged'), :].copy()
-    
-    tau = df.loc[df['Description'].eq('AV1451 Co-registered, Averaged') |
-                 df['Description'].eq('MK6240 Co-registered, Averaged') |
-                 df['Description'].eq('PI2620 Co-registered, Averaged'), :].copy()
-    
-    t1 = df.loc[~ (df['Description'].isin(amy['Description']) | df['Description'].isin(tau['Description'])), :].copy()
+def create_subject_table(selected_amyloid_search, selected_tau_search, selected_t1_search):
+    amy = pd.read_csv(selected_amyloid_search)
+    tau = pd.read_csv(selected_tau_search)
+    t1 = pd.read_csv(selected_t1_search)
 
     # select columns
     def select(df):
-        cols = ['Image Data ID', 'Subject', 'Description',
-                'Acq Date']
+        cols = ['Image ID', 'Subject ID', 'Description', 'Study Date']
+        if 'Imaging Protocol' in df.columns:
+            cols += ['Imaging Protocol']
         tmp = df[cols]
-        tmp = tmp.rename(columns={'Image Data ID': 'ImageID', 'Acq Date': 'ScanDate'})
+        tmp = tmp.rename(columns={'Subject ID': 'Subject', 'Image ID': 'ImageID', 'Study Date': 'ScanDate'})
+
+        # images from site 053 are omitted
+        # The raw tau images here are in HRRT format (hard to convert)
+        # And the processed images have some of the gradient artifcats (unusable)
+        site = tmp['Subject'].str[0:3]
+        tmp = tmp[site.ne('053')]
+
         return tmp
 
     amy = select(amy)
@@ -46,17 +47,18 @@ def create_subject_table_from_combined_search(image_search):
     t1 = select(t1)
 
     # label tracers
-    amy['Tracer'] = None
+    amy['Tracer'] = ''
     amy.loc[amy['Description'].str.contains('AV45'), 'Tracer'] = 'FBP'
     amy.loc[amy['Description'].str.contains('FBB'), 'Tracer'] = 'FBB'
-    if amy['Tracer'].isna().any():
+    if amy['Tracer'].eq('').any():
         raise ValueError('Unable to detect tracer for some rows; recheck logic for assigning ADNI tracers.')
 
-    tau['Tracer'] = None
+    tau['Tracer'] = ''
     tau.loc[tau['Description'].str.contains('AV1451'), 'Tracer'] = 'FTP'
     tau.loc[tau['Description'].str.contains('MK6240'), 'Tracer'] = 'M62'
     tau.loc[tau['Description'].str.contains('PI2620'), 'Tracer'] = 'P26'
-    if amy['Tracer'].isna().any():
+    tau.loc[tau['Imaging Protocol'].str.contains('AV1451') & (~tau['Imaging Protocol'].isna()), 'Tracer'] = 'FTP'
+    if tau['Tracer'].eq('').any():
         raise ValueError('Unable to detect tracer for some rows; recheck logic for assigning ADNI tracers.')
 
     result = link_modalities(tau, amy, t1, extra_tau_columns=['ImageID'], extra_amyloid_columns=['ImageID'], extra_t1_columns=['ImageID'])
@@ -65,9 +67,9 @@ def create_subject_table_from_combined_search(image_search):
 def create_preproc_table(subject_table, download_table):
 
     df = subject_table
-    df['ImageIDTau'] = df['ImageIDTau'].str.replace('D', 'I')
-    df['ImageIDAmyloid'] = df['ImageIDAmyloid'].str.replace('D', 'I')
-    df['ImageIDT1'] = df['ImageIDT1'].str.replace('D', 'I')
+    df['ImageIDTau'] = 'I' + df['ImageIDTau'].astype(str)
+    df['ImageIDAmyloid'] =  'I' + df['ImageIDAmyloid'].astype(str)
+    df['ImageIDT1'] = 'I' + df['ImageIDT1'].astype(str)
 
     mapper = download_table['Path']
     mapper.index = download_table['ImageID']
@@ -117,8 +119,7 @@ def create_feature_table(preproc_table, tabular_folder):
     amyloid['AmyloidPositive'] = amyloid['AMYLOID_STATUS']
     features = add_features_by_date(features, amyloid, fields=['AmyloidPositive'],
                                     a_subject='Subject', a_date='ScanDateAmyloid',
-                                    b_subject='PTID', b_date='DateAmyloidUCB', b_name='UCBAMY',
-                                    gap_allowed='90D', include_gap_cols=False)
+                                    b_subject='PTID', b_date='DateAmyloidUCB', b_name='UCBAMY', include_gap_cols=False)
 
     # CDR
     cdr['CDR'] = cdr['CDGLOBAL']
@@ -127,8 +128,7 @@ def create_feature_table(preproc_table, tabular_folder):
     cdr = cdr.loc[cdr['CDR'].ge(0)]
     features = add_features_by_date(features, cdr, fields=['CDR', 'CDRSumBoxes', 'CDRBinned'],
                                     a_subject='Subject', a_date='TauAmyloidMeanDate',
-                                    b_subject='PTID', b_date='VISDATE', b_name='CDRVisit',
-                                    gap_allowed='180D', include_gap_cols=True)
+                                    b_subject='PTID', b_date='VISDATE', b_name='CDRVisit', include_gap_cols=True)
     
     report_missingness(features)
     

@@ -234,16 +234,19 @@ def list_loni_images(directory, show_count=True, count_every=100):
                     # can finally look at the images now
                     # remove non-image files just in case
                     imagefiles = [i for i in os.listdir(imageidfolder)
-                                  if i.endswith(('.dcm', '.nii', '.nii.gz'))]
+                                  if i.endswith(('.dcm', '.nii', '.nii.gz', '.v'))]
                     if not imagefiles:
                         continue
 
                     img = imagefiles[0] # example image
                     is_dicom = img.lower().endswith('dcm')
+                    is_ecat = img.lower().endswith('.v')
                     is_nifti = img.lower().endswith(('.nii', '.nii.gz'))
 
                     if is_dicom:
                         filetype = 'DICOM'
+                    elif is_ecat:
+                        filetype = 'ECAT'
                     elif is_nifti:
                         filetype = 'NIFTI'
                     else:
@@ -256,10 +259,12 @@ def list_loni_images(directory, show_count=True, count_every=100):
                     row['Date'] = pd.to_datetime(date, format=date_fmt)
                     row['FileType'] = filetype
                     row['ImageID'] = imageid
-                    if is_nifti:
-                        row['Path'] = os.path.join(imageidfolder, img)
-                    else:
+
+                    if is_dicom:
                         row['Path'] = imageidfolder
+                    else:
+                        row['Path'] = os.path.join(imageidfolder, img)
+                        
                     rows.append(row)
 
                     c += 1

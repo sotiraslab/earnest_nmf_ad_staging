@@ -9,6 +9,7 @@ from atstaging.dataorg.utils import link_modalities
 PET_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_pet_search.csv'
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_mri_search.csv'
 OUTPUT_DIRECTORY = '/scratch/tom.earnest/atstaging/searches/'
+USE_RAW_IMAGE_FOR_SITES = ['041', '053', '094', '109', '127']
 
 # load data
 pet_search = pd.read_csv(PET_SEARCH)
@@ -105,7 +106,22 @@ def filter_adni_t1(t1_search, add_columns=False):
 
     return grouped
 
-def filter_pet(pet_search):
+def filter_pet_raw(pet_search):
+    pet_search['Study Date'] = pd.to_datetime(pet_search['Study Date'])
+    pet_search = pet_search.sort_values(['Subject ID', 'Study Date'])
+    pet_search['Imaging Protocol'] = pet_search.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
+    pet_search = pet_search[pet_search['Type'].eq('Original')].copy()
+
+    amyloid = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV45') |
+                              pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-FBB'))].copy()
+
+    tau = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV1451') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-MK6240') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-PI2620'))].copy()
+
+    return amyloid, tau
+
+def filter_pet_proc(pet_search):
     pet_search['Study Date'] = pd.to_datetime(pet_search['Study Date'])
     pet_search = pet_search.sort_values(['Subject ID', 'Study Date'])
     pet_search['Imaging Protocol'] = pet_search.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
@@ -122,17 +138,19 @@ def filter_pet(pet_search):
 
 # filter tau/amyloid/t1
 t1 = filter_adni_t1(t1_search)
-amyloid, tau = filter_pet(pet_search)
+amyloid_proc, tau_proc = filter_pet_proc(pet_search)
+amyloid_raw, tau_raw = filter_pet_raw(pet_search)
 
-# merge to find overlap
-tau['Tracer'] = tau['Imaging Protocol'].map({
+# merge to find overlap based on preprocessed scans
+# for most scans, we prefer the one with mild preprocessing
+tau_proc['Tracer'] = tau_proc['Imaging Protocol'].map({
     'Radiopharmaceutical=18F-AV1451': 'FTP',
     'Radiopharmaceutical=18F-MK6240': 'M62',
     'Radiopharmaceutical=18F-PI2620': 'P26'})
-amyloid['Tracer'] = amyloid['Imaging Protocol'].map({
+amyloid_proc['Tracer'] = amyloid_proc['Imaging Protocol'].map({
     'Radiopharmaceutical=18F-AV45': 'FBP',
     'Radiopharmaceutical=18F-FBB': 'FBB'})
-merged = link_modalities(tau=tau, amyloid=amyloid, t1=t1,
+merged = link_modalities(tau=tau_proc, amyloid=amyloid_proc, t1=t1,
                          subject_col='Subject ID',
                          date_col = 'Study Date',
                          tracer_col='Tracer',
@@ -140,6 +158,14 @@ merged = link_modalities(tau=tau, amyloid=amyloid, t1=t1,
                          extra_amyloid_columns=['Image ID'],
                          extra_tau_columns=['Image ID'],
                          extra_t1_columns=['Image ID'])
+
+# replace the raw images for the desired sites
+raw_linker = tau_raw[['Subject ID', 'Study Date', 'Description', 'Image ID']]
+raw_linker.columns = ['Subject ID', 'Study DateTau', 'RAW Description', 'RAW Image ID']
+merged = merged.merge(raw_linker, on=['Subject ID', 'Study DateTau'], how='left')
+site = merged['Subject ID'].str[0:3]
+mask = site.isin(USE_RAW_IMAGE_FOR_SITES)
+merged.loc[mask, 'Image IDTau'] = merged['RAW Image ID']
 
 # save image ids to search
 def save_loni_search_field(series, outfile):
@@ -156,4 +182,4 @@ save_loni_search_field(a, os.path.join(OUTPUT_DIRECTORY, 'adni_tau_ids.txt'))
 save_loni_search_field(t, os.path.join(OUTPUT_DIRECTORY, 'adni_amyloid_ids.txt'))
 save_loni_search_field(n, os.path.join(OUTPUT_DIRECTORY, 'adni_t1_ids.txt'))
 
-save_loni_search_field(pd.concat([a, t, n]), os.path.join(OUTPUT_DIRECTORY, 'all_ids.txt'))
+save_loni_search_field(pd.concat([a, t, n]), os.path.join(OUTPUT_DIRECTORY, 'adni_all_ids.txt'))

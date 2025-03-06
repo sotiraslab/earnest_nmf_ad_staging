@@ -10,17 +10,34 @@ from pathlib import Path
 import tempfile
 
 import nibabel as nib
+import nibabel.ecat as ecat
 
 from atstaging.preprocessing.execute import execute
 
 def ecat_to_nifti(inimg, outimg):
+    # The previous implementation was based on this
     # https://neurostars.org/t/how-can-i-convert-ecat-v-file-to-nifti-nii-file-in-python/27297/2
-    ecat = nib.ecat.load(inimg)
-    nii = nib.Nifti1Image(
-        ecat.get_fdata(),
-        ecat.affine
-    )
-    nib.save(nii, outimg)
+
+    # But that seemed to screw up the axis labels for many images (not all, mostly older ones)
+
+    # This approach, for whatever reason, seems to be doing better
+    # where the frames are accessed independently
+    # https://gist.github.com/cindeem/7347843
+
+    img = ecat.load(inimg)
+    mlist = img.get_mlist()
+    nframes = mlist[mlist[:,0] > 0].shape[0]
+
+    to_concat = []
+    for i in range(nframes):
+        tmp = nib.Nifti1Image(
+            dataobj=img.get_frame(i, orientation='neurological'),
+            affine=img.get_frame_affine(i)
+            )
+        to_concat.append(tmp)
+
+    concat = nib.funcs.concat_images(to_concat)
+    nib.save(concat, outimg)
 
 def merge_separated_dicom_frames(input_paths, output_path):
     """

@@ -1,3 +1,16 @@
+# Some comments about the selection of tau images from ADNI
+# The original plan was to select images in the Coregistered & Averaged format for all
+# For amyloid, there were no issues with this observed during preprocessing
+# For tau, however, there were several dozen images from a few sites (see `TAU_PROBLEM_SITES`)
+# which had unusable image artifacts (gradient of intensity change for over slices in the superior-inferior direction)
+
+# So I first switched to using the RAW images for the images from these sites.  For some reason,
+# These images don't appear to have the same artifact.
+
+# However, that lead to another issue that some of those issues were in HRRT/Analyze format
+# It became worrisome to try and convert these while maintaining proper axis labels,
+# particularly in the L/R dimension.  So for the cases where the RAW image is in HRRT 
+# format, we elect to use the later processed version (Coreg, Avg, Std vox, Uniform res)
 
 import os
 
@@ -8,8 +21,9 @@ from atstaging.dataorg.utils import link_modalities
 # VARIABLES
 PET_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_pet_search.csv'
 T1_SEARCH = '/scratch/tom.earnest/atstaging/searches/adni_mri_search.csv'
+ALL_OG_PET_COLLECTION = '/scratch/tom.earnest/atstaging/searches/adni_all_og_pet.csv'
 OUTPUT_DIRECTORY = '/scratch/tom.earnest/atstaging/searches/'
-USE_RAW_IMAGE_FOR_SITES = ['041', '053', '094', '109', '127']
+TAU_PROBLEM_SITES = ['024', '029', '032', '041', '053', '094', '109', '127', '128']
 
 # load data
 pet_search = pd.read_csv(PET_SEARCH)
@@ -40,6 +54,7 @@ def filter_adni_t1(t1_search, add_columns=False):
                 't1_fl2d_sag',
                 'Take off auto send',
                 'AXIAL RFORMAT 1',
+                'mask',
                ]
     pat = '|'.join(unwanted)
     t1 = t1[~t1['Description'].str.contains(pat, case=False, regex=True)]
@@ -121,7 +136,7 @@ def filter_pet_raw(pet_search):
 
     return amyloid, tau
 
-def filter_pet_proc(pet_search):
+def filter_pet_ca(pet_search):
     pet_search['Study Date'] = pd.to_datetime(pet_search['Study Date'])
     pet_search = pet_search.sort_values(['Subject ID', 'Study Date'])
     pet_search['Imaging Protocol'] = pet_search.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
@@ -136,10 +151,29 @@ def filter_pet_proc(pet_search):
 
     return amyloid, tau
 
+def filter_pet_casu(pet_search):
+    pet_search['Study Date'] = pd.to_datetime(pet_search['Study Date'])
+    pet_search = pet_search.sort_values(['Subject ID', 'Study Date'])
+    pet_search['Imaging Protocol'] = pet_search.groupby(['Subject ID', 'Study Date'])['Imaging Protocol'].ffill()
+    pet_search = pet_search.loc[
+        pet_search['Description'].str.contains('Coreg, Avg, Std Img and Vox Siz, Uniform Resolution') &
+        ~ pet_search['Description'].str.contains('6mm'), :
+    ].copy()
+
+    amyloid = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV45') |
+                              pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-FBB'))].copy()
+
+    tau = pet_search.loc[(pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-AV1451') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-MK6240') |
+                          pet_search['Imaging Protocol'].eq('Radiopharmaceutical=18F-PI2620'))].copy()
+
+    return amyloid, tau
+
 # filter tau/amyloid/t1
 t1 = filter_adni_t1(t1_search)
-amyloid_proc, tau_proc = filter_pet_proc(pet_search)
+amyloid_proc, tau_proc = filter_pet_ca(pet_search)
 amyloid_raw, tau_raw = filter_pet_raw(pet_search)
+amyloid_casu, tau_casu = filter_pet_casu(pet_search)
 
 # merge to find overlap based on preprocessed scans
 # for most scans, we prefer the one with mild preprocessing
@@ -159,13 +193,30 @@ merged = link_modalities(tau=tau_proc, amyloid=amyloid_proc, t1=t1,
                          extra_tau_columns=['Image ID'],
                          extra_t1_columns=['Image ID'])
 
-# replace the raw images for the desired sites
+# Replacements for sites where artifacts were observed
+# Add the Raw and CASU versions of images
 raw_linker = tau_raw[['Subject ID', 'Study Date', 'Description', 'Image ID']]
 raw_linker.columns = ['Subject ID', 'Study DateTau', 'RAW Description', 'RAW Image ID']
 merged = merged.merge(raw_linker, on=['Subject ID', 'Study DateTau'], how='left')
-site = merged['Subject ID'].str[0:3]
-mask = site.isin(USE_RAW_IMAGE_FOR_SITES)
-merged.loc[mask, 'Image IDTau'] = merged['RAW Image ID']
+
+casu_linker = tau_casu[['Subject ID', 'Study Date', 'Description', 'Image ID']]
+casu_linker.columns = ['Subject ID', 'Study DateTau', 'CASU Description', 'CASU Image ID']
+merged = merged.merge(casu_linker, on=['Subject ID', 'Study DateTau'], how='left')
+
+# Add the Raw image format
+fileformats = pd.read_csv(ALL_OG_PET_COLLECTION)
+linker = fileformats[['Image Data ID', 'Format']].copy()
+linker['Image Data ID'] = linker['Image Data ID'].str.lstrip('I').astype(int)
+linker.columns = ['RAW Image ID', 'RawFileFormat']
+merged = merged.merge(linker, on='RAW Image ID', how='left')
+
+# For subjects from the sites with issues:
+# 1. If the raw tau image is not HRRT, use that
+# 2. Otherwise, use the CASU versions
+in_problem_sites = merged['Subject ID'].str[0:3].isin(TAU_PROBLEM_SITES)
+raw_image_is_hrrt = merged['RawFileFormat'].eq('HRRT')
+merged.loc[in_problem_sites & ~raw_image_is_hrrt, 'Image IDTau'] = merged['RAW Image ID']
+merged.loc[in_problem_sites & raw_image_is_hrrt, 'Image IDTau'] = merged['CASU Image ID']
 
 # save image ids to search
 def save_loni_search_field(series, outfile):

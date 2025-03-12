@@ -34,12 +34,6 @@ def create_subject_table(selected_amyloid_search, selected_tau_search, selected_
         tmp = df[cols]
         tmp = tmp.rename(columns={'Subject ID': 'Subject', 'Image ID': 'ImageID', 'Study Date': 'ScanDate'})
 
-        # images from site 053 are omitted
-        # The raw tau images here are in HRRT format (hard to convert)
-        # And the processed images have some of the gradient artifcats (unusable)
-        site = tmp['Subject'].str[0:3]
-        tmp = tmp[site.ne('053')]
-
         return tmp
 
     amy = select(amy)

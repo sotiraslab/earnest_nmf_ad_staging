@@ -18,8 +18,8 @@ def load_master(master_folder=None, filters=True, features=True):
     
     master_csv_path = os.path.join(master_folder, 'MASTER.csv')
     listdir = [os.path.join(master_folder, f) for f in os.listdir(master_folder) if f.lower().endswith('.csv')]
-    features_csvs = [f for f in listdir if os.path.basename(f).startswith('FEATURE')]
-    filter_csvs = [f for f in listdir if os.path.basename(f).startswith('FILTER')]
+    features_csvs = sorted([f for f in listdir if os.path.basename(f).startswith('FEATURE')])
+    filter_csvs = sorted([f for f in listdir if os.path.basename(f).startswith('FILTER')])
 
     print()
     print("* Loading master dataframe")
@@ -38,8 +38,8 @@ def load_master(master_folder=None, filters=True, features=True):
             filter_df = pd.read_csv(path, dtype={'Subject': str, 'Session': str, 'Keep': bool})
             filter_df = filter_df[['Subject', 'Session', 'Keep']].copy()
             filter_df.columns = ['Subject', 'Session', tmpname]
-            master = master.merge(filter_df, on=['Subject', 'Session'])
-            master = master[master[tmpname]].copy()
+            master = master.merge(filter_df, on=['Subject', 'Session'], how='left')
+            master = master[master[tmpname].astype(bool) & ~(master[tmpname].isna())].copy()
             master = master[[col for col in master.columns if col != tmpname]]
             lenafter = len(master)
             print(f'    + # Records before: {lenbefore}; after: {lenafter}')
@@ -58,6 +58,53 @@ def load_master(master_folder=None, filters=True, features=True):
         print('    + Complete.')
 
     return master
+
+def load_master_splits(split_training=True, split_baseline=True, split_column='Split'):
+    
+    master = load_master(filters=True, features=True)
+    split = master[split_column]
+    is_training = split.str.contains('Training')
+    is_baseline = split.str.contains('Baseline')
+    
+    if not split_training and not split_baseline:
+        return master
+    elif split_training and not split_baseline:
+        a = master[is_training].copy()
+        b = master[~is_training].copy()
+        return a, b
+    elif not split_training and split_baseline:
+        a = master[is_baseline]
+        b = master[~is_baseline]
+        return a, b
+    else:
+        a = master[is_training & is_baseline]
+        b = master[is_training & (~is_baseline)]
+        c = master[(~is_training) & is_baseline]
+        d = master[(~is_training) & (~is_baseline)]
+        return a, b, c, d
+
+def load_musestats(kind):
+
+    if kind not in ['amyloid', 'tau']:
+        raise ValueError('`kind` must be "amyloid" or "tau"')
+
+    # locate output directory
+    output_directory = get('output_directory')
+    preproc_folder = os.path.join(output_directory, 'preprocessing', 'images')
+
+    # load all the amyloid stats into one master table
+    museall = []
+    for dataset in os.listdir(preproc_folder):
+        muse_path = os.path.join(output_directory, 'preprocessing', 'images', dataset, 'qc', f'musestats_{kind}.csv')
+        if not os.path.isfile(muse_path):
+            print(f'Cannot find amyloid MUSE stats for DataSet={dataset}; skipping.')
+            continue
+
+        muse_single_dataset = pd.read_csv(muse_path, dtype={'Subject':str, 'Session':str})
+        museall.append(muse_single_dataset)
+
+    muse = pd.concat(museall, ignore_index=True)
+    return muse
 
 def setup_outputs_folder(directory):
     _dircreate(directory)

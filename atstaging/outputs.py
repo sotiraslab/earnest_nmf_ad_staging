@@ -59,7 +59,7 @@ def load_master(master_folder=None, filters=True, features=True):
 
     return master
 
-def load_master_splits(split_training=True, split_baseline=True, split_column='Split'):
+def load_master_splits(split_training=False, split_baseline=False, split_column='Split'):
     
     master = load_master(filters=True, features=True)
     split = master[split_column]

@@ -1,3 +1,5 @@
 include atstaging/config/example.json
 include atstaging/nmf/NMFVolBin
 include atstaging/nmf/NMFVolBin/*
+include atstaging/nmf/NMFVolBinMask
+include atstaging/nmf/NMFVolBinMask/*

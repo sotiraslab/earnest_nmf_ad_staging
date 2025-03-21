@@ -8,31 +8,36 @@ from atstaging.preprocessing.execute import execute
 
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 _NMFVolBin_Directory = os.path.join(_this_dir, 'NMFVolBin')
+_NMFVolBinMask_Directory = os.path.join(_this_dir, 'NMFVolBinMask')
 
 class NMFRunner:
 
     def __init__(self,
+                 name: str,
                  master_table: pd.DataFrame,
-                 output_dir_path: str,
+                 output_root_folder: str,
                  ranks: list = list(range(2, 21)),
                  master_table_path_column: str ='Path',
                  n_reproducibility_splits: int =15,
                  reproduciblity_match_continuous: list =['Age'],
                  reproducbility_match_categorical: list=['CDRBinned','SexMale'],
-                 source_dir=None):
+                 use_mask=False):
 
+        self.name = name
         self.master_table = master_table
-        self.output_dir_path = output_dir_path
+        self.output_root_folder = output_root_folder
+        self.output_directory = os.path.join(self.output_root_folder, name)
         self.ranks = ranks
-        self.source_dir = source_dir if source_dir is not None else _NMFVolBin_Directory
+        self.use_mask = use_mask
+        self.source_dir = _NMFVolBinMask_Directory if use_mask else _NMFVolBin_Directory
 
         self.master_table_path_column = master_table_path_column
         self.n_reproducibility_splits = n_reproducibility_splits
         self.reproducibility_match_continuous = reproduciblity_match_continuous
         self.reproducbility_match_categorical = reproducbility_match_categorical
 
-        self.main_output_dir = os.path.join(self.output_dir_path, 'main')
-        self.reproducibility_output_dir = os.path.join(self.output_dir_path, 'reproducibility')
+        self.main_output_dir = os.path.join(self.output_directory, 'main')
+        self.reproducibility_output_dir = os.path.join(self.output_directory, 'reproducibility')
 
     def _dircreate(self, *args):
         path = os.path.join(*args)
@@ -115,10 +120,14 @@ class NMFRunner:
             print('> Submitting run jobs.')
             command = ['source', submit_script_path]
 
+        print()
+        print('+------------ COMMAND RESULT ------------+')
         execute(command)
+        print('+------------ COMMAND RESULT ------------+')
 
     def setup(self):
-        self._dircreate(self.output_dir_path)
+        self._dircreate(self.output_root_folder)
+        self._dircreate(self.output_directory)
         self._dircreate(self.main_output_dir)
         self._dircreate(self.reproducibility_output_dir)
 

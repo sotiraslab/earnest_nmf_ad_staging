@@ -4,6 +4,7 @@ import os
 import pandas as pd
 
 from atstaging.config import get
+from atstaging.preprocessing.pipeline import paths_folder_to_dataframe
 
 def _dircreate(*args):
     path = os.path.join(*args)
@@ -106,6 +107,36 @@ def load_musestats(kind):
     muse = pd.concat(museall, ignore_index=True)
     return muse
 
+def load_paths_tables(use_saved=True):
+    output_directory = get('output_directory')
+    preproc_dir = os.path.join(output_directory, 'preprocessing', 'images')
+
+    # try loading the saved path if requested
+    if use_saved:
+        saved_path = os.path.join(output_directory, 'preprocessing', 'paths', 'paths.csv')
+        if os.path.isfile(saved_path):
+            print()
+            print(f'Using paths table at "{saved_path}".')
+            df = pd.read_csv(saved_path, dtype={'Subject': str, 'Session': str})
+            return df
+        else:
+            print(f'No paths table found at "{saved_path}"; loading manually.')
+
+    datasets = sorted(os.listdir(preproc_dir))
+    output = []
+    print()
+    print('Manually reading paths folders:')
+    for dataset in datasets:
+        print(f'  > {dataset}...')
+        path = os.path.join(preproc_dir, dataset, 'paths')
+        if not os.path.isdir(path):
+            continue
+        df = paths_folder_to_dataframe(path)
+        output.append(df)
+    output = pd.concat(output)
+    print('Done!')
+    return output
+
 def setup_outputs_folder(directory):
     _dircreate(directory)
     _dircreate(directory, 'amyloidpetnet')
@@ -113,9 +144,11 @@ def setup_outputs_folder(directory):
     _dircreate(directory, 'datasetTables')
     _dircreate(directory, 'downloadLists')
     _dircreate(directory, 'nmf')
+    _dircreate(directory, 'nmf', 'gmmask')
     _dircreate(directory, 'plots')
     _dircreate(directory, 'masterTables')
     _dircreate(directory, 'preprocessing')
     _dircreate(directory, 'preprocessing', 'images')
+    _dircreate(directory, 'preprocessing', 'paths')
     _dircreate(directory, 'preprocessing', 'preproc_tables')
     _dircreate(directory, 'searches')

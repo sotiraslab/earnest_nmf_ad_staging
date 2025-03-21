@@ -76,7 +76,9 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
     if out_registered is not None:
         _verbose_copy(registered, out_registered)
 
-def apply_transform(moving, fixed, warp, output):
+def apply_transform(moving, fixed, warp, output, verbose=True):
+
+    v = '1' if verbose else '0'
 
     command = [
         get_cli_path('antsApplyTransforms'),
@@ -85,7 +87,7 @@ def apply_transform(moving, fixed, warp, output):
         '-r', fixed,
         '-t', warp,
         '-o', output,
-        '-v', '1']
+        '-v', v]
 
     execute(command)
 

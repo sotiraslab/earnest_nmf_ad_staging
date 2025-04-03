@@ -60,29 +60,38 @@ def load_master(master_folder=None, filters=True, features=True):
 
     return master
 
-def load_master_splits(split_training=False, split_baseline=False, split_column='Split'):
+def load_split(split='training', longitudinal='baseline', longitudinal_sub=None, split_column='Split'):
     
     master = load_master(filters=True, features=True)
-    split = master[split_column]
-    is_training = split.str.contains('Training')
-    is_baseline = split.str.contains('Baseline')
+    data_split_series = master[split_column]
+
+    # validate
+    if split is not None and split.lower() not in ['training', 'validation']:
+        raise ValueError('`split` must be "training" or "validation", or None')
     
-    if not split_training and not split_baseline:
-        return master
-    elif split_training and not split_baseline:
-        a = master[is_training].copy()
-        b = master[~is_training].copy()
-        return a, b
-    elif not split_training and split_baseline:
-        a = master[is_baseline]
-        b = master[~is_baseline]
-        return a, b
-    else:
-        a = master[is_training & is_baseline]
-        b = master[is_training & (~is_baseline)]
-        c = master[(~is_training) & is_baseline]
-        d = master[(~is_training) & (~is_baseline)]
-        return a, b, c, d
+    if longitudinal is not None and longitudinal.lower() not in ['baseline', 'followup']:
+        raise ValueError('`longitudinal` must be "baseline" or "followup", or None')
+    
+    if (longitudinal_sub is not None) and (longitudinal_sub not in ['A', 'B']):
+        print(type(longitudinal_sub))
+        raise ValueError('`longitudinal_sub` must be "A" or "B" or None')
+
+    key_training = split.lower().capitalize() if split else ''
+    key_longitudinal = longitudinal.lower().capitalize() if longitudinal else ''
+    
+    mask1 = data_split_series.str.contains(key_training)
+    mask2 = data_split_series.str.contains(key_longitudinal)
+    final_mask = mask1 & mask2
+
+    if longitudinal_sub is not None:
+        mask3 = master['SameTracerValidation' + longitudinal_sub]
+        final_mask = final_mask & mask3
+
+    data = master[final_mask]
+    if data.empty:
+        raise ValueError('Selection returned an empty dataframe!  Check parameters.')
+
+    return data
 
 def load_musestats(kind):
 

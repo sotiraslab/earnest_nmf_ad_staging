@@ -16,8 +16,8 @@ def jitter_ys(ys, xcenter, spread):
 def pct(top, bottom):
     return round(top/bottom * 100, 2)
 
-def calculate_cortical_summary_suvr(muse):
-    suvr_cols, vol_cols = get_muse_cortical_summary_columns()
+def calculate_cortical_summary_suvr(muse, pet):
+    suvr_cols, vol_cols = get_muse_cortical_summary_columns(pet=pet)
     regional_suvr = muse[suvr_cols]
     regional_vol = muse[vol_cols]
     regional_weights = regional_vol.div(regional_vol.sum(axis=1), axis=0)
@@ -109,12 +109,15 @@ def diagnostic_plot_amyloid_positivity(df, test_score, test_label, gt_label='Amy
 
     return fig
 
-def get_muse_cortical_summary_columns():
+def get_muse_cortical_summary_columns(pet='amyloid'):
+
+    if pet not in ['amyloid', 'tau']:
+        raise ValueError('`pet` must be "amyloid" or "tau".')
 
     # MAP FS TO MUSE
     # taken from Srinivasan et al. (2020)
     # https://doi.org/10.1016/j.neuroimage.2020.117248
-    leftside = {
+    amyloid_left = {
         'ctx-lh-caudalmiddlefrontal': 'Left MFG   middle frontal gyrus',
         'ctx-lh-lateralorbitofrontal': 'Left POrG  posterior orbital gyrus',
         'ctx-lh-medialorbitofrontal': 'Left SCA   subcallosal area',
@@ -152,6 +155,19 @@ def get_muse_cortical_summary_columns():
             'Left STG   superior temporal gyrus',
         ],
     }
+
+    tau_left = {
+        'ctx-lh-entorhinal': 'Left Ent   entorhinal area',
+        'Left-Amygdala': 'Left Amygdala',
+        'ctx-lh-fusiform': [
+            'Left FuG   fusiform gyrus',
+            'Left OFuG  occipital fusiform gyrus'
+        ],
+        'ctx-lh-inferiortemporal': 'Left ITG   inferior temporal gyrus',
+        'ctx-lh-middletemporal': 'Left MTG   middle temporal gyrus',
+    }
+
+    leftside = {'amyloid': amyloid_left, 'tau': tau_left}[pet]
 
     # Add the right side
     cortical_summary_fs_to_muse = leftside.copy()

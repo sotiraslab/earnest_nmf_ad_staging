@@ -10,7 +10,7 @@ numBases=$2
 outputDir=$3
 BinDir=$4
 
-MCRROOT="/export/matlab/MCR/R2018b/v95"
+MCRROOT="/export/matlab/R2021a/"
 extractBases="${BinDir}/run_extractBasesMT.sh"
 
 # script creation

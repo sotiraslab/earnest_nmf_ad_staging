@@ -10,7 +10,7 @@ numBases=$2
 outputDir=$3
 BinDir=$4
 
-MCRROOT="/export/matlab/MCR/R2018b/v95"
+MCRROOT="/export/matlab/R2021a/"
 extractBases="${BinDir}/run_extractBasesMT.sh"
 
 # script creation
@@ -43,11 +43,6 @@ echo '### Account  '
 echo '#SBATCH --account=aristeidis_sotiras  '
 echo '### Partition  '
 echo '#SBATCH --partition=tier2_cpu  '
-echo '  '
-
-# load matlab
-echo '  '
-echo 'module load matlab'
 echo '  '
 
 # variables

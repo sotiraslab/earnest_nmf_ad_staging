@@ -39,6 +39,10 @@ echo '### Select 24Gb RAM  '
 echo '#SBATCH --mem=128G  '
 echo '### Select wall time  '
 echo '#SBATCH -t 24:00:00  '
+echo '### Account  '
+echo '#SBATCH --account=aristeidis_sotiras  '
+echo '### Partition  '
+echo '#SBATCH --partition=tier2_cpu  '
 echo '  '
 
 # load matlab

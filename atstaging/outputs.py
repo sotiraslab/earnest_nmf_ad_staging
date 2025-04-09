@@ -155,6 +155,7 @@ def setup_outputs_folder(directory):
     _dircreate(directory, 'nmf')
     _dircreate(directory, 'nmf', 'gmmask')
     _dircreate(directory, 'nmf', 'runs')
+    _dircreate(directory, 'nmf', 'tables')
     _dircreate(directory, 'plots')
     _dircreate(directory, 'masterTables')
     _dircreate(directory, 'preprocessing')

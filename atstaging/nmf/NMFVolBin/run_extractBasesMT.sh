@@ -27,6 +27,7 @@ else
       args="${args} \"${token}\"" 
       shift
   done
+  echo "\"${exe_dir}/extractBasesMT\"" $args
   eval "\"${exe_dir}/extractBasesMT\"" $args
 fi
 exit

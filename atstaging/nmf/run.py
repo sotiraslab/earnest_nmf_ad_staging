@@ -1,18 +1,34 @@
 
 import glob
 import os
+import pickle
 import textwrap
 import warnings
 
+import h5py
+import matplotlib.pyplot as plt
 import nibabel as nib
+from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
 
+from atstaging.config import get
 from atstaging.preprocessing.execute import execute
 
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 _NMFVolBin_Directory = os.path.join(_this_dir, 'NMFVolBin')
 _NMFVolBinMask_Directory = os.path.join(_this_dir, 'NMFVolBinMask')
+
+def load_nmf_runner(path):
+
+    # if a folder is passed, assume it is the run output directory
+    if os.path.isdir(path):
+        path = os.path.join(path, 'NMFRunner.pickle')
+
+    with open(path, 'rb') as file:
+        runner = pickle.load(file)
+
+    return runner
 
 class NMFRunner:
 
@@ -44,6 +60,11 @@ class NMFRunner:
         self.n_reproducibility_splits = None
         self.split_columns = []
 
+        # save
+        self.pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
+        with open(self.pickle_path, 'wb') as file:
+            pickle.dump(self, file)
+
     def _dircreate(self, *args):
         path = os.path.join(*args)
         if not os.path.isdir(path):
@@ -67,16 +88,28 @@ class NMFRunner:
         images.to_csv(input_csv_path, header=False, index=False)
         return input_csv_path
     
-    # def create_main_overlays(self, verbose=True):
-    #     nii_dirs = self.get_main_nii_directories()
-    #     figure_dirs = self.get_main_figure_directores()
+    def create_thresholded_components(self, range_threshold=0.2):
+        results = self.get_main_resultsmats()
+        for rank, mat in results.items():
+            
+            imat = mat
+            omat = os.path.join(os.path.dirname(imat), f'ThresholdedResults{range_threshold}.mat')
 
-    #     for k, nii_dir in nii_dirs.items():
-    #         niftis = glob.glob('*.nii.gz', root_dir=nii_dir)
-    #         print()
-    #         print(f'Directory: {nii_dir}')
-    #         print(f'Images found: {len(niftis)}')
-    #         for 
+            if os.path.isfile(omat):
+                print(f'  + Existing output for rank={rank} [{omat}]')
+            else:
+                print(f'  + Thresholding rank={rank} [{mat}]')
+                self.threshold_components_mat(imat=imat, omat=omat, range_threshold=range_threshold)
+
+    def create_main_overlays(self):
+        resultsmats = self.get_main_resultsmats()
+        figuredirs = self.get_main_figure_directores()
+
+        for k, mat in resultsmats.items():
+            figuredir = figuredirs[k]
+            outdir = os.path.join(figuredir, 'MainOverlays')
+            self._dircreate(outdir)
+            self.plot_results_mat(mat, odir=outdir)
 
     def create_submission_script(self, files_csv_path, nmf_output_dir, outpath):
         
@@ -126,8 +159,44 @@ class NMFRunner:
     
     def get_main_num_bases_directories(self):
         return {k : os.path.join(self.main_output_dir, f'NumBases{k}') for k in self.ranks}
+
+    def get_main_resultsmats(self):
+        numbases = self.get_main_num_bases_directories()
+        return {k: os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat') for k, v in numbases.items()}
     
+    def plot_results_mat(self, mat, odir):
+
+        mni_path = get('mni152_brain')
+        mni = nib.load(mni_path)
+        mni_affine = mni.affine
+        mni_shape = mni.shape
+
+        print(f'  + MAT file = {mat}')
+        with h5py.File(mat) as file:
+            W = np.array(file['B'])
+
+        k, _ = W.shape
+        for i in range(k):
+
+            outpath = os.path.join(odir, f'Basis{i+1}.jpg')
+            if os.path.isfile(outpath):
+                print(f'    + Existing image for basis {i+1} [{outpath}]')
+
+            else:
+                print(f'    + Creating overlay for basis {i+1} [{outpath}]')
+                data1d = W[i, :]
+                data3d = np.reshape(data1d, shape=mni_shape, order='F')
+                data_nii = nib.Nifti1Image(dataobj=data3d, affine=mni_affine)
+
+                overlay = NiftiOverlay()
+                overlay.add_anat('/home/tom.earnest/mni/MNI152_T1_1mm_brain.nii.gz')
+                overlay.add_anat(data_nii, color='magma', alpha=.7)
+                overlay.generate(outpath)
+                plt.close()
+
     def post_main(self):
+
+        range_threshold = 0.2
         
         print()
         print('POST-RUN NMF STEPS (Main)')
@@ -138,9 +207,15 @@ class NMFRunner:
         self.compress_niftis(delete=True)
         print('> Done.')
 
-        
-        # self.create_filtered_components()
-        # self.create_main_overlays()
+        print()
+        print(f'> Creating thresholded components [threshold={range_threshold}]')
+        self.create_thresholded_components(range_threshold=range_threshold)
+        print('> Done.')
+
+        print()
+        print(f'> Creating main component images')
+        self.create_main_overlays()
+        print('> Done.')
     
     def run_main(self, dry=False):
 
@@ -339,4 +414,23 @@ class NMFRunner:
         self._dircreate(self.output_directory)
         self._dircreate(self.main_output_dir)
         self._dircreate(self.reproducibility_output_dir)
+
+    
+    def threshold_components_mat(self, imat, omat, range_threshold=0.2):
+
+        with h5py.File(imat) as f:
+            W = np.array(f['B'])
+
+        range_threshold = 0.2
+
+        k, m = W.shape
+        extents = W.max(axis=1) - W.min(axis=1)
+        cutoffs = (extents * range_threshold) + W.min(axis=1)
+        W_thresholded = np.where(W > cutoffs.reshape([k, 1]), W, 0)
+        mdict = {'B': W_thresholded}
+
+        with h5py.File(omat, 'w') as f:
+            for key, value in mdict.items():
+                f.create_dataset(key, data=value)
+
 

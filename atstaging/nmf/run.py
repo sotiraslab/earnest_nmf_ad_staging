@@ -1,8 +1,10 @@
 
+import glob
 import os
 import textwrap
 import warnings
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 
@@ -47,11 +49,34 @@ class NMFRunner:
         if not os.path.isdir(path):
             os.mkdir(path)
 
+    def compress_niftis(self, delete=True, verbose=True):
+        niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
+        niis_absolute = [os.path.join(self.output_root_folder, f) for f in niis_relative]
+        for path in niis_absolute:
+            nii = nib.load(path)
+            nib.save(nii, path + '.gz')
+            if verbose:
+                print(f'  + Compressed {path}')
+            del nii
+            if delete:
+                os.remove(path)
+
     def create_input_file_csv(self):
         input_csv_path = os.path.join(self.main_output_dir, 'inputFiles.csv')
         images = self.master_table[[self.master_table_path_column]]
         images.to_csv(input_csv_path, header=False, index=False)
         return input_csv_path
+    
+    # def create_main_overlays(self, verbose=True):
+    #     nii_dirs = self.get_main_nii_directories()
+    #     figure_dirs = self.get_main_figure_directores()
+
+    #     for k, nii_dir in nii_dirs.items():
+    #         niftis = glob.glob('*.nii.gz', root_dir=nii_dir)
+    #         print()
+    #         print(f'Directory: {nii_dir}')
+    #         print(f'Images found: {len(niftis)}')
+    #         for 
 
     def create_submission_script(self, files_csv_path, nmf_output_dir, outpath):
         
@@ -84,6 +109,38 @@ class NMFRunner:
 
         with open(outpath, 'w') as f:
             f.write(SCRIPT)
+
+    def get_main_completion_by_rank(self):
+        directories = self.get_main_num_bases_directories()
+        result = {k: os.path.isfile(os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat'))
+                  for k, v in directories.items()}
+        return result
+    
+    def get_main_figure_directores(self):
+        numbases = self.get_main_num_bases_directories()
+        return {k: os.path.join(v, 'OPNMF', 'Figures') for k, v in numbases.items()}
+
+    def get_main_nii_directories(self):
+        numbases = self.get_main_num_bases_directories()
+        return {k: os.path.join(v, 'OPNMF', 'niiImg') for k, v in numbases.items()}
+    
+    def get_main_num_bases_directories(self):
+        return {k : os.path.join(self.main_output_dir, f'NumBases{k}') for k in self.ranks}
+    
+    def post_main(self):
+        
+        print()
+        print('POST-RUN NMF STEPS (Main)')
+        print('-------------------------')
+
+        print()
+        print('> Compressing NIFTI images')
+        self.compress_niftis(delete=True)
+        print('> Done.')
+
+        
+        # self.create_filtered_components()
+        # self.create_main_overlays()
     
     def run_main(self, dry=False):
 

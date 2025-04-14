@@ -11,6 +11,8 @@ import nibabel as nib
 from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
+from scipy.io import loadmat
+from skimage.measure import block_reduce
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
@@ -53,6 +55,7 @@ class NMFRunner:
         self.main_output_dir = os.path.join(self.output_directory, 'main')
         self.reproducibility_output_dir = os.path.join(self.output_directory, 'reproducibility')
         self.main_submission_script = os.path.join(self.main_output_dir, 'submit_extractBasesMT.sh')
+        self.analysis_dir = os.path.join(self.output_directory, 'analysis')
 
         # reproducibility split objects set later
         self.reproducibility_splits_path = None
@@ -69,6 +72,56 @@ class NMFRunner:
         path = os.path.join(*args)
         if not os.path.isdir(path):
             os.mkdir(path)
+            
+    def _load_image_with_downsample(self, path, downsample_factor, order='F'):
+        
+        nii = nib.load(path)
+        data3d = nii.get_fdata()
+        
+        if downsample_factor == 1:
+            return data3d.flatten(order=order)
+        else:
+            reduce = block_reduce(data3d, block_size=downsample_factor, func=np.mean)
+            return reduce.flatten(order=order)
+        
+    def _load_results_with_downsample(self, path_mat, voxel_dim, downsample_factor=1, order='F', dtype='single'):
+        
+        dtype = np.dtype(dtype)
+        
+        # Issue with HDF5 format and matlab
+        # Newer files should be readable with h5py (assumed usually for my project)
+        # Doesn't work for older files; in this case, loadmat from scipy can be used
+        try:
+            with h5py.File(path_mat, 'r') as file:
+                W = np.array(file['B'], dtype=dtype)
+                H = np.array(file['C'],  dtype=dtype)
+        except Exception:
+            mdict = loadmat(path_mat)
+            W = mdict['B'].astype(dtype)
+            H = mdict['C'].astype(dtype)
+            
+        # no downsampling
+        if downsample_factor == 1:
+            return W, H
+        
+        # downsampling
+        m_orig, k = W.shape
+        
+        example1d = W[:, 0]
+        example3d = np.reshape(example1d, shape=voxel_dim, order=order)
+        reduce = block_reduce(example3d, block_size=downsample_factor, func=np.mean)
+        flatten = reduce.flatten(order=order)
+        m_final = len(flatten)
+        
+        W_final = np.zeros((m_final, k), dtype=dtype)
+        for i in range(k):
+            compoment1d = W[:, i]
+            component3d = np.reshape(compoment1d, shape=voxel_dim, order=order)
+            reduce = block_reduce(component3d, block_size=downsample_factor, func=np.mean)
+            flatten = reduce.flatten(order=order)
+            W_final[:, i] = flatten
+
+        return W_final, H
 
     def compress_niftis(self, delete=True, verbose=True):
         niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
@@ -81,6 +134,35 @@ class NMFRunner:
             del nii
             if delete:
                 os.remove(path)
+                
+    def construct_X(self, downsample_factor=1, dtype='single', order='F'):
+        
+        images = self.get_training_images_list()
+        n = len(images)
+        m = len(self._load_image_with_downsample(images[0], downsample_factor=downsample_factor, order=order))
+        dtype = np.dtype(dtype)
+        itemsize_bytes = dtype.itemsize
+
+        estimated_size_bytes = n * m * itemsize_bytes
+        estimated_size_gb = round(estimated_size_bytes / 1e9, 2)
+
+        print()
+        print('> Beginning construction of X matrix')
+        print(f'  ! N: {n}')
+        print(f'  ! M (with downsampling={downsample_factor}): {m}')
+        print(f'  ! Estimated memory usage of X [NxM]: {estimated_size_gb}GB')
+        print(f'  ! Reconstuction error analyses require at least 2x this size ({2*estimated_size_gb}GB)')
+
+        X = np.zeros((m, n), dtype=dtype)
+
+        for i, path in enumerate(images):
+            
+            print(f'  + [{i+1}/{n}] {path}')
+            
+            data = self._load_image_with_downsample(path=path, downsample_factor=downsample_factor, order=order)
+            X[:, i] = data
+            
+        return X
 
     def create_input_file_csv(self):
         input_csv_path = os.path.join(self.main_output_dir, 'inputFiles.csv')
@@ -164,6 +246,15 @@ class NMFRunner:
         numbases = self.get_main_num_bases_directories()
         return {k: os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat') for k, v in numbases.items()}
     
+    def get_training_images_list(self):
+        return list(self.master_table[[self.master_table_path_column]])
+    
+    def get_voxel_dimensions(self):
+        images = self.get_training_images_list()
+        example = images[0]
+        nii = nib.load(example)
+        return nii.shape
+    
     def plot_results_mat(self, mat, odir):
 
         mni_path = get('mni152_brain')
@@ -189,7 +280,7 @@ class NMFRunner:
                 data_nii = nib.Nifti1Image(dataobj=data3d, affine=mni_affine)
 
                 overlay = NiftiOverlay()
-                overlay.add_anat('/home/tom.earnest/mni/MNI152_T1_1mm_brain.nii.gz')
+                overlay.add_anat(mni_path)
                 overlay.add_anat(data_nii, color='magma', alpha=.7)
                 overlay.generate(outpath)
                 plt.close()
@@ -213,9 +304,79 @@ class NMFRunner:
         print('> Done.')
 
         print()
-        print(f'> Creating main component images')
+        print('> Creating main component images')
         self.create_main_overlays()
         print('> Done.')
+        
+    def reconstruction_error_analysis(self, downsample_factor=2, dtype='single', order='F'):
+        
+        results_by_rank = self.get_main_resultsmats()
+        
+        print()
+        print('RECONSTRUCTION ERROR ANALYSIS')
+        print('==============')
+        
+        # 1. Recreate the X input matrix
+        # This can take a lot of memory !
+        # Downsampling/dtype can be used to ameliorate this
+        print()
+        print('STEP 1: CONSTRUCT X')
+        
+        X = self.construct_X(downsample_factor=downsample_factor,
+                             dtype=dtype,
+                             order=order)
+        
+        # 2. For each rank, load the results and reconstruction
+        print()
+        print('STEP 2: COMPUTE RECONSTRUCTION ERRORS')
+        
+        reconstruction_errors = []
+        
+        # we need to know the registered image dimensions to help with the resampling
+        # This could be gotten from the training images themselves
+        # but for my purposes this should always be consistent
+        mni_path = get('mni152_brain')
+        mni = nib.load(mni_path)
+        mni_shape = mni.shape
+        
+        print()
+        print('> Looping over ranks to load components (W) and loadings (H).')
+        for k, mat in results_by_rank.items():
+            print(f'    + Rank={k} [{mat}]')
+            W, H = self._load_results_with_downsample(
+                path_mat=mat,
+                voxel_dim=mni_shape,
+                downsample_factor=downsample_factor,
+                order=order,
+                dtype=dtype,
+                )
+            recon = np.matmul(W, H)
+            norm = np.linalg.norm(X - recon, ord='fro')
+            reconstruction_errors.append(norm)
+            print(f'      + Norm={norm}')
+            
+            
+        # 2. For each rank, load the results and reconstruction
+        print()
+        print('STEP 3: SAVE')
+        
+        OUTDIR = os.path.join(self.analysis_dir, 'reconError')
+        self._dircreate(OUTDIR)
+        
+        print()
+        print(f'Saving results in: {OUTDIR}')
+            
+        # save as a dataset
+        print()
+        print('> Creating dataframe with reconstruction errors.')
+        df = pd.DataFrame({'k': self.ranks,
+                           'reconstruction_error': reconstruction_errors})
+        outpath = os.path.join(OUTDIR, 'reconstruction_errors.csv')
+        df.to_csv(outpath, index=False)
+        print(f'> Done [{outpath}].')
+        
+        # Save a plot
+        ...
     
     def run_main(self, dry=False):
 
@@ -414,7 +575,7 @@ class NMFRunner:
         self._dircreate(self.output_directory)
         self._dircreate(self.main_output_dir)
         self._dircreate(self.reproducibility_output_dir)
-
+        self._dircreate(self.analysis_dir)
     
     def threshold_components_mat(self, imat, omat, range_threshold=0.2):
 

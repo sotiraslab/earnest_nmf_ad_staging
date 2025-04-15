@@ -68,6 +68,14 @@ class NMFRunner:
         with open(self.pickle_path, 'wb') as file:
             pickle.dump(self, file)
 
+        # cached objects
+        self._X = None
+        self._reconstruction_errors = None
+
+    def clear_cache(self):
+        self._X = None
+        self._reconstruction_errors = None
+
     def _dircreate(self, *args):
         path = os.path.join(*args)
         if not os.path.isdir(path):
@@ -93,8 +101,9 @@ class NMFRunner:
         # Doesn't work for older files; in this case, loadmat from scipy can be used
         try:
             with h5py.File(path_mat, 'r') as file:
-                W = np.array(file['B'], dtype=dtype)
-                H = np.array(file['C'],  dtype=dtype)
+                # the way the data is coming out, this transpose seems to be in order
+                W = np.array(file['B'], dtype=dtype).T
+                H = np.array(file['C'],  dtype=dtype).T
         except Exception:
             mdict = loadmat(path_mat)
             W = mdict['B'].astype(dtype)
@@ -156,12 +165,14 @@ class NMFRunner:
         X = np.zeros((m, n), dtype=dtype)
 
         for i, path in enumerate(images):
-            
-            print(f'  + [{i+1}/{n}] {path}')
+
+            end = '\n' if (i == (n-1)) else '\r'            
+            print(f'  + [{i+1}/{n}] {path}', end=end)
             
             data = self._load_image_with_downsample(path=path, downsample_factor=downsample_factor, order=order)
             X[:, i] = data
-            
+
+        print('Complete.')            
         return X
 
     def create_input_file_csv(self):
@@ -170,8 +181,9 @@ class NMFRunner:
         images.to_csv(input_csv_path, header=False, index=False)
         return input_csv_path
     
-    def create_thresholded_components(self, range_threshold=0.2):
+    def create_thresholded_components(self, range_threshold=0.2, create_figures=True):
         results = self.get_main_resultsmats()
+        figuredirs = self.get_main_figure_directores()
         for rank, mat in results.items():
             
             imat = mat
@@ -182,6 +194,14 @@ class NMFRunner:
             else:
                 print(f'  + Thresholding rank={rank} [{mat}]')
                 self.threshold_components_mat(imat=imat, omat=omat, range_threshold=range_threshold)
+
+            # plot
+            if create_figures:
+                figuredir = figuredirs[rank]
+                thisoutdir = os.path.join(figuredir, f'ThresholdedOverlays{range_threshold}')
+                self._dircreate(thisoutdir)
+                self.plot_results_mat(omat, thisoutdir)
+
 
     def create_main_overlays(self):
         resultsmats = self.get_main_resultsmats()
@@ -225,6 +245,23 @@ class NMFRunner:
         with open(outpath, 'w') as f:
             f.write(SCRIPT)
 
+    def delete_niftis(self, verbose=True):
+        niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
+        niigzs_relative = glob.glob('**/*.nii.gz', root_dir=self.output_root_folder, recursive=True)
+        niis_absolute = [os.path.join(self.output_root_folder, f) for f in niis_relative]
+        niigzs_absolute = [os.path.join(self.output_root_folder, f) for f in niigzs_relative]
+
+        all_images_absolute = niis_absolute + niigzs_absolute
+        n = len(all_images_absolute)
+
+        if verbose:
+            print(f'  + FOUND {n} IMAGES.')
+
+        for i, path in enumerate(all_images_absolute):
+            if verbose:
+                print(f'  + Deleting [{i+1}/{n}] {path}')
+            os.remove(path)
+
     def get_main_completion_by_rank(self):
         directories = self.get_main_num_bases_directories()
         result = {k: os.path.isfile(os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat'))
@@ -247,7 +284,7 @@ class NMFRunner:
         return {k: os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat') for k, v in numbases.items()}
     
     def get_training_images_list(self):
-        return list(self.master_table[[self.master_table_path_column]])
+        return list(self.master_table[self.master_table_path_column])
     
     def get_voxel_dimensions(self):
         images = self.get_training_images_list()
@@ -294,13 +331,13 @@ class NMFRunner:
         print('-------------------------')
 
         print()
-        print('> Compressing NIFTI images')
-        self.compress_niftis(delete=True)
+        print('> Deleting basis images (NIFTI)')
+        self.delete_niftis()
         print('> Done.')
 
         print()
         print(f'> Creating thresholded components [threshold={range_threshold}]')
-        self.create_thresholded_components(range_threshold=range_threshold)
+        self.create_thresholded_components(range_threshold=range_threshold, create_figures=False)
         print('> Done.')
 
         print()
@@ -308,7 +345,7 @@ class NMFRunner:
         self.create_main_overlays()
         print('> Done.')
         
-    def reconstruction_error_analysis(self, downsample_factor=2, dtype='single', order='F'):
+    def reconstruction_error_analysis(self, downsample_factor=2, dtype='single', order='F', save_X=False):
         
         results_by_rank = self.get_main_resultsmats()
         
@@ -321,39 +358,52 @@ class NMFRunner:
         # Downsampling/dtype can be used to ameliorate this
         print()
         print('STEP 1: CONSTRUCT X')
-        
-        X = self.construct_X(downsample_factor=downsample_factor,
-                             dtype=dtype,
-                             order=order)
-        
+
+        if self._X is not None:
+            print()
+            print(f'> Using cached X matrix [{self._X.shape}, {self._X.nbytes / 1e9}GB]')
+            X = self._X
+        else:
+            X = self.construct_X(downsample_factor=downsample_factor,
+                                dtype=dtype,
+                                order=order)
+            self._X = X
+
         # 2. For each rank, load the results and reconstruction
         print()
         print('STEP 2: COMPUTE RECONSTRUCTION ERRORS')
         
-        reconstruction_errors = []
-        
-        # we need to know the registered image dimensions to help with the resampling
-        # This could be gotten from the training images themselves
-        # but for my purposes this should always be consistent
-        mni_path = get('mni152_brain')
-        mni = nib.load(mni_path)
-        mni_shape = mni.shape
-        
-        print()
-        print('> Looping over ranks to load components (W) and loadings (H).')
-        for k, mat in results_by_rank.items():
-            print(f'    + Rank={k} [{mat}]')
-            W, H = self._load_results_with_downsample(
-                path_mat=mat,
-                voxel_dim=mni_shape,
-                downsample_factor=downsample_factor,
-                order=order,
-                dtype=dtype,
-                )
-            recon = np.matmul(W, H)
-            norm = np.linalg.norm(X - recon, ord='fro')
-            reconstruction_errors.append(norm)
-            print(f'      + Norm={norm}')
+        if self._reconstruction_errors is not None:
+            print()
+            print(f'> Using cached reconstruction errors')
+            reconstruction_errors = self._reconstruction_errors
+        else:
+            reconstruction_errors = []
+            
+            # we need to know the registered image dimensions to help with the resampling
+            # This could be gotten from the training images themselves
+            # but for my purposes this should always be consistent
+            mni_path = get('mni152_brain')
+            mni = nib.load(mni_path)
+            mni_shape = mni.shape
+            
+            print()
+            print('> Looping over ranks to load components (W) and loadings (H).')
+            for k, mat in results_by_rank.items():
+                print(f'    + Rank={k} [{mat}]')
+                W, H = self._load_results_with_downsample(
+                    path_mat=mat,
+                    voxel_dim=mni_shape,
+                    downsample_factor=downsample_factor,
+                    order=order,
+                    dtype=dtype,
+                    )
+                recon = np.matmul(W, H)
+                norm = np.linalg.norm(X - recon, ord='fro')
+                reconstruction_errors.append(norm)
+                print(f'      + Norm={norm}')
+
+            self._reconstruction_errors = np.array(reconstruction_errors)
             
             
         # 2. For each rank, load the results and reconstruction
@@ -361,6 +411,7 @@ class NMFRunner:
         print('STEP 3: SAVE')
         
         OUTDIR = os.path.join(self.analysis_dir, 'reconError')
+        self.setup()
         self._dircreate(OUTDIR)
         
         print()
@@ -374,9 +425,44 @@ class NMFRunner:
         outpath = os.path.join(OUTDIR, 'reconstruction_errors.csv')
         df.to_csv(outpath, index=False)
         print(f'> Done [{outpath}].')
-        
-        # Save a plot
-        ...
+
+        # Save X
+        if save_X:
+            print()
+            print('> Saving X matrix.')
+            outpath = os.path.join(OUTDIR, 'X.npy')
+            np.save(outpath, X)
+            print(f'> Done [{outpath}].')
+
+        # Plots
+
+        # 1. Recon Error
+        plt.figure(figsize=(8, 6))
+        x = self.ranks
+        y = reconstruction_errors
+        plt.plot(x, y, color='red')
+        plt.xticks(x)
+        plt.xlabel('Rank')
+        plt.ylabel('Reconstruction Error')
+        plt.title('Reconstruction error for different NMF ranks')
+        plt.grid()
+
+        outpath = os.path.join(OUTDIR, 'reconstruction_error.png')
+        plt.savefig(outpath, dpi=300)
+
+        # 2. Gradient recon error
+        plt.figure(figsize=(8, 6))
+        x = self.ranks[:-1]
+        y = np.diff(reconstruction_errors)
+        plt.plot(x, y, color='red')
+        plt.xticks(x)
+        plt.xlabel('Rank')
+        plt.ylabel('Reconstruction Error')
+        plt.title('Gradient of reconstruction error over different NMF ranks')
+        plt.grid()
+
+        outpath = os.path.join(OUTDIR, 'gradient_reconstruction_error.png')
+        plt.savefig(outpath, dpi=300)
     
     def run_main(self, dry=False):
 

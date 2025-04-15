@@ -283,6 +283,39 @@ class NMFRunner:
         numbases = self.get_main_num_bases_directories()
         return {k: os.path.join(v, 'OPNMF', 'ResultsExtractBases.mat') for k, v in numbases.items()}
     
+    def get_reproducibility_completion_status(self, show_only_incomplete=False):
+        output = {}
+        for repeat in os.listdir(self.reproducibility_output_dir):
+            if not repeat.startswith('Repeat'):
+                continue
+            repeat_dir = os.path.join(self.reproducibility_output_dir, repeat)
+
+            for split in os.listdir(repeat_dir):
+                if not split.startswith('Split'):
+                    continue
+                
+                split_dir = os.path.join(repeat_dir, split)
+                if not os.path.isdir(split_dir):
+                    continue
+
+                for numbases in os.listdir(split_dir):
+                    
+                    if not numbases.startswith('NumBases'):
+                        continue
+
+                    results_path = os.path.join(split_dir, numbases, 'OPNMF', 'ResultsExtractBases.mat')
+                    complete = os.path.isfile(results_path)
+
+                    if show_only_incomplete and complete:
+                        continue
+
+                    key = f"{repeat}-{split}-{numbases}"
+                    output[key] = complete
+
+        output = {k:output[k] for k in sorted(output.keys())}
+
+        return output
+
     def get_training_images_list(self):
         return list(self.master_table[self.master_table_path_column])
     

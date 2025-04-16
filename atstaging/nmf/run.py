@@ -11,26 +11,18 @@ import nibabel as nib
 from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
-from scipy.io import loadmat
-from skimage.measure import block_reduce
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
-
+from atstaging.nmf.utils import (
+    assess_solution_similarity,
+    load_image_with_downsample,
+    load_results, 
+    load_results_with_downsample, 
+)
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 _NMFVolBin_Directory = os.path.join(_this_dir, 'NMFVolBin')
 _NMFVolBinMask_Directory = os.path.join(_this_dir, 'NMFVolBinMask')
-
-def load_nmf_runner(path):
-
-    # if a folder is passed, assume it is the run output directory
-    if os.path.isdir(path):
-        path = os.path.join(path, 'NMFRunner.pickle')
-
-    with open(path, 'rb') as file:
-        runner = pickle.load(file)
-
-    return runner
 
 class NMFRunner:
 
@@ -71,66 +63,17 @@ class NMFRunner:
         # cached objects
         self._X = None
         self._reconstruction_errors = None
+        self._reproducibility_metrics = None
 
     def clear_cache(self):
         self._X = None
         self._reconstruction_errors = None
+        self._reproducibility_metrics = None
 
     def _dircreate(self, *args):
         path = os.path.join(*args)
         if not os.path.isdir(path):
             os.mkdir(path)
-            
-    def _load_image_with_downsample(self, path, downsample_factor, order='F'):
-        
-        nii = nib.load(path)
-        data3d = nii.get_fdata()
-        
-        if downsample_factor == 1:
-            return data3d.flatten(order=order)
-        else:
-            reduce = block_reduce(data3d, block_size=downsample_factor, func=np.mean)
-            return reduce.flatten(order=order)
-        
-    def _load_results_with_downsample(self, path_mat, voxel_dim, downsample_factor=1, order='F', dtype='single'):
-        
-        dtype = np.dtype(dtype)
-        
-        # Issue with HDF5 format and matlab
-        # Newer files should be readable with h5py (assumed usually for my project)
-        # Doesn't work for older files; in this case, loadmat from scipy can be used
-        try:
-            with h5py.File(path_mat, 'r') as file:
-                # the way the data is coming out, this transpose seems to be in order
-                W = np.array(file['B'], dtype=dtype).T
-                H = np.array(file['C'],  dtype=dtype).T
-        except Exception:
-            mdict = loadmat(path_mat)
-            W = mdict['B'].astype(dtype)
-            H = mdict['C'].astype(dtype)
-            
-        # no downsampling
-        if downsample_factor == 1:
-            return W, H
-        
-        # downsampling
-        m_orig, k = W.shape
-        
-        example1d = W[:, 0]
-        example3d = np.reshape(example1d, shape=voxel_dim, order=order)
-        reduce = block_reduce(example3d, block_size=downsample_factor, func=np.mean)
-        flatten = reduce.flatten(order=order)
-        m_final = len(flatten)
-        
-        W_final = np.zeros((m_final, k), dtype=dtype)
-        for i in range(k):
-            compoment1d = W[:, i]
-            component3d = np.reshape(compoment1d, shape=voxel_dim, order=order)
-            reduce = block_reduce(component3d, block_size=downsample_factor, func=np.mean)
-            flatten = reduce.flatten(order=order)
-            W_final[:, i] = flatten
-
-        return W_final, H
 
     def compress_niftis(self, delete=True, verbose=True):
         niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
@@ -148,7 +91,7 @@ class NMFRunner:
         
         images = self.get_training_images_list()
         n = len(images)
-        m = len(self._load_image_with_downsample(images[0], downsample_factor=downsample_factor, order=order))
+        m = len(load_image_with_downsample(images[0], downsample_factor=downsample_factor, order=order))
         dtype = np.dtype(dtype)
         itemsize_bytes = dtype.itemsize
 
@@ -169,7 +112,7 @@ class NMFRunner:
             end = '\n' if (i == (n-1)) else '\r'            
             print(f'  + [{i+1}/{n}] {path}', end=end)
             
-            data = self._load_image_with_downsample(path=path, downsample_factor=downsample_factor, order=order)
+            data = load_image_with_downsample(path=path, downsample_factor=downsample_factor, order=order)
             X[:, i] = data
 
         print('Complete.')            
@@ -285,32 +228,22 @@ class NMFRunner:
     
     def get_reproducibility_completion_status(self, show_only_incomplete=False):
         output = {}
-        for repeat in os.listdir(self.reproducibility_output_dir):
-            if not repeat.startswith('Repeat'):
+
+        for repeat, split, rank in self.iterate_reproducibility_indices():
+            results_path = os.path.join(
+                self.reproducibility_output_dir,
+                f'Repeat{repeat}',
+                f'Split{split}',
+                f'NumBases{rank}',
+                'OPNMF',
+                'ResultsExtractBases.mat')
+            complete = os.path.isfile(results_path)
+
+            if show_only_incomplete and complete:
                 continue
-            repeat_dir = os.path.join(self.reproducibility_output_dir, repeat)
 
-            for split in os.listdir(repeat_dir):
-                if not split.startswith('Split'):
-                    continue
-                
-                split_dir = os.path.join(repeat_dir, split)
-                if not os.path.isdir(split_dir):
-                    continue
-
-                for numbases in os.listdir(split_dir):
-                    
-                    if not numbases.startswith('NumBases'):
-                        continue
-
-                    results_path = os.path.join(split_dir, numbases, 'OPNMF', 'ResultsExtractBases.mat')
-                    complete = os.path.isfile(results_path)
-
-                    if show_only_incomplete and complete:
-                        continue
-
-                    key = f"{repeat}-{split}-{numbases}"
-                    output[key] = complete
+            key = f"Repeat{repeat}-Split{split}-NumBases{rank}"
+            output[key] = complete
 
         output = {k:output[k] for k in sorted(output.keys())}
 
@@ -324,6 +257,28 @@ class NMFRunner:
         example = images[0]
         nii = nib.load(example)
         return nii.shape
+    
+    def iterate_reproducibility_indices(self):
+        n_repeats = len([f for f in os.listdir(self.reproducibility_output_dir) if f.startswith('Repeat')])
+
+        for repeat in range(1, n_repeats + 1):
+            for split in [1, 2]:
+                for rank in self.ranks:
+                    yield repeat, split, rank
+
+    def iterate_reproducibility_paired_split_results(self):
+        n_repeats = len([f for f in os.listdir(self.reproducibility_output_dir) if f.startswith('Repeat')])
+
+        for repeat in range(1, n_repeats+1):
+            for rank in self.ranks:
+                results1 = os.path.join(
+                    self.reproducibility_output_dir, f'Repeat{repeat}', 'Split1', f'NumBases{rank}', 'OPNMF', 'ResultsExtractBases.mat'
+                )
+                results2 = os.path.join(
+                    self.reproducibility_output_dir, f'Repeat{repeat}', 'Split2', f'NumBases{rank}', 'OPNMF', 'ResultsExtractBases.mat'
+                )
+
+                yield repeat, rank, results1, results2
     
     def plot_results_mat(self, mat, odir):
 
@@ -408,7 +363,7 @@ class NMFRunner:
         
         if self._reconstruction_errors is not None:
             print()
-            print(f'> Using cached reconstruction errors')
+            print('> Using cached reconstruction errors')
             reconstruction_errors = self._reconstruction_errors
         else:
             reconstruction_errors = []
@@ -424,12 +379,13 @@ class NMFRunner:
             print('> Looping over ranks to load components (W) and loadings (H).')
             for k, mat in results_by_rank.items():
                 print(f'    + Rank={k} [{mat}]')
-                W, H = self._load_results_with_downsample(
+                W, H = load_results_with_downsample(
                     path_mat=mat,
                     voxel_dim=mni_shape,
                     downsample_factor=downsample_factor,
                     order=order,
                     dtype=dtype,
+                    transpose=True
                     )
                 recon = np.matmul(W, H)
                 norm = np.linalg.norm(X - recon, ord='fro')
@@ -496,6 +452,52 @@ class NMFRunner:
 
         outpath = os.path.join(OUTDIR, 'gradient_reconstruction_error.png')
         plt.savefig(outpath, dpi=300)
+
+    def reproducibility_analysis(self, verbose=True):
+        
+        print()
+        print('REPRODUCIBILITY ANALYSIS')
+        print('==============')
+        
+        OUTDIR = os.path.join(self.analysis_dir, 'reproducibility')
+        self.setup()
+        self._dircreate(OUTDIR)
+
+        # Load/compute reproducibility statistics
+        path_repro_stats = os.path.join(OUTDIR, 'reproducibility_metircs.csv')
+
+        if os.path.isfile(path_repro_stats):
+            print()
+            print(f'> Loading existing statistics [{path_repro_stats}].')
+            df = pd.read_csv(path_repro_stats)
+
+        else:
+            print()
+            print('> No existing statistics found, computing...')
+
+            rows = []
+
+            for repeat, rank, results1, results2 in self.iterate_reproducibility_paired_split_results():
+                metrics = assess_solution_similarity(
+                    mat1=results1,
+                    mat2=results2
+                )
+                row = {
+                    'Repeat': repeat,
+                    'Rank': rank,
+                    'MeanInnerProduct': metrics['mean_inner_product'],
+                    'MedianInnerProduct': metrics['median_inner_product'],
+                    'ARI': metrics['adjusted_rand_index'],
+                    'ARINonZero': metrics['adjusted_rand_index_nonzero']
+                }
+                rows.append(row)
+                if verbose:
+                    print(row)
+
+            df = pd.DataFrame(rows)
+            df.to_csv(path_repro_stats, index=False)
+
+        self._reproducibility_metrics = df
     
     def run_main(self, dry=False):
 
@@ -698,8 +700,7 @@ class NMFRunner:
     
     def threshold_components_mat(self, imat, omat, range_threshold=0.2):
 
-        with h5py.File(imat) as f:
-            W = np.array(f['B'])
+        W, _ = load_results(imat, transpose=False)
 
         range_threshold = 0.2
 

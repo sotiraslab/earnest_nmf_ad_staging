@@ -9,9 +9,11 @@ from colorama import Fore, Style
 CONFIG = {}
 CONFIG_FILE = ''
 
-def assert_config_is_set():
+def assert_config_is_set(try_set=True):
     if CONFIG:
         return True
+    elif try_set:
+        set_config()
     else:
         msg = ('Configuration file is not set; either a specified '
                'config file was unable to be loaded or '
@@ -125,6 +127,7 @@ def set_config_automatic():
         if not config['AUTOUSE']:
             continue
         update_config(file)
+        break
 
     assert_config_is_set()
 
@@ -141,4 +144,6 @@ def update_config(file):
 
     cname = os.path.basename(CONFIG_FILE)
     print()
+    print('----- ATSTAGING CONFIG -----')
     print('Using configuration: ' + Fore.CYAN + Style.BRIGHT + cname + Style.RESET_ALL)
+    print('----------------------------')

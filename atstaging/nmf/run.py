@@ -6,6 +6,7 @@ import textwrap
 import warnings
 
 import h5py
+from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 import nibabel as nib
 from nifti_overlay import NiftiOverlay
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from atstaging.config import get
+from atstaging.plotting import freesurfer_cortical_colors
 from atstaging.preprocessing.execute import execute
 from atstaging.nmf.utils import (
     assess_solution_similarity,
@@ -55,26 +57,26 @@ class NMFRunner:
         self.n_reproducibility_splits = None
         self.split_columns = []
 
-        # save
-        self.pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
-        with open(self.pickle_path, 'wb') as file:
-            pickle.dump(self, file)
-
         # cached objects
         self._X = None
         self._reconstruction_errors = None
         self._reproducibility_metrics = None
 
-    def clear_cache(self):
-        self._X = None
-        self._reconstruction_errors = None
-        self._reproducibility_metrics = None
+        # save
+        self.pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
+        with open(self.pickle_path, 'wb') as file:
+            pickle.dump(self, file)
 
     def _dircreate(self, *args):
         path = os.path.join(*args)
         if not os.path.isdir(path):
             os.mkdir(path)
 
+    def clear_cache(self):
+        self._X = None
+        self._reconstruction_errors = None
+        self._reproducibility_metrics = None
+    
     def compress_niftis(self, delete=True, verbose=True):
         niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
         niis_absolute = [os.path.join(self.output_root_folder, f) for f in niis_relative]
@@ -498,7 +500,81 @@ class NMFRunner:
             df.to_csv(path_repro_stats, index=False)
 
         self._reproducibility_metrics = df
+
+        # Plots
+
+        # 1. Mean inner product
+        col = 'MeanInnerProduct'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Mean inner product')
+
+        outpath = os.path.join(OUTDIR, 'mean_inner_product.png')
+        plt.savefig(outpath, dpi=300)
+
+        # 2. Median inner product
+        col = 'MedianInnerProduct'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Median inner product')
+
+        outpath = os.path.join(OUTDIR, 'median_inner_product.png')
+        plt.savefig(outpath, dpi=300)
+
+        # 3. ARI
+        col = 'ARI'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Adjusted Rand Index')
+
+        outpath = os.path.join(OUTDIR, 'ari.png')
+        plt.savefig(outpath, dpi=300)
     
+        # 4. ARI
+        col = 'ARINonZero'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Adjusted Rand Index (NonZero)')
+
+        outpath = os.path.join(OUTDIR, 'ari_nonzero.png')
+        plt.savefig(outpath, dpi=300)
+
     def run_main(self, dry=False):
 
         print()
@@ -714,4 +790,82 @@ class NMFRunner:
             for key, value in mdict.items():
                 f.create_dataset(key, data=value)
 
+    def winner_take_all_analysis(self):
+        print()
+        print('WINNER TAKE ALL ANALYSIS')
+        print('==============')
 
+        # 1. Load
+
+        OUTDIR = os.path.join(self.analysis_dir, 'winnerTakeAll')
+        self.setup()
+        self._dircreate(OUTDIR)
+
+        wta_mat = os.path.join(OUTDIR, 'stacked_WTA_assignments.mat')
+
+        if os.path.isfile(wta_mat):
+            print()
+            print(f'> Loading existing winner take all assignments... [{wta_mat}]')
+            with h5py.File(wta_mat, 'r') as f:
+                stacked_wta = np.array(f['WTA'])
+        else:
+            print()
+            print(f'No existing winner take all assignments found; computing.')
+
+            m = np.prod(self.get_voxel_dimensions())
+            n_ranks = len(self.ranks)
+            stacked_wta = np.zeros((m, n_ranks))
+            
+            results_by_rank = self.get_main_resultsmats()
+            for i, (rank, results) in enumerate(results_by_rank.items()):
+                print(f'  + Processing rank={rank} [{results}]')
+                W, _ = load_results(results)
+                zeromask = np.all(W == 0, axis=1)
+                W_unit = W / np.sqrt(np.sum(W ** 2, axis=0))
+                wta = W_unit.argmax(axis=1)
+                stacked_wta[:, i] = np.where(zeromask, 0, wta + 1)
+
+            # save the statistics
+            print()
+            print('> Saving...')
+            mdict = {'WTA': stacked_wta,
+                    'ranks': np.array(self.ranks, dtype=int)}
+            print()
+            with h5py.File(wta_mat, 'w') as f:
+                for key, value in mdict.items():
+                    f.create_dataset(key, data=value)
+            print(f'> Done [{wta_mat}].')
+
+        # 2. Plot
+
+        print()
+        print('> Creating figures...')
+
+        mni_path = get('mni152_brain')
+        mni = nib.load(mni_path)
+        mni_shape = mni.shape
+        mni_affine = mni.affine
+
+        fs_colors = freesurfer_cortical_colors()
+
+        for i, rank in enumerate(self.ranks):
+            outpath = os.path.join(OUTDIR, f'winnerTakeAll_rank{rank}.jpg')
+            if os.path.isfile(outpath):
+                print(f'  + Exsting figure for RANK={rank} [{outpath}]')
+                continue
+
+            print(f'  + Plotting figure for RANK={rank} [{outpath}]')
+            data1d = stacked_wta[:, i]
+            data3d = np.reshape(data1d, mni_shape, order='F')
+            nii = nib.Nifti1Image(data3d, affine=mni_affine)
+
+            colors = fs_colors[:rank]
+            cmap = ListedColormap(colors)
+
+            overlay = NiftiOverlay()
+            overlay.add_anat(mni)
+            overlay.add_anat(nii, color=cmap, alpha=0.8, drop_zero=True, vmin=1, vmax=rank)
+            overlay.generate(outpath)
+            plt.close()
+
+        print('> Complete')

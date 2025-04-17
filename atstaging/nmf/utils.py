@@ -54,7 +54,7 @@ def assess_solution_similarity(mat1, mat2):
     
     return results
 
-def load_image_with_downsample(self, path, downsample_factor, order='F'):
+def load_image_with_downsample(path, downsample_factor, order='F'):
         
     nii = nib.load(path)
     data3d = nii.get_fdata()
@@ -65,7 +65,7 @@ def load_image_with_downsample(self, path, downsample_factor, order='F'):
         reduce = block_reduce(data3d, block_size=downsample_factor, func=np.mean)
         return reduce.flatten(order=order)
         
-def load_results_with_downsample(self, path_mat, voxel_dim, downsample_factor=1, order='F', dtype='single', transpose=True):
+def load_results_with_downsample(path_mat, voxel_dim, downsample_factor=1, order='F', dtype='single', transpose=True):
     
     dtype = np.dtype(dtype)
     

@@ -62,11 +62,6 @@ class NMFRunner:
         self._reconstruction_errors = None
         self._reproducibility_metrics = None
 
-        # save
-        self.pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
-        with open(self.pickle_path, 'wb') as file:
-            pickle.dump(self, file)
-
     def _dircreate(self, *args):
         path = os.path.join(*args)
         if not os.path.isdir(path):
@@ -586,6 +581,13 @@ class NMFRunner:
         print('> Setting up necessary directories...')
         self.setup()
         print('Done.')
+
+        print()
+        print('> Saving pickle of NMF Runner...')
+        pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
+        with open(pickle_path, 'wb') as file:
+            pickle.dump(self, file)
+        print(f'> Done [{pickle_path}]')
 
         print()
         print('> Creating input file CSV with image paths...')

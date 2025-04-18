@@ -91,6 +91,8 @@ class ATPreprocMRINamer(BIDSOutputNamer):
             'fullwarp': 'sub-{SUBJECT}_ses-{SESSION}_from-orig_to-MNI152NLin6ASym_desc-fullwarp_warpfield.nii.gz',
             'registered': 'sub-{SUBJECT}_ses-{SESSION}_space-MNI152NLin6ASym_desc-registered_T1w.nii.gz',
             'muse': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-muse_seg.nii.gz',
+            'brainmask-frommuse': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmaskfrommuse_T1w.nii.gz',
+            'brain-frommuse': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainfrommuse_T1w.nii.gz',
             'volumes': 'sub-{SUBJECT}_ses-{SESSION}_desc-musevolumes_table.csv',
             'petreference': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-petreference_mask.nii.gz',
             'qc-skullstrip': 'sub-{SUBJECT}_ses-{SESSION}_space-orig_desc-brainmask_qc.png',

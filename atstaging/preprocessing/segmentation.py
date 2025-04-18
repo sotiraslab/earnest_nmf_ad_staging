@@ -37,6 +37,31 @@ def compute_regional_statistics_MUSE(img, segmentaion):
     output = muse.merge(df, how='left', on='ROI')
     return output
 
+def derive_brainmask_from_MUSE(segmentation, out_brainmask=None, out_brain=None, in_img=None):
+
+    if out_brain is None and out_brainmask is None:
+        raise ValueError('At least one output (`out_brain` or `out_brainmask`) must be provided.')
+
+    if out_brain and in_img is None:
+        raise ValueError(
+            'When requested to save brain (`out_brain`), user must provide an '
+            'input T1 or brain image (`in_img`)')
+
+    seg = nib.load(segmentation)
+    seg_data = seg.get_fdata()
+    isbrain_mask = (seg_data != 0).astype(float)
+
+    if out_brainmask:
+        brainmask = nib.Nifti1Image(dataobj=isbrain_mask, affine=seg.affine)
+        nib.save(brainmask, out_brainmask)
+
+    if out_brain:
+        t1 = nib.load(in_img)
+        t1_data = t1.get_fdata()
+        t1_data_mask_applied = np.where(isbrain_mask == 1., t1_data, 0.)
+        brain = nib.Nifti1Image(dataobj=t1_data_mask_applied, affine=seg.affine)
+        nib.save(brain, out_brain)
+    
 def get_mask_volume(inpath, binarize=True, background_value=0.):
     nii = nib.load(inpath)
     voxel_dims = (nii.header["pixdim"])[1:4]
@@ -106,7 +131,7 @@ def run_deepmrseg_muse(inpath, outpath):
     execute(command)
 
 def segmentation_pipeline(brain, out_segmentation, out_volumes=None, out_petreference=None,
-                          rerun_segmentation=False):
+                          rerun_segmentation=False, out_brainmask=None, out_brain=None):
 
     print('* -------------- *')
     print('|  Segmentation  |')
@@ -137,4 +162,9 @@ def segmentation_pipeline(brain, out_segmentation, out_volumes=None, out_petrefe
         maskdata = np.where((data == 38) | (data == 39), 1., 0.)
         mask = nib.Nifti1Image(dataobj=maskdata, affine=nii.affine, dtype=np.int16)
         nib.save(mask, out_petreference)
+        print('>>> Done.')
+
+    if out_brain is not None or out_brainmask is not None:
+        print('>>> Deriving brain mask image(s) from MUSE segmentation.')
+        derive_brainmask_from_MUSE(segmentation=out_segmentation, out_brainmask=out_brainmask, out_brain=out_brain, in_img=brain)
         print('>>> Done.')

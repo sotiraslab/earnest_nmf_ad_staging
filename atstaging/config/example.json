@@ -35,5 +35,6 @@
         "subject": "Subject",
         "session": "Session"
     },
-    "tau_preproc_keep": ["registered"]
+    "tau_preproc_keep": ["registered"],
+    "use_muse_brain": true
 }

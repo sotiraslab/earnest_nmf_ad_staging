@@ -251,6 +251,26 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         apply_brainmask(t1=preskullstrip, brainmask=brainmask, outpath=brain)
         end_command('apply_brainmask')
 
+    # segmentation
+    #  ---> MUSE, volume CSV generation, PET reference generation
+    segmentation = t1namer.get_path('muse')
+    volumes = t1namer.get_path('volumes')
+    petreference = t1namer.get_path('petreference')
+    brain_frommuse = t1namer.get_path('brain-frommuse')
+    brainmask_frommuse = t1namer.get_path('brainmask-frommuse')
+
+    print()
+    tsp('Beginnging MRI segmentation.')
+
+    begin_command('segmentation')
+    segmentation_pipeline(brain=brain,
+                          out_segmentation=segmentation,
+                          out_petreference=petreference,
+                          out_volumes=volumes,
+                          out_brain=brain_frommuse,
+                          out_brainmask=brainmask_frommuse)
+    end_command('segmentation')
+
     # registration
     # ---> registration, warp concatenation, jacobian determinant
     affine = t1namer.get_path('affine')
@@ -258,6 +278,8 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     registered = t1namer.get_path('registered')
 
     mri2mni_transformation_file = affine if is_linear_transformation else fullwarp
+    brain_to_register = brain_frommuse if get('use_muse_brain') else brain
+    brainmask_to_use = brainmask_frommuse if get('use_muse_brain') else brainmask
 
     if not os.path.exists(mri2mni_transformation_file) or overwrite_t1:
 
@@ -265,12 +287,12 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tsp('Registering brain to MNI template.')
 
         begin_command('registration')
-        registration_mni_pipeline(brain=brain,
+        registration_mni_pipeline(brain=brain_to_register,
                                   quick=get('quick'),
                                   transformation=mri2mni_transformation,
                                   out_affine=affine,
                                   out_fullwarp=fullwarp,
-                                  out_registered=registered)
+                                  out_registered=registered,)
         end_command('registration')
 
     else:
@@ -285,25 +307,8 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tsp('Creating brain image warped to MNI space.')
 
         begin_command('apply warp')
-        apply_transform(brain, mni_brain, mri2mni_transformation_file, registered)
+        apply_transform(brain_to_register, mni_brain, mri2mni_transformation_file, registered)
         end_command('apply warp')
-
-    # segmentation
-    #  ---> MUSE, volume CSV generation, PET reference generation
-    segmentation = t1namer.get_path('muse')
-    volumes = t1namer.get_path('volumes')
-    petreference = t1namer.get_path('petreference')
-
-    print()
-    tsp('Beginnging MRI segmentation.')
-
-    begin_command('segmentation')
-    segmentation_pipeline(brain=brain,
-                          out_segmentation=segmentation,
-                          out_petreference=petreference,
-                          out_volumes=volumes)
-    end_command('segmentation')
-
 
     # MRI QC images
     skullstrip_qc = t1namer.get_path('qc-skullstrip')
@@ -313,7 +318,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     tsp('Generating QC images')
 
     begin_command('qc-skullstrip')
-    skullstripping_qc_image(preskullstrip, brainmask, skullstrip_qc)
+    skullstripping_qc_image(preskullstrip, brainmask_to_use, skullstrip_qc)
     end_command('qc-skullstrip')
 
     begin_command('qc-checkerboard')
@@ -373,7 +378,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             
             out = register_pet_image(pet=amy_prereg,
                             t1=preskullstrip,
-                            brainmask=brainmask,
+                            brainmask=brainmask_to_use,
                             mri2mni_transform=mri2mni_transformation_file,
                             muse_segmentation=segmentation,
                             suvr_reference_mask=petreference,
@@ -474,7 +479,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             
             info = register_pet_image(pet=tau_prereg,
                             t1=preskullstrip,
-                            brainmask=brainmask,
+                            brainmask=brainmask_to_use,
                             mri2mni_transform=mri2mni_transformation_file,
                             muse_segmentation=segmentation,
                             suvr_reference_mask=petreference,

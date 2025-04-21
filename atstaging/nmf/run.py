@@ -812,7 +812,7 @@ class NMFRunner:
                 stacked_wta = np.array(f['WTA'])
         else:
             print()
-            print(f'No existing winner take all assignments found; computing.')
+            print('No existing winner take all assignments found; computing.')
 
             m = np.prod(self.get_voxel_dimensions())
             n_ranks = len(self.ranks)

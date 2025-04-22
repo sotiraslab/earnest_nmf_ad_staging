@@ -2,6 +2,7 @@
 import datetime as dt
 import json
 import os
+import pprint
 import time
 
 from colorama import Fore, Style
@@ -342,7 +343,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     smooth_y = float(get('smoothing', 'y'))
     smooth_z = float(get('smoothing', 'z'))
 
-    if do_smoothing:
+    if not do_smoothing:
         target_prereg_fwhm = None
         target_postreg_fwhm = None
     elif smooth_prereg:
@@ -361,7 +362,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         'smooth_y': smooth_y,
         'smooth_z': smooth_z
     }
-    print(petprint)
+    pprint.pprint(petprint)
 
     # # # # # # # #
     # AMYLOID

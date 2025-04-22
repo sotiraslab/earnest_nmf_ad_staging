@@ -21,7 +21,7 @@ from .pet import prepare_registration_pet, register_pet_image
 from .reorient import reorient_image
 from .registration import apply_transform, registration_mni_pipeline
 from .segmentation import segmentation_pipeline
-from .skullstrip import apply_brainmask, run_deepmrseg_dlicv
+from .skullstrip import apply_brainmask, get_skullstrip_method
 
 from .debug import run_dependency_check
 
@@ -223,18 +223,20 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
         tsp('Existing preskullstripped image; not rerunning.')
 
     # skullstripping
+    ss_method_key = get('skullstrip_method')
+    func = get_skullstrip_method(ss_method_key)
     brainmask = t1namer.get_path('brainmask')
     brain = t1namer.get_path('brain')
 
     if not os.path.exists(brainmask) or overwrite_t1:
 
         print()
-        tsp('Running skullstripping.')
+        tsp(f'Running skullstripping. [key={ss_method_key}; func={func}]')
         tsp(f'Source: {preskullstrip}')
         tsp(f'Destination (brain mask): {brainmask}')
 
         begin_command('skullstrip')
-        run_deepmrseg_dlicv(preskullstrip, brainmask)
+        func(inpath=preskullstrip, outpath=brainmask)
         end_command('skullstrip')
     else:
         print()

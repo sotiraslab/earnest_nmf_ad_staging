@@ -4,6 +4,7 @@
     "amyloidpetnet_directory": "/path/to/AmyloidPETNet",
     "amyloidpetnet_env": "p3.7torch1.8",
     "deepmrseg_env": "DeepMRSeg",
+    "hdbet_env": "hdbet",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "muse", "volumes", "qc-skullstrip", "qc-checkerboard"],
     "mri2mni_transformation": "s",
@@ -11,6 +12,7 @@
     "overwrite_pet": false,
     "overwrite_t1": false,
     "quick": true,
+    "skullstrip_method": "DLICV",
     "smoothing": {
         "do_smoothing": true,
         "x": "10",

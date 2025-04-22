@@ -35,6 +35,10 @@ def check_ants():
     path = get_cli_path('antsRegistration')
     return path is not None, 'Checked for path with `atstaging.preprocessing.execute.get_cli_path()`'
 
+def check_c3d():
+    path = get_cli_path('c3d_affine_tool')
+    return path is not None, 'Checked for path with `atstaging.preprocessing.execute.get_cli_path()`'
+
 def check_conda():
     return _check_command_returns(['which', 'conda'])
 
@@ -77,6 +81,7 @@ def run_dependency_check():
         'AFNI': check_afni,
         'ANTS Registration': check_ants,
         'FSL': check_fsl,
+        'C3D': check_c3d,
         'DeepMRSeg': check_deepmrseg,
         }
 

@@ -279,9 +279,14 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     fullwarp = t1namer.get_path('fullwarp')
     registered = t1namer.get_path('registered')
 
+    # NOTE: preliminary experiments indicate using the hard MUSE mask for registration 
+    # is not a good idea.   So hard coding this to not work, but could be changed back
+    # See commented line for how to renable
     mri2mni_transformation_file = affine if is_linear_transformation else fullwarp
-    brain_to_register = brain_frommuse if get('use_muse_brain') else brain
-    brainmask_to_use = brainmask_frommuse if get('use_muse_brain') else brainmask
+    brain_to_register = brain
+    brainmask_to_use = brainmask
+    # brain_to_register = brain_frommuse if get('use_muse_brain') else brain
+    # brainmask_to_use = brainmask_frommuse if get('use_muse_brain') else brainmask
 
     if not os.path.exists(mri2mni_transformation_file) or overwrite_t1:
 
@@ -332,10 +337,31 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
     # # # # # # # # 
 
     do_smoothing = get('smoothing', 'do_smoothing')
+    smooth_prereg = get('smoothing', 'prereg')
     smooth_x = float(get('smoothing', 'x'))
     smooth_y = float(get('smoothing', 'y'))
     smooth_z = float(get('smoothing', 'z'))
-    target_fwhm = (smooth_x, smooth_y, smooth_z) if do_smoothing else None
+
+    if do_smoothing:
+        target_prereg_fwhm = None
+        target_postreg_fwhm = None
+    elif smooth_prereg:
+        target_prereg_fwhm = (smooth_x, smooth_y, smooth_z)
+        target_postreg_fwhm = None
+    else:
+        target_prereg_fwhm = None
+        target_postreg_fwhm = (smooth_x, smooth_y, smooth_z)
+
+    tsp('Reporting PET smoothing parameters:')
+    petprint = {
+        'do_smoothing': do_smoothing,
+        'target_prereg_fwhm': target_prereg_fwhm,
+        'target_postreg_fwhm': target_postreg_fwhm,
+        'smooth_x': smooth_x,
+        'smooth_y': smooth_y,
+        'smooth_z': smooth_z
+    }
+    print(petprint)
 
     # # # # # # # #
     # AMYLOID
@@ -357,7 +383,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             tsp('Creating pre-regsitration image for amyloid.')
 
             begin_command('amyloid-prereg')
-            out = prepare_registration_pet(amyloid_img, out_final=amy_prereg, target_fwhm=target_fwhm)
+            out = prepare_registration_pet(amyloid_img, out_final=amy_prereg, target_fwhm=target_prereg_fwhm)
             AMYINFO.update(out)
             end_command('amyloid-prereg')
         else:
@@ -389,7 +415,8 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
                             out_pet2mni=amy_pet2mni,
                             out_rigid_reg=amy_rigid,
                             out_suvr=amy_suvr,
-                            out_regional_suvrs=amy_regional_suvrs)
+                            out_regional_suvrs=amy_regional_suvrs,
+                            target_fwhm=target_postreg_fwhm)
             AMYINFO.update(out)
             end_command('amyloid-registration')
         else:
@@ -458,7 +485,7 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
             tsp('Creating pre-regsitration image for tau.')
 
             begin_command('tau-prereg')
-            info = prepare_registration_pet(tau_img, out_final=tau_prereg, target_fwhm=target_fwhm)
+            info = prepare_registration_pet(tau_img, out_final=tau_prereg, target_fwhm=target_prereg_fwhm)
             TAUINFO.update(info)
             end_command('tau-prereg')
         else:
@@ -490,7 +517,8 @@ def at_mri_pipeline(subject, session, output_directory, t1_img,
                             out_pet2mni=tau_pet2mni,
                             out_rigid_reg=tau_rigid,
                             out_suvr=tau_suvr,
-                            out_regional_suvrs=tau_regional_suvrs)
+                            out_regional_suvrs=tau_regional_suvrs,
+                            target_fwhm=target_postreg_fwhm)
             TAUINFO.update(info)
             end_command('tau-registration')
         else:

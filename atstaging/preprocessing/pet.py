@@ -364,13 +364,13 @@ def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
 
     # convert FSL to ANTs format
     command = [
-            C3D_AFFINE_TOOL,
-            '-ref', t1,
-            '-src', pet,
-            out_transformation,
-            '-fsl2ras',
-            '-oitk', out_transformation
-        ]
+        C3D_AFFINE_TOOL,
+        '-ref', t1,
+        '-src', pet,
+        out_transformation,
+        '-fsl2ras',
+        '-oitk', out_transformation
+    ]
 
     print()
     print('>>> Converting PET2MRI linear transformation matrix from FSL to ANTs format:')
@@ -382,7 +382,7 @@ def rigid_pet_registration_FSL(pet, t1, out_transformation, out_registered):
 
 def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mask=None, muse_segmentation=None,
                        mni_brain=None, out_registered=None, out_suvr=None, out_rigid_reg=None, out_pet2mni=None,
-                       out_petbrain=None, out_regional_suvrs=None, rigid_reg_method='fsl'):
+                       out_petbrain=None, out_regional_suvrs=None, rigid_reg_method='fsl', target_fwhm=None):
     
     # check if outputs being created
     outputs = [out_registered, out_rigid_reg, out_pet2mni, out_petbrain, out_suvr, out_regional_suvrs]
@@ -568,6 +568,21 @@ def register_pet_image(pet, t1, brainmask, mri2mni_transform, suvr_reference_mas
         print('- - -')
         execute(command)
         print('- - -')
+
+        # Smoothing
+        if target_fwhm is None:
+            print()
+            print('>>> No target FWHM supplied; not smoothing.')
+        else:
+            print()
+            print(f'>>> Applying iterative smoothing algorithm to target: {target_fwhm} mm FWHM...')
+            print('- - -')
+            smoothstats = iterative_smoothing(final, final, target_fwhm=target_fwhm,
+                                              start_fwhm=(0, 0, 0), stepsize=0.5,
+                                              tolerance=0.5, max_iterations=75,
+                                              automask=True, difMAD=True, verbose=True)
+            INFO.update(smoothstats)
+            print('- - -')
 
         # move output files
         print()

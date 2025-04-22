@@ -13,8 +13,8 @@
     "overwrite_t1": false,
     "quick": true,
     "skullstrip_method": "DLICV",
-    "smooth_post_registration": false,
     "smoothing": {
+        "prereg": true,
         "do_smoothing": true,
         "x": "10",
         "y": "10",

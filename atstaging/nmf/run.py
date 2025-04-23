@@ -73,8 +73,8 @@ class NMFRunner:
         self._reproducibility_metrics = None
     
     def compress_niftis(self, delete=True, verbose=True):
-        niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
-        niis_absolute = [os.path.join(self.output_root_folder, f) for f in niis_relative]
+        niis_relative = glob.glob('**/*.nii', root_dir=self.output_directory, recursive=True)
+        niis_absolute = [os.path.join(self.output_directory, f) for f in niis_relative]
         for path in niis_absolute:
             nii = nib.load(path)
             nib.save(nii, path + '.gz')
@@ -186,10 +186,10 @@ class NMFRunner:
             f.write(SCRIPT)
 
     def delete_niftis(self, verbose=True):
-        niis_relative = glob.glob('**/*.nii', root_dir=self.output_root_folder, recursive=True)
-        niigzs_relative = glob.glob('**/*.nii.gz', root_dir=self.output_root_folder, recursive=True)
-        niis_absolute = [os.path.join(self.output_root_folder, f) for f in niis_relative]
-        niigzs_absolute = [os.path.join(self.output_root_folder, f) for f in niigzs_relative]
+        niis_relative = glob.glob('**/*.nii', root_dir=self.output_directory, recursive=True)
+        niigzs_relative = glob.glob('**/*.nii.gz', root_dir=self.output_directory, recursive=True)
+        niis_absolute = [os.path.join(self.output_directory, f) for f in niis_relative]
+        niigzs_absolute = [os.path.join(self.output_directory, f) for f in niigzs_relative]
 
         all_images_absolute = niis_absolute + niigzs_absolute
         n = len(all_images_absolute)

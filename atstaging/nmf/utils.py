@@ -9,7 +9,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from skimage.measure import block_reduce
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import adjusted_rand_score, r2_score
 
 from atstaging.config import get
 
@@ -51,7 +51,19 @@ def assess_solution_similarity(mat1, mat2):
 
     results['adjusted_rand_index'] = ari
     results['adjusted_rand_index_nonzero'] = ari_nonzero
-    
+
+    # Correlation
+    correlations = []
+
+    for i, j in zip(ind1, ind2):
+        cmp1 = W1_unit[~zeroBoth, i]
+        cmp2 = W2_unit[~zeroBoth, j]
+        correlations.append(r2_score(cmp1, cmp2))
+
+    results['pearson_correlations'] = correlations
+    results['mean_person_correlation'] = np.mean(correlations) 
+    results['median_pearson_correlation'] = np.median(correlations)
+
     return results
 
 def load_image_with_downsample(path, downsample_factor, order='F'):

@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from atstaging.config import get
-from atstaging.plotting import freesurfer_cortical_colors
+from atstaging.plotting import freesurfer_cortical_colors, set_font_properties
 from atstaging.preprocessing.execute import execute
 from atstaging.nmf.utils import (
     assess_solution_similarity,
@@ -421,6 +421,7 @@ class NMFRunner:
             print(f'> Done [{outpath}].')
 
         # Plots
+        set_font_properties()
 
         # 1. Recon Error
         plt.figure(figsize=(8, 6))
@@ -485,7 +486,9 @@ class NMFRunner:
                     'MeanInnerProduct': metrics['mean_inner_product'],
                     'MedianInnerProduct': metrics['median_inner_product'],
                     'ARI': metrics['adjusted_rand_index'],
-                    'ARINonZero': metrics['adjusted_rand_index_nonzero']
+                    'ARINonZero': metrics['adjusted_rand_index_nonzero'],
+                    'MeanPearson': metrics['mean_person_correlation'],
+                    'MedianPearson': metrics['median_pearson_correlation']
                 }
                 rows.append(row)
                 if verbose:
@@ -497,6 +500,7 @@ class NMFRunner:
         self._reproducibility_metrics = df
 
         # Plots
+        set_font_properties()
 
         # 1. Mean inner product
         col = 'MeanInnerProduct'
@@ -568,6 +572,42 @@ class NMFRunner:
         plt.ylabel('Adjusted Rand Index (NonZero)')
 
         outpath = os.path.join(OUTDIR, 'ari_nonzero.png')
+        plt.savefig(outpath, dpi=300)
+
+        # 5. Mean Pearson correlation
+        col = 'MeanPearson'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Mean Pearson correlation')
+
+        outpath = os.path.join(OUTDIR, 'mean_pearson.png')
+        plt.savefig(outpath, dpi=300)
+
+        # 6. Median Pearson correlation
+        col = 'MedianPearson'
+        mean = df.groupby('Rank')[col].mean()
+        std = df.groupby('Rank')[col].std()
+        x = mean.index
+        y = mean.values
+        e = std.values
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y, color='blue')
+        plt.fill_between(x, y-e, y+e, alpha=0.1, color='blue', edgecolor='none')
+        plt.xticks(x)
+        plt.grid()
+        plt.xlabel('Rank')
+        plt.ylabel('Median Pearson correlation')
+
+        outpath = os.path.join(OUTDIR, 'median_pearson.png')
         plt.savefig(outpath, dpi=300)
 
     def run_main(self, dry=False):

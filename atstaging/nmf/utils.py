@@ -151,3 +151,24 @@ def plot_component(mat, i):
     overlay.plot()
 
     return overlay.fig
+
+def plot_component_over_pet_average(mat, i, path_pet, show_plot=True, vmin_pet=None, vmax_pet=None):
+    mni_path = get('mni152_brain')
+    mni = nib.load(mni_path)
+    mni_affine = mni.affine
+    mni_shape = mni.shape
+
+    W, _ = load_results(mat, transpose=True)
+    data1d = W[:, i]
+    data3d = np.reshape(data1d, mni_shape, order='F')
+    datanii = nib.Nifti1Image(data3d, affine=mni_affine)
+
+    overlay = NiftiOverlay()
+    overlay.add_anat(path_pet, color='gray', vmin=vmin_pet, vmax=vmax_pet)
+    overlay.add_anat(datanii, color='magma', alpha=.5, drop_zero=True)
+
+    if show_plot:
+        overlay.plot()
+
+    return overlay
+

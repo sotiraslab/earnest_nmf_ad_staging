@@ -21,6 +21,7 @@ from atstaging.nmf.utils import (
     load_image_with_downsample,
     load_results, 
     load_results_with_downsample, 
+    plot_component_over_pet_average
 )
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 _NMFVolBin_Directory = os.path.join(_this_dir, 'NMFVolBin')
@@ -71,6 +72,45 @@ class NMFRunner:
         self._X = None
         self._reconstruction_errors = None
         self._reproducibility_metrics = None
+
+    def create_basis_overlays_over_pet_average(self, path_average_pet, rank=None, vmin_pet=None, vmax_pet=None):
+        results = self.get_main_resultsmats()
+        figuredirs = self.get_main_figure_directores()
+
+        if isinstance(rank, int):
+            rank = [rank]
+        elif rank is None:
+            rank = list(results.keys())
+
+        print()
+        print(f'Path PET image: {path_average_pet}')
+        print(f'Rank solutions being plotted: {rank}')
+
+        for k in rank:
+
+            print()
+            print(f'> RANK = {k} ')
+            print(f'  + MAT path: {results[k]}')
+            print(f'  + Figure directory: {figuredirs[k]}')
+
+            mat = results[k]
+            figuredir = figuredirs[k]
+            
+            outdir = os.path.join(figuredir, 'MainOverlaysOnAvergePET')
+            os.makedirs(outdir, exist_ok=True)
+
+            for i in range(k):
+                print(f'  + Plotting component {i+1} of {k}...')
+                overlay = plot_component_over_pet_average(
+                    mat=mat,
+                    i=i,
+                    path_pet=path_average_pet,
+                    show_plot=False,
+                    vmax_pet=vmax_pet,
+                    vmin_pet=vmin_pet
+                )
+                overlay.generate(os.path.join(outdir, f'Basis{i+1}.jpg'))
+
     
     def compress_niftis(self, delete=True, verbose=True):
         niis_relative = glob.glob('**/*.nii', root_dir=self.output_directory, recursive=True)

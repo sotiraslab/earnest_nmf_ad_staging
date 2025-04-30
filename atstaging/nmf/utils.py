@@ -134,6 +134,25 @@ def load_results(mat, transpose=True):
 
     return W, H
 
+def mat_to_nifti(mat, output_directory):
+    mni_path = get('mni152_brain')
+    mni = nib.load(mni_path)
+    mni_affine = mni.affine
+    mni_shape = mni.shape
+
+    W, _ = load_results(mat, transpose=True)
+    k = W.shape[1]
+
+    os.makedirs(output_directory, exist_ok=True)
+
+    for i in range(k):
+        data1d = W[:, i]
+        data3d = np.reshape(data1d, mni_shape, order='F')
+        datanii = nib.Nifti1Image(data3d, affine=mni_affine)
+        
+        opath = os.path.join(output_directory, f'Component{i+1}.nii.gz')
+        nib.save(datanii, opath)
+
 def plot_component(mat, i):
 
     mni_path = get('mni152_brain')

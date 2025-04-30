@@ -68,6 +68,18 @@ class NMFRunner:
         if not os.path.isdir(path):
             os.mkdir(path)
 
+    def _updated_version(self):
+        new = NMFRunner(
+            name=self.name,
+            master_table_path=self.master_table_path,
+            output_root_folder=self.output_root_folder,
+            ranks=self.ranks,
+            master_table_path_column=self.master_table_path_column,
+            use_mask=self.use_mask
+        )
+
+        return new
+
     def clear_cache(self):
         self._X = None
         self._reconstruction_errors = None
@@ -123,6 +135,33 @@ class NMFRunner:
             del nii
             if delete:
                 os.remove(path)
+
+    def compute_loadings_array(self, images, rank, normalize=True):
+        results = self.get_main_resultsmats()
+        mat = results[rank]
+
+        W, _ = load_results(mat, transpose=True)
+
+        if normalize:
+            W /= W.sum(axis=0)
+
+        n = len(images)
+        output = np.zeros((n, rank))
+
+        print()
+        print(f'> Beginning main loop to derive loadings for {n} images.')
+        print()
+
+        for i, image in enumerate(images):
+            print(f'  + [{i+1}/{n}] {image}')
+            nii = nib.load(image)
+            data3d = nii.get_fdata()
+            data1d = data3d.flatten(order='F')
+            vsize = len(data1d)
+            loadings = np.matmul(data1d.reshape((1, vsize)), W)
+            output[i, :] = loadings
+
+        return output
                 
     def construct_X(self, downsample_factor=1, dtype='single', order='F'):
         
@@ -664,9 +703,7 @@ class NMFRunner:
 
         print()
         print('> Saving pickle of NMF Runner...')
-        pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
-        with open(pickle_path, 'wb') as file:
-            pickle.dump(self, file)
+        pickle_path = self.pickle()
         print(f'> Done [{pickle_path}]')
 
         print()
@@ -848,6 +885,13 @@ class NMFRunner:
         self.reproducibility_splits = df
         self.n_splits = n_splits
         self.split_columns = split_columns
+
+    def pickle(self):
+        pickle_path = os.path.join(self.output_directory, 'NMFRunner.pickle')
+        with open(pickle_path, 'wb') as file:
+            pickle.dump(self, file)
+
+        return pickle_path
 
     def setup(self):
         self._dircreate(self.output_root_folder)

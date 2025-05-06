@@ -136,7 +136,7 @@ class NMFRunner:
             if delete:
                 os.remove(path)
 
-    def compute_loadings_array(self, images, rank, normalize=True):
+    def compute_loadings_array(self, rank, images, normalize=True):
         results = self.get_main_resultsmats()
         mat = results[rank]
 
@@ -162,6 +162,21 @@ class NMFRunner:
             output[i, :] = loadings
 
         return output
+    
+    def compute_loadings_dataframe(self, rank, images, keep_indices=None, keep_names=None, normalize=True, prefix='', suffix=''):
+        if keep_indices is None:
+            keep_indices = list(range(rank))
+        if keep_names is None:
+            keep_names = [f'Component{i}' for i in range(1, len(keep_indices)+1)]
+        if len(keep_indices) != len(keep_names):
+            raise ValueError('Length of selected component indices and names must be the same.')
+        
+        loadings = self.compute_loadings_array(rank=rank, images=images, normalize=normalize)
+        selected_loadings = loadings[:, keep_indices]
+        df = pd.DataFrame(selected_loadings)
+        df.columns = keep_names
+        df.columns = prefix + df.columns + suffix
+        return df
                 
     def construct_X(self, downsample_factor=1, dtype='single', order='F'):
         

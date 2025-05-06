@@ -20,16 +20,18 @@ set_config('main')
 output_directory = get('output_directory')
 
 # VARIABLES
-path_tau_nmf = os.path.join(output_directory, 'nmf', 'runs', 'tau1390')
-path_amy_nmf = os.path.join(output_directory, 'nmf', 'runs', 'amyloid1390')
+nmf_name_tau = 'tau1390'
+nmf_name_amyloid = 'amyloid1390'
 
 # TAU
+path_tau_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_tau)
 taunmf = load_nmf_runner(path_tau_nmf)
 taunmf.post_main()
 taunmf.reconstruction_error_analysis()
 taunmf.reproducibility_analysis()
 
 # AMYLOID
+path_amy_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_amyloid)
 amynmf = load_nmf_runner(path_amy_nmf)
 amynmf.post_main()
 amynmf.reconstruction_error_analysis()

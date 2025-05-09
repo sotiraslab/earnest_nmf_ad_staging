@@ -9,7 +9,7 @@ from atstaging.outputs import load_split, load_paths_tables
 # VARIABLES
 # NOTE: set `dry=False` to actually run the NMF
 name_tau = 'tau1390'
-name_amyloid = 'amyloid1390'
+name_amyloid = 'amyloidCN1183'
 path_splits_tau = '/scratch/tom.earnest/atstaging/nmf/tables/training1390_splits.csv'
 path_splits_amyloid = '/scratch/tom.earnest/atstaging/nmf/tables/training1390_splits.csv'
 dry=True
@@ -45,7 +45,7 @@ taunmf.run_reproducibility(reproducibility_splits_path=path_splits_tau, dry=dry)
 
 # AMYLOID
 amyloidnmf = NMFRunner(
-    name='amyloidCN1183',
+    name=name_amyloid,
     master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'cn1183_master.csv'),
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=list(range(2, 21)),

@@ -23,8 +23,8 @@ set_config('main')
 output_directory = get('output_directory')
 
 # LOAD NMF RUNNERS
-taunmf = load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'tau1390'))
-amynmf = load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'amyloid1390'))
+taunmf = load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', tau_nmf_name))
+amynmf = load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', amy_nmf_name))
 
 # LOAD PATHS TO PREPROCESSED IMAGES
 # filtered to be only the images in the final dataset
@@ -55,7 +55,7 @@ if os.path.isfile(amy_loadings_cache):
 else:
     print()
     print('>  No cached amyloid loadings found; recomputing..')
-    amy_loadings = amynmf.compute_loadings_dataframe(rank=amy_rank, images=images, keep_indices=amy_component_indices, keep_names=amy_component_names, prefix='PTC', suffix='SUVR')
+    amy_loadings = amynmf.compute_loadings_dataframe(rank=amy_rank, images=images, keep_indices=amy_component_indices, keep_names=amy_component_names, prefix='PAC', suffix='SUVR')
     amy_loadings.to_csv(amy_loadings_cache, index=False)
 
 # CREATE FEATURES

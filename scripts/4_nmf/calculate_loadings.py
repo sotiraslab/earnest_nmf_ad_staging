@@ -28,7 +28,7 @@ amynmf = load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'amyloid1
 
 # LOAD PATHS TO PREPROCESSED IMAGES
 # filtered to be only the images in the final dataset
-maindata = load_split(None, None)[:200]
+maindata = load_split(None, None)
 paths = load_paths_tables()
 paths = paths[(paths['Subject'] + paths['Session']).isin(maindata['Subject'] + maindata['Session'])].copy()
 

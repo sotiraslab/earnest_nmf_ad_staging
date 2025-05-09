@@ -60,7 +60,7 @@ def load_master(master_folder=None, filters=True, features=True):
 
     return master
 
-def load_split(split='training', longitudinal='baseline', longitudinal_sub=None, split_column='Split'):
+def load_split(split='training', longitudinal='baseline', validation_sub=None, split_column='Split'):
     
     master = load_master(filters=True, features=True)
     data_split_series = master[split_column]
@@ -72,9 +72,9 @@ def load_split(split='training', longitudinal='baseline', longitudinal_sub=None,
     if longitudinal is not None and longitudinal.lower() not in ['baseline', 'followup']:
         raise ValueError('`longitudinal` must be "baseline" or "followup", or None')
     
-    if (longitudinal_sub is not None) and (longitudinal_sub not in ['A', 'B']):
-        print(type(longitudinal_sub))
-        raise ValueError('`longitudinal_sub` must be "A" or "B" or None')
+    if (validation_sub is not None) and (validation_sub not in ['A', 'B']):
+        print(type(validation_sub))
+        raise ValueError('`validation_sub` must be "A" or "B" or None')
 
     key_training = split.lower().capitalize() if split else ''
     key_longitudinal = longitudinal.lower().capitalize() if longitudinal else ''
@@ -83,8 +83,8 @@ def load_split(split='training', longitudinal='baseline', longitudinal_sub=None,
     mask2 = data_split_series.str.contains(key_longitudinal)
     final_mask = mask1 & mask2
 
-    if longitudinal_sub is not None:
-        mask3 = master['SameTracerValidation' + longitudinal_sub]
+    if validation_sub is not None:
+        mask3 = master['SameTracerValidation' + validation_sub]
         final_mask = final_mask & mask3
 
     data = master[final_mask]

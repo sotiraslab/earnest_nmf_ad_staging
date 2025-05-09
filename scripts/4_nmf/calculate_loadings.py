@@ -14,8 +14,8 @@ tau_component_indices = [3, 4, 5, 6, 7, 9, 10]
 tau_component_names = ['LeftParietlTemporal', 'Occipital', 'RightParietalTemporal', 'Frontal', 'MedialTemporal', 'Sensorimotor', 'Orbitofrontal']
 
 amy_nmf_name = 'amyloidCN1183'
-amy_rank = 12
-amy_component_indices = [1, 3, 5, 8, 10]
+amy_rank = 10
+amy_component_indices = [1, 3, 5, 7, 9]
 amy_component_names = ['FrontalCingulatePrecuneus', 'Parietal', 'Occipital', 'Sensorimotor', 'Insular']
 
 # CONFIG

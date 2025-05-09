@@ -21,7 +21,7 @@ output_directory = get('output_directory')
 
 # VARIABLES
 nmf_name_tau = 'tau1390'
-nmf_name_amyloid = 'amyloid1390'
+nmf_name_amyloid = 'amyloidCN1183'
 
 # TAU
 path_tau_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_tau)

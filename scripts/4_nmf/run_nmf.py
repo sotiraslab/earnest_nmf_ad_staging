@@ -21,8 +21,14 @@ output_directory = get('output_directory')
 # LOAD DATA
 training = load_split('training', 'baseline')
 paths = load_paths_tables()
+
+# whole training set, which is used for tau (n=1390)
 df = training.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
 df.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'training1390_master.csv'))
+
+# CNs only, used for amyloid (n=1183)
+cn = df[df['CDRBinned'].eq('0.0') & ~df['CDRBinned'].isna()]
+cn.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'cn1183_master.csv'))
 
 # TAU
 taunmf = NMFRunner(
@@ -39,8 +45,8 @@ taunmf.run_reproducibility(reproducibility_splits_path=path_splits_tau, dry=dry)
 
 # AMYLOID
 amyloidnmf = NMFRunner(
-    name=name_amyloid,
-    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'training1390_master.csv'),
+    name='amyloidCN1183',
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'cn1183_master.csv'),
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=list(range(2, 21)),
     master_table_path_column='amyloid_registered',

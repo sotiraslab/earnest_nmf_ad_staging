@@ -55,7 +55,7 @@ def load_master(master_folder=None, filters=True, features=True):
             feature_df = pd.read_csv(path , dtype={'Subject': str, 'Session': str})
             master = master.merge(feature_df, on=['Subject', 'Session'], how='left')
             colsafter = len(master.columns)
-            print(f'    + # Features before: {colsbefore}; after: {colsafter}')
+            print(f'    + # Features before: {colsbefore}; after: {colsafter} (nrows: {len(master)})')
         print('    + Complete.')
 
     return master

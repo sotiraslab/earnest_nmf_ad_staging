@@ -175,8 +175,15 @@ is_ads = df['FinalAmyloidStatus'].eq(1.0)
 is_cn = df['FinalAmyloidStatus'].eq(0.0) & df['GMMTauStatus'].eq(0.0) & (df['CDR'].eq(0.0) & ~df['CDR'].isna())
 has_acceptable_diseasestatus = (is_ads | is_cn) & has_demographics
 has_training_tracers = df['TracerAmyloid'].eq('FBP') & df['TracerTau'].eq('FTP')
-training_subjects = df.loc[has_training_tracers & has_acceptable_diseasestatus, 'Subject'].unique()
+training_subjects = df.loc[has_training_tracers & has_acceptable_diseasestatus & is_baseline, 'Subject'].unique()
 is_training = df['Subject'].isin(training_subjects)
+
+# look for changes to tracer
+baseline_tracers = df.loc[is_baseline, ['Subject', 'TracerAmyloid', 'TracerTau']]
+baseline_tracers.columns = ['Subject', 'BaselineTracerAmyloid', 'BaselineTracerTau']
+tracer_tracker = df[['Subject', 'Session', 'TracerAmyloid', 'TracerTau']]
+tracer_tracker = tracer_tracker.merge(baseline_tracers, how='left', on='Subject')
+followup_tracer_changes = tracer_tracker['BaselineTracerAmyloid'].ne(tracer_tracker['TracerAmyloid']) | tracer_tracker['BaselineTracerTau'].ne(tracer_tracker['TracerTau'])
 
 #  apply splits
 df['Split'] = ''
@@ -184,11 +191,10 @@ df.loc[is_training & is_baseline, 'Split'] = 'TrainingBaseline'
 df.loc[is_training & ~is_baseline, 'Split'] = 'TrainingFollowup'
 df.loc[~is_training & is_baseline, 'Split'] = 'ValidationBaseline'
 df.loc[~is_training & ~is_baseline, 'Split'] = 'ValidationFollowup'
-df['OMIT'] = (is_baseline & ~ has_acceptable_diseasestatus) | (~ has_demographics)
 
 # apply exclusion criteria
 omit_subjects = df.loc[is_baseline & ~ has_acceptable_diseasestatus, 'Subject']
-omit_mask = df['Subject'].isin(omit_subjects) | (~ has_demographics)
+omit_mask = df['Subject'].isin(omit_subjects) | (~ has_demographics) | followup_tracer_changes
 omitted = df[omit_mask].copy()
 df = df[~omit_mask].copy()
 omitted.to_csv(os.path.join(plot_folder, 'omitted_scans.csv'), index=False)

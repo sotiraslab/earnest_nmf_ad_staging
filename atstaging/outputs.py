@@ -72,9 +72,9 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None, s
     if longitudinal is not None and longitudinal.lower() not in ['baseline', 'followup']:
         raise ValueError('`longitudinal` must be "baseline" or "followup", or None')
     
-    if (validation_sub is not None) and (validation_sub not in ['A', 'B']):
+    if (validation_sub is not None) and (validation_sub not in ['A', 'B', 'C']):
         print(type(validation_sub))
-        raise ValueError('`validation_sub` must be "A" or "B" or None')
+        raise ValueError('`validation_sub` must be "A", "B", "C", or None')
 
     key_training = split.lower().capitalize() if split else ''
     key_longitudinal = longitudinal.lower().capitalize() if longitudinal else ''

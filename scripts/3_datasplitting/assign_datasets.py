@@ -169,10 +169,11 @@ baseline_index = df.groupby('Subject')['TauAmyloidMeanDate'].idxmin()
 # baseline = df.loc[baseline_index].copy()
 
 # useful masks
+has_demographics = (~df['Age'].isna()) & (~df['SexMale'].isna())
 is_baseline = df.index.isin(baseline_index)
 is_ads = df['FinalAmyloidStatus'].eq(1.0)
 is_cn = df['FinalAmyloidStatus'].eq(0.0) & df['GMMTauStatus'].eq(0.0) & (df['CDR'].eq(0.0) & ~df['CDR'].isna())
-has_acceptable_diseasestatus = is_ads | is_cn
+has_acceptable_diseasestatus = (is_ads | is_cn) & has_demographics
 has_training_tracers = df['TracerAmyloid'].eq('FBP') & df['TracerTau'].eq('FTP')
 training_subjects = df.loc[has_training_tracers & has_acceptable_diseasestatus, 'Subject'].unique()
 is_training = df['Subject'].isin(training_subjects)
@@ -183,20 +184,22 @@ df.loc[is_training & is_baseline, 'Split'] = 'TrainingBaseline'
 df.loc[is_training & ~is_baseline, 'Split'] = 'TrainingFollowup'
 df.loc[~is_training & is_baseline, 'Split'] = 'ValidationBaseline'
 df.loc[~is_training & ~is_baseline, 'Split'] = 'ValidationFollowup'
-df['OMIT'] = is_baseline & ~ has_acceptable_diseasestatus
+df['OMIT'] = (is_baseline & ~ has_acceptable_diseasestatus) | (~ has_demographics)
 
 # apply exclusion criteria
 omit_subjects = df.loc[is_baseline & ~ has_acceptable_diseasestatus, 'Subject']
-omitted = df[df['Subject'].isin(omit_subjects)].copy()
-df = df[~df['Subject'].isin(omit_subjects)].copy()
+omit_mask = df['Subject'].isin(omit_subjects) | (~ has_demographics)
+omitted = df[omit_mask].copy()
+df = df[~omit_mask].copy()
 omitted.to_csv(os.path.join(plot_folder, 'omitted_scans.csv'), index=False)
 
 # Identify same tracer splits
 df['SameTracerValidationA'] = df['TracerAmyloid'].eq('PIB') & df['TracerTau'].eq('FTP')
 df['SameTracerValidationB'] = df['TracerAmyloid'].eq('FBB') & df['TracerTau'].eq('P26')
+df['SameTracerValidationC'] = df['TracerAmyloid'].eq('FBB') & df['TracerTau'].eq('FTP')
 
 # save
-tosave = df[['Subject', 'Session', 'Split', 'SameTracerValidationA', 'SameTracerValidationB']].copy()
+tosave = df[['Subject', 'Session', 'Split', 'SameTracerValidationA', 'SameTracerValidationB', 'SameTracerValidationC']].copy()
 savepath = os.path.join(output_folder, 'masterTables', 'FEATURE_SPLIT.csv')
 tosave.to_csv(savepath, index=False)
 

@@ -11,7 +11,9 @@ def _dircreate(*args):
     if not os.path.isdir(path):
         os.mkdir(path)
         
-def load_master(master_folder=None, filters=True, features=True):
+def load_master(master_folder=None, filters=True, features=True, verbose=True):
+
+    vprint = print if verbose else lambda *args, **kwargs: None
 
     if master_folder is None:
         odir = get('output_directory')
@@ -22,18 +24,18 @@ def load_master(master_folder=None, filters=True, features=True):
     features_csvs = sorted([f for f in listdir if os.path.basename(f).startswith('FEATURE')])
     filter_csvs = sorted([f for f in listdir if os.path.basename(f).startswith('FILTER')])
 
-    print()
-    print("* Loading master dataframe")
+    vprint()
+    vprint("* Loading master dataframe")
 
-    print(f"    + Loading base from {master_csv_path}")
+    vprint(f"    + Loading base from {master_csv_path}")
     master = pd.read_csv(master_csv_path, dtype={'Subject': str, 'Session': str})
-    print("    + Complete.")
+    vprint("    + Complete.")
 
     if filters:
-        print('* Applying filters.')
-        print(f'    + Filters found: {[os.path.basename(f) for f in filter_csvs]}')
+        vprint('* Applying filters.')
+        vprint(f'    + Filters found: {[os.path.basename(f) for f in filter_csvs]}')
         for path in filter_csvs:
-            print(f'    + Applying filter: {os.path.basename(path)}')
+            vprint(f'    + Applying filter: {os.path.basename(path)}')
             lenbefore = len(master)
             tmpname = '__Keep__'
             filter_df = pd.read_csv(path, dtype={'Subject': str, 'Session': str, 'Keep': bool})
@@ -43,26 +45,26 @@ def load_master(master_folder=None, filters=True, features=True):
             master = master[master[tmpname].astype(bool) & ~(master[tmpname].isna())].copy()
             master = master[[col for col in master.columns if col != tmpname]]
             lenafter = len(master)
-            print(f'    + # Records before: {lenbefore}; after: {lenafter}')
-        print('    + Complete')
+            vprint(f'    + # Records before: {lenbefore}; after: {lenafter}')
+        vprint('    + Complete')
     
     if features:
-        print('* Adding features.')
-        print(f'    + Features found: {[os.path.basename(f) for f in features_csvs]}')
+        vprint('* Adding features.')
+        vprint(f'    + Features found: {[os.path.basename(f) for f in features_csvs]}')
         for path in features_csvs:
-            print(f'    + Adding features: {os.path.basename(path)}')
+            vprint(f'    + Adding features: {os.path.basename(path)}')
             colsbefore = len(master.columns)
             feature_df = pd.read_csv(path , dtype={'Subject': str, 'Session': str})
             master = master.merge(feature_df, on=['Subject', 'Session'], how='left')
             colsafter = len(master.columns)
-            print(f'    + # Features before: {colsbefore}; after: {colsafter} (nrows: {len(master)})')
-        print('    + Complete.')
+            vprint(f'    + # Features before: {colsbefore}; after: {colsafter} (nrows: {len(master)})')
+        vprint('    + Complete.')
 
     return master
 
-def load_split(split='training', longitudinal='baseline', validation_sub=None, split_column='Split'):
+def load_split(split='training', longitudinal='baseline', validation_sub=None, split_column='Split', verbose=True):
     
-    master = load_master(filters=True, features=True)
+    master = load_master(filters=True, features=True, verbose=verbose)
     data_split_series = master[split_column]
 
     # validate

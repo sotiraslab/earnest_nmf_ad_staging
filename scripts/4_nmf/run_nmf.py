@@ -18,7 +18,7 @@ path_record_tau = os.path.join(output_directory, 'nmf', 'tables', 'training_tau_
 path_record_amyloid = os.path.join(output_directory, 'nmf', 'tables', 'training_amyloid_master.csv')
 path_splits_tau = os.path.join(output_directory, 'nmf', 'tables', 'training_tau_splits.csv')
 path_splits_amyloid = os.path.join(output_directory, 'nmf', 'tables', 'training_amyloid_splits.csv')
-dry=False
+dry=True
 
 # LOAD DATA
 training = load_split('training', 'baseline')
@@ -37,13 +37,13 @@ taunmf = NMFRunner(
     name=name_tau,
     master_table_path=path_record_tau,
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
-    ranks=[9, 10, 11, 12],
+    ranks=list(range(2, 21)),
     master_table_path_column='tau_registered',
     use_mask=False
 )
 
 taunmf.run_main(dry=dry)
-# taunmf.run_reproducibility(reproducibility_splits_path=path_splits_tau, dry=dry)
+taunmf.run_reproducibility(reproducibility_splits_path=path_splits_tau, dry=dry)
 
 # AMYLOID
 amyloidnmf = NMFRunner(

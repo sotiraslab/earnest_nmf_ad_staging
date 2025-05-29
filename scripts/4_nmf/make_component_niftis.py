@@ -17,10 +17,10 @@ os.makedirs(OUTDIR_AMY, exist_ok=True)
 os.makedirs(OUTDIR_TAU, exist_ok=True)
 
 # VARIABLES
-nmf_name_tau = 'tau1390'
-nmf_ranks_tau = [2, 11] 
-nmf_name_amyloid = 'amyloidCN1183'
-nmf_ranks_amyloid = [2, 10]
+nmf_name_tau = 'training_tau'
+nmf_ranks_tau = [2, 12] 
+nmf_name_amyloid = 'training_amyloid'
+nmf_ranks_amyloid = [2, 11]
 
 # TAU
 path_tau_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_tau)

@@ -8,15 +8,21 @@ from atstaging.nmf.utils import load_nmf_runner
 from atstaging.outputs import load_paths_tables, load_split
 
 # PARAMETERS
-tau_nmf_name = 'tau1390'
-tau_rank = 11
-tau_component_indices = [3, 4, 5, 6, 7, 9, 10]
-tau_component_names = ['LeftParietlTemporal', 'Occipital', 'RightParietalTemporal', 'Frontal', 'MedialTemporal', 'Sensorimotor', 'Orbitofrontal']
+tau_nmf_name = 'training_tau'
+tau_rank = 12
+tau_component_indices = [
+    1, 3, 4, 6,
+    9, 10, 11
+    ]
+tau_component_names = [
+    'LeftParietalTemporal', 'Occipital', 'RightParietalTemporal', 'TemporalPole',
+    'Sensorimotor', 'Frontal', 'MedialOrbitofrontal'
+    ]
 
-amy_nmf_name = 'amyloidCN1183'
-amy_rank = 10
-amy_component_indices = [1, 3, 5, 7, 9]
-amy_component_names = ['FrontalCingulatePrecuneus', 'Parietal', 'Occipital', 'Sensorimotor', 'Insular']
+amy_nmf_name = 'training_amyloid'
+amy_rank = 11
+amy_component_indices = [1, 2, 5, 6]
+amy_component_names = ['Frontal', 'Parietal', 'Occipital', 'Sensorimotor']
 
 # CONFIG
 set_config('main')

@@ -20,8 +20,8 @@ set_config('main')
 output_directory = get('output_directory')
 
 # VARIABLES
-nmf_name_tau = 'tau1390'
-nmf_name_amyloid = 'amyloidCN1183'
+nmf_name_tau = 'training_tau'
+nmf_name_amyloid = 'training_amyloid'
 
 # TAU
 path_tau_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_tau)

@@ -129,8 +129,6 @@ def set_config_automatic():
         update_config(file)
         break
 
-    assert_config_is_set()
-
 def update_config(file):
 
     global CONFIG_FILE

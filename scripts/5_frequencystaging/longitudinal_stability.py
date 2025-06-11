@@ -54,10 +54,10 @@ def longitudinal_permutation_test(flow, N):
 
     return {'observed': observed, 'null': null, 'p': p, 'figure': fig}
 
-def longitudinal_transitions_heatmap(flow, ax=None, ticklabels=None):
+def longitudinal_transitions_heatmap(flow, ax=None, potential_labels=None, ticklabels=None):
 
     # create heatmap data
-    labels = sorted(flow['label_to'].unique(), key = lambda x: (not x.isnumeric(), x))
+    labels = sorted(flow['label_to'].unique(), key = lambda x: (not x.isnumeric(), x)) if potential_labels is None else potential_labels
     transitions = flow.groupby(['label_from', 'label_to'])['subject'].count()
     new_index = pd.MultiIndex.from_product([labels, labels])
     transitions = transitions.reindex(new_index).reset_index()
@@ -107,13 +107,14 @@ def longitudinal_transitions_heatmap(flow, ax=None, ticklabels=None):
 
     return fig
 
-def pipeline(df, stage_labels=None, out_histogram=None, out_heatmap=None):
+def pipeline(df, stage_labels=None, potential_labels=None,\
+             out_histogram=None, out_heatmap=None):
     flow = stageflow(df)
     permresults = longitudinal_permutation_test(flow, N=N)
     if out_histogram is not None:
         permresults['figure'].savefig(out_histogram, dpi=300)
 
-    hmap = longitudinal_transitions_heatmap(flow, ticklabels=stage_labels)
+    hmap = longitudinal_transitions_heatmap(flow, potential_labels=potential_labels, ticklabels=stage_labels)
     if out_heatmap is not None:
         hmap.savefig(out_heatmap, dpi=300)
 
@@ -141,6 +142,7 @@ def stagestat(label_from, label_to):
 # MAIN
 
 set_config('main')
+potential_labels = ['0', '1', '2', '3', '4', '5', '6', 'NS']
 stage_labels = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'NS']
 
 # outputs
@@ -153,17 +155,19 @@ df = load_split('training', None, verbose=False)
 df = df[~df['ControlForStaging']].copy()
 pipeline(df, out_histogram=os.path.join(plots_dest, 'training_permutation_test.png'),
          out_heatmap=os.path.join(plots_dest, 'training_transition_heatmap.png'),
-         stage_labels=stage_labels)
+         stage_labels=stage_labels, potential_labels=potential_labels)
 
 # # Validation - All
 df = load_split('validation', None, verbose=False)
 df = df[~df['ControlForStaging']].copy()
 pipeline(df, out_histogram=os.path.join(plots_dest, 'validationAll_permutation_test.png'),
-         out_heatmap=os.path.join(plots_dest, 'validationAll_transition_heatmap.png'))
+         out_heatmap=os.path.join(plots_dest, 'validationAll_transition_heatmap.png'),
+         stage_labels=stage_labels, potential_labels=potential_labels)
 
 # Validation - subsets
 for x in ['A', 'B', 'C']:
     df = load_split('validation', None, verbose=False, validation_sub=x)
     df = df[~df['ControlForStaging']].copy()
     pipeline(df, out_histogram=os.path.join(plots_dest, f'validation{x}_permutation_test.png'),
-             out_heatmap=os.path.join(plots_dest, f'validation{x}_transition_heatmap.png'))
+             out_heatmap=os.path.join(plots_dest, f'validation{x}_transition_heatmap.png'),
+             stage_labels=stage_labels, potential_labels=potential_labels)

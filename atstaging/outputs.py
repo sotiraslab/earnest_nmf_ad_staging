@@ -62,7 +62,8 @@ def load_master(master_folder=None, filters=True, features=True, verbose=True):
 
     return master
 
-def load_split(split='training', longitudinal='baseline', validation_sub=None, split_column='Split', verbose=True):
+def load_split(split='training', longitudinal='baseline', validation_sub=None,
+               split_column='Split', omit_control=False, verbose=True):
     
     master = load_master(filters=True, features=True, verbose=verbose)
     data_split_series = master[split_column]
@@ -92,6 +93,11 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None, s
     data = master[final_mask]
     if data.empty:
         raise ValueError('Selection returned an empty dataframe!  Check parameters.')
+    
+    if omit_control:
+        print()
+        print('Omitting controls using `ControlForStaging` column.')
+        data = data[~data['ControlForStaging']].copy()
 
     return data
 

@@ -459,7 +459,7 @@ atstaging <- function(data, staging.results, thr = 2.5) {
            StageDual = ifelse(StageAmyloid == '0' & StageTau != '0', 'A-T+', StageDual),
            StageLabeled = recode(StageMain, '0'='A0T0', '1'='A1T0', '2'='A2T0', '3'='A2T1',
                                  '4'='A2T2', '5'='A2T3', '6'='A2T4', 'NS'='NS'),
-           StageLabeled = ifelse(StageAmyloid == '0' & StageTau != '0', 'A-T+', StageLabeled),
+           StageLabeled = ifelse(StageAmyloid == '0' & StageTau != '0', 'A0T+', StageLabeled),
            StageLabeled = ifelse(StageAmyloid == '1' & StageTau %in% c('1', '2', '3', '4'), 'A1T+', StageLabeled))
   return (result)
 }

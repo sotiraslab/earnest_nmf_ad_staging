@@ -1,6 +1,7 @@
 
 import os
 
+import matplotlib as mpl
 from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
 import nibabel as nib
@@ -27,20 +28,20 @@ def make_average_pet_image(images, out_nii=None, out_figure=None, reuse=True):
         n = len(images)
         example = nib.load(images[0])
         shape = example.shape
-        
+
         dataimage = np.zeros(shape, dtype='single')
-        
+
         print()
         print(f'Looping through {n} images: ')
         print()
-        
+
         for i, path in enumerate(images):
-        
+
             print(f'+ Count={i+1}, Path={path}')
             nii = nib.load(path)
             data = nii.get_fdata()
             dataimage += data
-        
+
         dataimage /= n
         dataimage = nib.Nifti1Image(dataimage, affine=example.affine)
 
@@ -58,3 +59,23 @@ def set_font_properties():
     plt.rcParams.update({
         'font.size': 14,
         'font.family': 'FreeSans'})
+
+def staging_colors():
+    a_cmap = mpl.colormaps['Blues']
+    t_cmap = mpl.colormaps['YlOrRd']
+    ns_cmap = mpl.colormaps['Purples']
+    colors = {
+        'A0T0': 'white',
+        'A1T0': a_cmap(1/3),
+        'A2T0': a_cmap(2/3),
+        'A2T1': t_cmap(.2),
+        'A2T2': t_cmap(.4),
+        'A2T3': t_cmap(.6),
+        'A2T4': t_cmap(.8),
+        'Atypical': 'gray',
+        'NS': ns_cmap(1/3),
+        'A0T+': ns_cmap(2/3),
+        'A1T+': ns_cmap(1.)
+        }
+
+    return colors

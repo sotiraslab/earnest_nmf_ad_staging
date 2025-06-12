@@ -13,7 +13,8 @@ import os
 
 import gl
 
-def plot_hemisphere(nifti_path, side, output_directory, output_name=None, colormap='actc'):
+def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
+                    colormap='actc', overlayminmax=None):
 
     # screen arguments
     side = side.lower()
@@ -56,6 +57,9 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None, colorm
     gl.overlayload(nifti_path)
     gl.overlaycolorname(1, colormap)
     gl.overlayopacity(1, 100)
+    if overlayminmax is not None:
+        a, b = overlayminmax
+        gl.overlayminmax(1, a, b)
 
     # lateral view
     gl.viewsagittal(sagittal_lateral_view)
@@ -72,13 +76,15 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None, colorm
     gl.savebmpxy(outpath, 1000, 1000)
 
 
-def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colormap='actc'):
+def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colormap='actc',
+                          overlayminmax=None):
     plot_hemisphere(
         nifti_path=nifti_path,
         side='left',
         colormap=colormap,
         output_directory=output_directory,
-        output_name=output_name
+        output_name=output_name,
+        overlayminmax=overlayminmax
         )
 
     plot_hemisphere(
@@ -86,6 +92,7 @@ def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colorm
         side='right',
         colormap=colormap,
         output_directory=output_directory,
-        output_name=output_name
+        output_name=output_name,
+        overlayminmax=overlayminmax
         )
 

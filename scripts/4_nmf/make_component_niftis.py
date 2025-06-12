@@ -1,6 +1,7 @@
 
 # IMPORTS
 import os
+import shutil
 
 from atstaging.config import get, set_config
 from atstaging.nmf.utils import load_nmf_runner, mat_to_nifti
@@ -30,6 +31,12 @@ for k in nmf_ranks_tau:
     outdir = os.path.join(OUTDIR_TAU, f'rank{k}')
     os.makedirs(outdir, exist_ok=True)
     mat_to_nifti(taunmf_results[k], outdir)
+    
+    # copy MAT
+    srcpath = taunmf_results[k]
+    matname = os.path.basename(srcpath)
+    destpath = os.path.join(outdir, matname)
+    shutil.copyfile(srcpath, destpath)
 
 # AMYLOID
 path_amy_nmf = os.path.join(output_directory, 'nmf', 'runs', nmf_name_amyloid)
@@ -39,3 +46,9 @@ for k in nmf_ranks_amyloid:
     outdir = os.path.join(OUTDIR_AMY, f'rank{k}')
     os.makedirs(outdir, exist_ok=True)
     mat_to_nifti(amynmf_results[k], outdir)
+
+    # copy MAT
+    srcpath = amynmf_results[k]
+    matname = os.path.basename(srcpath)
+    destpath = os.path.join(outdir, matname)
+    shutil.copyfile(srcpath, destpath)

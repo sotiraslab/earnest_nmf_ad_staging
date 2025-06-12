@@ -9,6 +9,9 @@ from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
 
+from atstaging.config import get
+from atstaging.nmf.utils import load_results
+
 def freesurfer_cortical_colors():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'freesurfer_cortical_colors.csv')
     colors = pd.read_csv(path)
@@ -54,6 +57,133 @@ def make_average_pet_image(images, out_nii=None, out_figure=None, reuse=True):
         overlay.generate(out_figure)
 
     return dataimage, overlay
+
+def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, outpath=None,
+                          return_type='nii'):
+
+    ###### NMF SETTINGS SPECIFIC TO THE PROJECT ##############
+
+    # These could be moved to the configuration (also elswhere in code)
+    # If these settings are changed, all cached WTA images should be removed
+
+    selected_tau_rank = 12
+    selected_amyloid_rank = 11
+
+    # Map component names to indices of the W matrix
+    amy_mapping = {
+        'PACParietal': 2,
+        'PACFrontal': 1,
+        'PACSensorimotor': 5,
+        'PACOccipital': 6
+        }
+
+    tau_mapping = {
+        'PTCTemporalPole': 6,
+        'PTCRightParietalTemporal': 4,
+        'PTCLeftParietalTemporal': 1,
+        'PTCOccipital': 3,
+        'PTCFrontal': 10,
+        'PTCSensorimotor': 9,
+        'PTCMedialOrbitofrontal': 11
+        }
+    ###### NMF SETTINGS SPECIFIC TO THE PROJECT ##############
+
+    # screen arguments
+    if biomarker.lower() == 'a':
+        biomarker = 'amyloid'
+    if biomarker.lower() == 't':
+        biomarker = 'tau'
+    if biomarker not in ['tau', 'amyloid']:
+        raise ValueError('`biomarker` must be "tau" or "amyloid"')
+
+    threshold = round(threshold, 2)
+    if not isinstance(threshold, float) or not (0 < threshold < 1):
+        raise ValueError('`threshold` must be a float between 0 and 1 (exclusive on both sides).')
+
+    return_type = return_type.lower()
+    if return_type not in ['1d', '3d', 'nii']:
+        raise ValueError('`return_type` must be "1d", "3d", or "nii".')
+
+    mapping = amy_mapping if biomarker == 'amyloid' else tau_mapping
+
+    # set some paths
+    output_directory = get('output_directory')
+    amy_results_mat = os.path.join(output_directory, 'images', 'amyloid_components', f'rank{selected_amyloid_rank}', 'ResultsExtractBases.mat')
+    tau_results_mat = os.path.join(output_directory, 'images', 'tau_components', f'rank{selected_tau_rank}', 'ResultsExtractBases.mat')
+    save_wta_directory = os.path.join(output_directory, 'images', 'winner_take_all')
+
+    # get the winner take all image
+    cache_image_path = os.path.join(save_wta_directory, f'{biomarker}_thresh{threshold}.nii.gz')
+    if use_saved and os.path.exists(cache_image_path):
+        print()
+        print(f'Using saved winner take all image for biomarker={biomarker} and threshold={threshold} ({cache_image_path}).')
+        wta_nii = nib.load(cache_image_path)
+        wta3D = wta_nii.get_fdata()
+        wta1D = wta3D.flatten(order='F')
+    else:
+        print()
+        print(f'Constructing winner take all image for biomarker={biomarker} and threshold={threshold}.')
+
+        mat = amy_results_mat if biomarker == 'amyloid' else tau_results_mat
+        comp_indices = list(mapping.values())
+
+        W, H = load_results(mat, transpose=True)
+        W = W[:, comp_indices]
+
+        m, k = W.shape
+        extents = W.max(axis=0) - W.min(axis=0)
+        cutoffs = (extents * threshold) + W.min(axis=0)
+        W_thresholded = np.where(W > cutoffs.reshape([1, k]), W, 0)
+
+        W_unit = W_thresholded / np.sqrt(np.sum(W_thresholded  ** 2, axis=0))
+        wta1D = W_unit.argmax(axis=1).astype('single')
+        zero_mask = np.all(W_thresholded == 0, axis=1)
+        wta1D = np.where(zero_mask, 0., wta1D+1)
+
+        # save
+
+        # load mni for affine & shape
+        mni_path = get('mni152_brain')
+        mni = nib.load(mni_path)
+        shape = mni.shape
+        affine = mni.affine
+
+        wta_nii = nib.Nifti1Image(
+            dataobj=np.reshape(wta1D, shape, order='F'),
+            affine=affine)
+
+        os.makedirs(save_wta_directory, exist_ok=True)
+        nib.save(wta_nii, cache_image_path)
+
+    # WTA image/array is loaded, but its values are ascending integers
+    # Need to map them to the indices contained in the mapping dictionary
+    wta1Dremap = np.copy(wta1D)
+    remapper = dict(zip(np.arange(len(mapping)) + 1, list(mapping.values())))
+    for k, v in remapper.items():
+        wta1Dremap[wta1D == k] = v
+
+    # Now apply the assignments
+    output1D = np.zeros(shape=wta1Dremap.shape)
+    for name, value in assignments.items():
+        index = mapping[name]
+        output1D[wta1Dremap == index] = value
+
+    shape = wta_nii.shape
+    affine = wta_nii.affine
+    output3D = np.reshape(output1D, shape, order='F')
+    output_nii = nib.Nifti1Image(dataobj=output3D, affine=affine)
+
+    return_value = {
+        '1d': output1D,
+        '3d': output3D,
+        'nii': output_nii
+        }[return_type]
+
+    # save if requested
+    if outpath:
+        nib.save(output_nii, outpath)
+
+    return return_value
 
 def set_font_properties():
     plt.rcParams.update({

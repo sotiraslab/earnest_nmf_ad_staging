@@ -11,17 +11,14 @@ set_config('main')
 output_directory = get('output_directory')
 
 # parameters
-TAU_RANK = 11
-AMYLOID_RANK = 10
+TAU_RANK = 12
+AMYLOID_RANK = 11
 
 # load master data
 validationA = load_split(split='validation', longitudinal='baseline', validation_sub='A')
 validationB = load_split(split='validation', longitudinal='baseline', validation_sub='B')
 validationC = load_split(split='validation', longitudinal='baseline', validation_sub='C')
-
-validationACN = validationA[validationA['CDRBinned'].eq('0.0') & ~ validationA['CDRBinned'].isna()]
-validationBCN = validationB[validationB['CDRBinned'].eq('0.0') & ~ validationB['CDRBinned'].isna()]
-validationCCN = validationC[validationC['CDRBinned'].eq('0.0') & ~ validationC['CDRBinned'].isna()]
+validationAll = load_split(split='validation', longitudinal='baseline')
 
 # add paths to preprocessed images
 paths = load_paths_tables()
@@ -29,17 +26,13 @@ paths = load_paths_tables()
 validationA = validationA.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
 validationB = validationB.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
 validationC = validationC.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
-validationACN = validationACN.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
-validationBCN = validationBCN.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
-validationCCN = validationCCN.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
+validationAll = validationAll.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
 
 # save record of input tables
 validationA.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationA_master.csv'))
 validationB.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationB_master.csv'))
 validationC.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationC_master.csv'))
-validationACN.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationACN_master.csv'))
-validationBCN.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationBCN_master.csv'))
-validationCCN.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationCCN_master.csv'))
+validationAll.to_csv(os.path.join(output_directory, 'nmf', 'tables', 'validationAll_master.csv'))
 
 # VALIDATION A - TAU
 validationATauNMF = NMFRunner(
@@ -54,7 +47,7 @@ validationATauNMF = NMFRunner(
 # VALIDATION A - AMYLOID
 validationAAmyNMF = NMFRunner(
     name='validationA_amyloid',
-    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationACN_master.csv'),
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationA_master.csv'),
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=[AMYLOID_RANK],
     master_table_path_column='amyloid_registered',
@@ -74,7 +67,7 @@ validationBTauNMF = NMFRunner(
 # VALIDATION B - AMYLOID
 validationBAmyNMF = NMFRunner(
     name='validationB_amyloid',
-    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationBCN_master.csv'),
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationB_master.csv'),
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=[AMYLOID_RANK],
     master_table_path_column='amyloid_registered',
@@ -95,7 +88,27 @@ validationCTauNMF = NMFRunner(
 # VALIDATION C - AMYLOID
 validationCAmyNMF = NMFRunner(
     name='validationC_amyloid',
-    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationCCN_master.csv'),
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationC_master.csv'),
+    output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
+    ranks=[AMYLOID_RANK],
+    master_table_path_column='amyloid_registered',
+    use_mask=False
+)
+
+# VALIDATION ALL - TAU
+validationAllTauNMF = NMFRunner(
+    name='validationAll_tau',
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationAll_master.csv'),
+    output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
+    ranks=[TAU_RANK],
+    master_table_path_column='tau_registered',
+    use_mask=False
+)
+
+# VALIDATION ALL - AMYLOID
+validationAllAmyNMF = NMFRunner(
+    name='validationAll_amyloid',
+    master_table_path=os.path.join(output_directory, 'nmf', 'tables', 'validationAll_master.csv'),
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=[AMYLOID_RANK],
     master_table_path_column='amyloid_registered',
@@ -104,7 +117,7 @@ validationCAmyNMF = NMFRunner(
 
 # Run
 # Set dry=True to actually submit
-dry = True
+dry = False
 
 validationATauNMF.run_main(dry=dry)
 validationAAmyNMF.run_main(dry=dry)
@@ -112,3 +125,5 @@ validationBTauNMF.run_main(dry=dry)
 validationBAmyNMF.run_main(dry=dry)
 validationCTauNMF.run_main(dry=dry)
 validationCAmyNMF.run_main(dry=dry)
+validationAllTauNMF.run_main(dry=dry)
+validationAllAmyNMF.run_main(dry=dry)

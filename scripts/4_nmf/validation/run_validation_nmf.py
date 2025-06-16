@@ -2,7 +2,6 @@
 # imports
 import os
 
-from atstaging.config import get
 from atstaging.nmf.run import NMFRunner
 from atstaging.outputs import load_split, load_paths_tables
 

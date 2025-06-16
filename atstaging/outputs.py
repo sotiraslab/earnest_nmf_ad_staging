@@ -124,8 +124,9 @@ def load_musestats(kind):
     muse = pd.concat(museall, ignore_index=True)
     return muse
 
-def load_paths_tables(use_saved=True):
-    output_directory = get('output_directory')
+def load_paths_tables(use_saved=True, output_directory=None):
+    if output_directory is None:
+        output_directory = get('output_directory')
     preproc_dir = os.path.join(output_directory, 'preprocessing', 'images')
 
     # try loading the saved path if requested

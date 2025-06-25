@@ -16,4 +16,6 @@ load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationB_tau')
 load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationB_amyloid')).post_main()
 load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationC_tau')).post_main()
 load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationC_amyloid')).post_main()
+load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationAll_tau')).post_main()
+load_nmf_runner(os.path.join(output_directory, 'nmf', 'runs', 'validationAll_amyloid')).post_main()
 

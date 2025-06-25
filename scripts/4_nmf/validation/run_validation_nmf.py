@@ -6,7 +6,8 @@ from atstaging.nmf.run import NMFRunner
 from atstaging.outputs import load_split, load_paths_tables
 
 # config
-output_directory = '/ceph/chpc/shared/aristeidis_sotiras_group/tom_pet_processing'
+preproc_direcotry = '/ceph/chpc/shared/aristeidis_sotiras_group/tom_pet_processing'
+output_directory = '/scratch/tom.earnest/atstaging'
 
 # parameters
 TAU_RANK = 12
@@ -19,7 +20,7 @@ validationC = load_split(split='validation', longitudinal='baseline', validation
 validationAll = load_split(split='validation', longitudinal='baseline')
 
 # add paths to preprocessed images
-paths = load_paths_tables(output_directory=output_directory)
+paths = load_paths_tables(output_directory=preproc_direcotry)
 
 validationA = validationA.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
 validationB = validationB.merge(paths[['Subject', 'Session', 'tau_registered', 'amyloid_registered']], on=['Subject', 'Session'], how='left')
@@ -115,7 +116,7 @@ validationAllAmyNMF = NMFRunner(
 
 # Run
 # Set dry=True to actually submit
-dry = False
+dry = True
 
 validationATauNMF.run_main(dry=dry)
 validationAAmyNMF.run_main(dry=dry)

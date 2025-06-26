@@ -25,6 +25,7 @@ from atstaging.nmf.utils import (
 )
 _this_dir = os.path.abspath(os.path.dirname(__file__))
 _NMFVolBin_Directory = os.path.join(_this_dir, 'NMFVolBin')
+_NMFVolBinHighMem_Directory = os.path.join(_this_dir, 'NMFVolBinHighMem')
 _NMFVolBinMask_Directory = os.path.join(_this_dir, 'NMFVolBinMask')
 
 class NMFRunner:
@@ -35,7 +36,8 @@ class NMFRunner:
                  output_root_folder: str,
                  ranks: list = list(range(2, 21)),
                  master_table_path_column: str ='Path',
-                 use_mask=False):
+                 use_mask=False,
+                 high_mem=False):
 
         self.name = name
         self.master_table_path = master_table_path
@@ -43,9 +45,18 @@ class NMFRunner:
         self.output_root_folder = output_root_folder
         self.output_directory = os.path.join(self.output_root_folder, name)
         self.ranks = ranks
-        self.use_mask = use_mask
-        self.source_dir = _NMFVolBinMask_Directory if use_mask else _NMFVolBin_Directory
         self.master_table_path_column = master_table_path_column
+
+        # source code
+        self.use_mask = use_mask
+        self.high_mem = high_mem
+        if high_mem:
+            self.use_mask = False
+            self.source_dir = _NMFVolBinHighMem_Directory
+        elif self.use_mask:
+            self.source_dir = _NMFVolBinMask_Directory
+        else:
+            self.source_dir = _NMFVolBin_Directory
     
         self.main_output_dir = os.path.join(self.output_directory, 'main')
         self.reproducibility_output_dir = os.path.join(self.output_directory, 'reproducibility')

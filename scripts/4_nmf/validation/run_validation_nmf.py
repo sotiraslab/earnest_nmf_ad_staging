@@ -101,7 +101,8 @@ validationAllTauNMF = NMFRunner(
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=[TAU_RANK],
     master_table_path_column='tau_registered',
-    use_mask=False
+    use_mask=False,
+    high_mem=True
 )
 
 # VALIDATION ALL - AMYLOID
@@ -111,7 +112,8 @@ validationAllAmyNMF = NMFRunner(
     output_root_folder=os.path.join(output_directory, 'nmf', 'runs'),
     ranks=[AMYLOID_RANK],
     master_table_path_column='amyloid_registered',
-    use_mask=False
+    use_mask=False,
+    high_mem=True
 )
 
 # Run

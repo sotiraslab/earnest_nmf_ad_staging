@@ -15,8 +15,8 @@ tau_component_indices = [
     9, 10, 11
     ]
 tau_component_names = [
-    'LeftParietalTemporal', 'Occipital', 'RightParietalTemporal', 'TemporalPole',
-    'Sensorimotor', 'Frontal', 'MedialOrbitofrontal'
+    'LeftParietalTemporal', 'Occipital', 'RightParietalTemporal', 'MedialTemporal',
+    'Sensorimotor', 'Frontal', 'InsularMedialFrontal'
     ]
 
 amy_nmf_name = 'training_amyloid'

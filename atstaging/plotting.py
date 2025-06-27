@@ -79,13 +79,13 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
         }
 
     tau_mapping = {
-        'PTCTemporalPole': 6,
+        'PTCMedialTemporal': 6,
         'PTCRightParietalTemporal': 4,
         'PTCLeftParietalTemporal': 1,
         'PTCOccipital': 3,
         'PTCFrontal': 10,
         'PTCSensorimotor': 9,
-        'PTCMedialOrbitofrontal': 11
+        'PTCInsularMedialFrontal': 11
         }
     ###### NMF SETTINGS SPECIFIC TO THE PROJECT ##############
 

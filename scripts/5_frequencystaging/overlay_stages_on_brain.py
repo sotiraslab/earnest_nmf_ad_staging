@@ -21,13 +21,13 @@ amy_mapping = {
     }
 
 tau_mapping = {
-    'PTCTemporalPole': 1,
+    'PTCMedialTemporal': 1,
     'PTCRightParietalTemporal': 2,
     'PTCLeftParietalTemporal': 2,
     'PTCOccipital': 3,
     'PTCFrontal': 4,
     'PTCSensorimotor': 4,
-    'PTCMedialOrbitofrontal': 4
+    'PTCInsularMedialFrontal': 4
     }
 
 # MAIN

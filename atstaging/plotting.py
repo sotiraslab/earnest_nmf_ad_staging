@@ -8,6 +8,7 @@ import nibabel as nib
 from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
+from sys import platform
 
 from atstaging.config import get
 from atstaging.nmf.utils import load_results
@@ -186,9 +187,15 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
     return return_value
 
 def set_font_properties():
+    
+    if platform == "linux" or platform == "linux2":
+        font = 'FreeSans'
+    else:
+        font = 'arial'
+
     plt.rcParams.update({
         'font.size': 14,
-        'font.family': 'FreeSans'})
+        'font.family': font})
 
 def staging_colors():
     a_cmap = mpl.colormaps['Blues']

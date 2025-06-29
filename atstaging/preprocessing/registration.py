@@ -76,7 +76,7 @@ def _copy_outputs(prefix, out_registered=None, out_affine=None,
     if out_registered is not None:
         _verbose_copy(registered, out_registered)
 
-def apply_transform(moving, fixed, warp, output, verbose=True):
+def apply_transform(moving, fixed, warp, output, verbose=True, transformtype='Linear'):
 
     v = '1' if verbose else '0'
 
@@ -87,6 +87,7 @@ def apply_transform(moving, fixed, warp, output, verbose=True):
         '-r', fixed,
         '-t', warp,
         '-o', output,
+        '-n', transformtype,
         '-v', v]
 
     execute(command)

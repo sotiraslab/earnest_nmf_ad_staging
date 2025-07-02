@@ -11,7 +11,7 @@ from atstaging.preprocessing.execute import execute
 
 class SustainManager:
 
-    def __init__(self, src=None, setup=True):
+    def __init__(self, src=None, setup=False):
         self.sustain = None
         self.sustain_output_folder = None
 
@@ -184,6 +184,17 @@ class SustainManager:
         }
         with open(os.path.join(self.path_model_freeze_subfolder, 'params.pickle'), 'wb') as f:
             pickle.dump(args, f)
+
+    def load_test_indices(self, cv_folds):
+
+        cv_dir = os.path.join(self.path_cv_subfolder, f'cv{cv_folds}')
+        test_indices = []
+        for i in range(cv_folds):
+            path = os.path.join(cv_dir, f'fold{i}.npy')
+            idx = np.load(path)
+            test_indices.append(idx)
+        test_indices = np.array(test_indices, dtype='object')
+        return test_indices
     
     def load_sustain(self, src):
 
@@ -222,6 +233,9 @@ class SustainManager:
 
     def run_cv(self, test_indices, dry=False):
 
+        # ensure setup
+        self.setup()
+
         # Create CV Scripts
         self.create_run_cv_scripts(test_indices=test_indices)
 
@@ -248,6 +262,9 @@ class SustainManager:
                 execute(command)
 
     def run_main(self, dry=False):
+
+        # ensure setup
+        self.setup()
 
         account = get('slurm', 'account')
         partition = get('slurm', 'partition')

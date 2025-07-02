@@ -392,6 +392,38 @@ def load_loni_downloads_with_caching(dataset_key, cachedir, download_folder, use
 
     return downloads
 
+def longitudinal_features(bl, long, long_features,
+                          bl_subject='Subject', bl_date='DateBaseline',
+                          long_subject='Subject', long_date='Date', gap='180D',
+                          dropna=True, dest_long_features=None):
+
+    if isinstance(long_features, str):
+        long_features = [long_features]
+
+    final_long_date = 'DateLongitudinal'
+    a = bl.copy()
+    b = long[[long_subject, long_date] + long_features].copy()
+    b.columns = [long_subject, final_long_date] + long_features
+    b[final_long_date] = pd.to_datetime(b[final_long_date])
+
+    join = a.merge(b, how='left', left_on=bl_subject, right_on=long_subject)
+
+    if dropna:
+        join = join[~join[final_long_date].isna()].copy()
+
+    if gap is not None:
+        gap = pd.Timedelta(gap)
+        join = join[join[final_long_date].gt(join[bl_date] - gap)]
+
+    if dest_long_features is not None:
+        if isinstance(dest_long_features, str):
+            dest_long_features = [dest_long_features]
+        if len(long_features) != len(dest_long_features):
+            raise ValueError(f'Length of features ({len(long_features)}) and their new names ({len(dest_long_features)}) must be equal.')
+        join = join.rename(columns=dict(zip(long_features, dest_long_features)))
+            
+    return join
+
 def print_missing(df, col):
     data = df[col]
     print(f'Count of missing values for "{col}": {data.isna().sum()}')

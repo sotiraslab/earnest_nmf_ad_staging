@@ -403,10 +403,10 @@ def longitudinal_features(bl, long, long_features,
     final_long_date = 'DateLongitudinal'
     a = bl.copy()
     b = long[[long_subject, long_date] + long_features].copy()
-    b.columns = [long_subject, final_long_date] + long_features
+    b.columns = [bl_subject, final_long_date] + long_features
     b[final_long_date] = pd.to_datetime(b[final_long_date])
 
-    join = a.merge(b, how='left', left_on=bl_subject, right_on=long_subject)
+    join = a.merge(b, how='left', on=bl_subject)
 
     if dropna:
         join = join[~join[final_long_date].isna()].copy()

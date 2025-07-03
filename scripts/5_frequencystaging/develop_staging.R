@@ -9,11 +9,11 @@ sh(library(stringr))
 sh(library(tidyr))
 
 # ---- Paths -----
-PATH.MASTER <- '/Users/earnestt1234/Desktop/atstaging//masterTables/_hardsave.csv'
-PATH.WSCORES <- '/Users/earnestt1234/Desktop/atstaging//masterTables/FEATURE_WSCORES.csv'
-PATH.HEATMAP.SCRIPT <- '/Users/earnestt1234/Documents/GitHub/at_nmf_sustain/scripts/rsource/stage_heatmaps.R'
-PATH.STAGING.SCRIPT <- '/Users/earnestt1234/Documents/GitHub/at_nmf_sustain/scripts/rsource/assign_stages.R'
-PATH.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/plots/stage_development'
+PATH.MASTER <- '/scratch/tom.earnest/atstaging//masterTables/_hardsave.csv'
+PATH.WSCORES <- '/scratch/tom.earnest/atstaging//masterTables/FEATURE_WSCORES.csv'
+PATH.HEATMAP.SCRIPT <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/stage_heatmaps.R'
+PATH.STAGING.SCRIPT <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/assign_stages.R'
+PATH.OUTPUT <- '/scratch/tom.earnest/atstaging/plots/stage_development'
 
 dir.create(PATH.OUTPUT, showWarnings = F)
 

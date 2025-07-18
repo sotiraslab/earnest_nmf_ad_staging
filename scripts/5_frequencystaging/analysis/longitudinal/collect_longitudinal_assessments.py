@@ -215,3 +215,7 @@ mmse_path = os.path.join(longitudinal_dir, 'mmse_long.csv')
 
 cdr_long.to_csv(cdr_path, index=False)
 mmse_long.to_csv(mmse_path, index=False)
+
+# also save the baseline data for analysis in R
+bl = load_split(None, 'baseline', verbose=False)
+bl.to_csv(os.path.join(longitudinal_dir, 'baseline.csv'), index=False)

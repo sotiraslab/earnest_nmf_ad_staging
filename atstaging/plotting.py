@@ -203,8 +203,8 @@ def staging_colors():
     ns_cmap = mpl.colormaps['Purples']
     colors = {
         'A0T0': 'white',
-        'A1T0': a_cmap(1/3),
-        'A2T0': a_cmap(2/3),
+        'A1T0': '#5FABF7',
+        'A2T0': '#1F4AD8',
         'A2T1': t_cmap(.2),
         'A2T2': t_cmap(.4),
         'A2T3': t_cmap(.6),

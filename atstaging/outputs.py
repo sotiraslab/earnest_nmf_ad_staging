@@ -174,3 +174,4 @@ def setup_outputs_folder(directory):
     _dircreate(directory, 'preprocessing', 'paths')
     _dircreate(directory, 'preprocessing', 'preproc_tables')
     _dircreate(directory, 'searches')
+    _dircreate(directory, 'sustain')

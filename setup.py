@@ -17,6 +17,7 @@ with open(path.join(this_directory, 'atstaging', 'version.py'), encoding='utf-8'
 requirements = [
     'colorama',
     'h5py',
+    'lifelines',
     'matplotlib',
     'nibabel',
     'nifti_overlay',

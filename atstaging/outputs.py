@@ -162,6 +162,7 @@ def setup_outputs_folder(directory):
     _dircreate(directory, 'datasetTables')
     _dircreate(directory, 'downloadLists')
     _dircreate(directory, 'images')
+    _dircreate(directory, 'longitudinalTables')
     _dircreate(directory, 'nmf')
     _dircreate(directory, 'nmf', 'gmmask')
     _dircreate(directory, 'nmf', 'runs')

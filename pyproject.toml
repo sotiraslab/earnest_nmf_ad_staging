@@ -8,6 +8,7 @@ description = "Code for Tom's NMF & SuStaIn PET staging work."
 dependencies = [
     "colorama",
     "h5py",
+    "lifelines",
     "matplotlib",
     "nibabel",
     "nifti_overlay",

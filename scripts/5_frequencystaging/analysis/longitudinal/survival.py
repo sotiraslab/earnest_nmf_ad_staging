@@ -20,7 +20,7 @@ cdr_long['Event'] = cdr_long['CDR'].ge(1)
 
 path_mmse_long = os.path.join(get('output_directory'), 'longitudinalTables', 'mmse_long.csv')
 mmse_long = pd.read_csv(path_mmse_long, parse_dates=['DateBaseline', 'DateLongitudinal'])
-mmse_long['Event'] = mmse_long['MMSE'].lt(24)
+mmse_long['Event'] = mmse_long['MMSE'].le(24)
 
 # Run the survival analyses
 

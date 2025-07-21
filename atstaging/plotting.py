@@ -198,7 +198,6 @@ def set_font_properties():
         'font.family': font})
 
 def staging_colors():
-    a_cmap = mpl.colormaps['Blues']
     t_cmap = mpl.colormaps['YlOrRd']
     ns_cmap = mpl.colormaps['Purples']
     colors = {
@@ -214,5 +213,7 @@ def staging_colors():
         'A0T+': ns_cmap(2/3),
         'A1T+': ns_cmap(1.)
         }
+    
+    colors = {k: to_hex(v) for k, v in colors.items()}
 
     return colors

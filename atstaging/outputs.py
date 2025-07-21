@@ -101,13 +101,14 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None,
 
     return data
 
-def load_musestats(kind):
+def load_musestats(kind, output_directory=None):
 
     if kind not in ['amyloid', 'tau']:
         raise ValueError('`kind` must be "amyloid" or "tau"')
 
     # locate output directory
-    output_directory = get('output_directory')
+    if output_directory is None:
+        output_directory = get('output_directory')
     preproc_folder = os.path.join(output_directory, 'preprocessing', 'images')
 
     # load all the amyloid stats into one master table

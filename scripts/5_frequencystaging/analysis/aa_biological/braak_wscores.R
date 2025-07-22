@@ -1,0 +1,74 @@
+library(dplyr)
+
+# Set paths/variables
+path.maindata <- '/scratch/tom.earnest/atstaging/filesForR/maindata.csv'
+path.braak <- '/scratch/tom.earnest/atstaging/filesForR/braak_mtl_neo.csv'
+path.wscore.script <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/wscore.R'
+path.output <- '/scratch/tom.earnest/atstaging/filesForR/braak_wscores.csv'
+
+source(path.wscore.script)
+
+# read data
+master <- read.csv(path.maindata)
+braak <- read.csv(path.braak)
+master <- master %>%
+    left_join(braak, by = c('Subject', 'Session'))
+
+# subset data
+train.all <- master[grepl('Training', master$Split), ]
+train.bl <- master[master$Split == 'TrainingBaseline', ]
+train.control <- train.bl[(!is.na(train.bl$CDRBinned)) & (train.bl$CDRBinned == '0.0') & (train.bl$FinalAmyloidStatus == 0) & (train.bl$GMMTauStatus == 0), ]
+
+valA.all <- master[master$SameTracerValidationA == 'True', ]
+valA.bl <- valA.all[grepl('Baseline', valA.all$Split), ]
+valA.control <- valA.bl[(!is.na(valA.bl$CDRBinned)) & (valA.bl$CDRBinned == '0.0') & (valA.bl$FinalAmyloidStatus == 0) & (valA.bl$GMMTauStatus == 0), ]
+
+valB.all <- master[master$SameTracerValidationB == 'True', ]
+valB.bl <- valB.all[grepl('Baseline', valB.all$Split), ]
+valB.control <- valB.bl[(!is.na(valB.bl$CDRBinned)) & (valB.bl$CDRBinned == '0.0') & (valB.bl$FinalAmyloidStatus == 0) & (valB.bl$GMMTauStatus == 0), ]
+
+valC.all <- master[master$SameTracerValidationC == 'True', ]
+valC.bl <- valC.all[grepl('Baseline', valC.all$Split), ]
+valC.control <- valC.bl[(!is.na(valC.bl$CDRBinned)) & (valC.bl$CDRBinned == '0.0') & (valC.bl$FinalAmyloidStatus == 0) & (valC.bl$GMMTauStatus == 0), ]
+
+# parameters
+covariates <- c('Age', 'SexMale')
+match.continuous <- c('Age', 'SummarySUVRAmyloid', 'SummarySUVRTau')
+match.categorical <- c('SexMale')
+portion.train <- 0.8
+repeats <- 200
+seed <- T
+
+# helper function for W-scoring
+wscore.inputs <- c('BraakMTLSUVR', 'BraakNeoSUVR')
+wscore.routine <- function(fulldata, control.subset) {
+    wmodel <- repeated.wscore.train(
+      control.data = control.subset,
+      y = wscore.inputs,
+      covariates = covariates,
+      match.continuous = match.continuous,
+      match.categorical = match.categorical,
+      portion.train = portion.train,
+      repeats = repeats,
+      seed = seed
+    )
+
+    predicts <- repeated.wscore.predict(wmodel, fulldata)
+    cat('\nSum of NAs for predictions:', sum(is.na(predicts)), '\n\n')
+    wscore.outputs <- gsub('SUVR', 'WScore', colnames(predicts))
+    colnames(predicts) <- wscore.outputs
+
+    wdf <- cbind(fulldata[, c('Subject', 'Session')], predicts)
+    return (wdf)
+    
+}
+
+# W-Scoring
+train.wdf <- wscore.routine(fulldata = train.all, control.subset = train.control)
+valA.wdf <- wscore.routine(fulldata = valA.all, control.subset = valA.control)
+valB.wdf <- wscore.routine(fulldata = valB.all, control.subset = valB.control)
+valC.wdf <- wscore.routine(fulldata = valC.all, control.subset = valC.control)
+
+# save output as features
+wscores <- bind_rows(train.wdf, valA.wdf, valB.wdf, valC.wdf)
+write.csv(wscores, path.output, quote=F, na='', row.names=F)

@@ -45,7 +45,7 @@ def add_features_by_date(a, b, fields, a_subject='Subject', a_date='Date', b_sub
         grouped.loc[grouped[bcols_abs].gt(pd.Timedelta(gap_allowed)), fields + [bcols_gap, bcols_abs]] = None
 
     if not include_gap_cols:
-        grouped = grouped.drop([bcols_gap, bcols_abs], axis=1)
+        grouped = grouped.drop([bcols_date, bcols_gap, bcols_abs], axis=1)
 
     return grouped
 

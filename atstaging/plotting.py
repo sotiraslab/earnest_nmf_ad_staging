@@ -9,7 +9,6 @@ import nibabel as nib
 from nifti_overlay import NiftiOverlay
 import numpy as np
 import pandas as pd
-from sys import platform
 
 from atstaging.config import get
 from atstaging.nmf.utils import load_results

@@ -2,6 +2,7 @@
 import os
 
 import matplotlib as mpl
+from matplotlib import font_manager
 from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
 import nibabel as nib
@@ -187,15 +188,16 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
     return return_value
 
 def set_font_properties():
-    
-    if platform == "linux" or platform == "linux2":
-        font = 'FreeSans'
-    else:
-        font = 'arial'
+
+    font_path = get('font_for_plots')
+    font_manager.fontManager.addfont(font_path)
+    font_prop = font_manager.FontProperties(fname=font_path)
+    font_name = font_prop.get_name()
 
     plt.rcParams.update({
         'font.size': 14,
-        'font.family': font})
+        'font.family': font_name
+        })
 
 def staging_colors():
     t_cmap = mpl.colormaps['YlOrRd']

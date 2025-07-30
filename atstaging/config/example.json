@@ -5,6 +5,7 @@
     "amyloidpetnet_env": "p3.7torch1.8",
     "deepmrseg_env": "DeepMRSeg",
     "hdbet_env": "hdbet",
+    "font_for_plots": "/path/to/font",
     "mni152_brain": "/usr/local/fsl/data/standard/MNI152_T1_1mm_brain.nii.gz",
     "mri_preproc_keep": ["brainmask", "fullwarp", "muse", "volumes", "qc-skullstrip", "qc-checkerboard"],
     "mri2mni_transformation": "s",

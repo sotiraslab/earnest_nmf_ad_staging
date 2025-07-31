@@ -92,7 +92,7 @@ validation = df[df['Split'].eq('ValidationBaseline') & ~df['ControlForStaging']]
 
 # setup output
 root_output = get('output_directory')
-odir = os.path.join(root_output, 'plots', 'compare_aa2024')
+odir = os.path.join(root_output, 'plots', 'compare_aa2024', 'biological')
 os.makedirs(odir, exist_ok=True)
 
 # training

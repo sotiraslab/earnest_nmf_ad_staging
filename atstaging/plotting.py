@@ -189,9 +189,13 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
 def set_font_properties():
 
     font_path = get('font_for_plots')
-    font_manager.fontManager.addfont(font_path)
-    font_prop = font_manager.FontProperties(fname=font_path)
-    font_name = font_prop.get_name()
+
+    if font_path is None:
+        font_name = 'Arial'
+    else:
+        font_manager.fontManager.addfont(font_path)
+        font_prop = font_manager.FontProperties(fname=font_path)
+        font_name = font_prop.get_name()
 
     plt.rcParams.update({
         'font.size': 14,
@@ -214,7 +218,7 @@ def staging_colors():
         'A0T+': ns_cmap(2/3),
         'A1T+': ns_cmap(1.)
         }
-    
+
     colors = {k: to_hex(v) for k, v in colors.items()}
 
     return colors

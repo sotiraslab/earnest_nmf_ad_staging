@@ -1,10 +1,17 @@
 
 # IMPORTS
 # =====
+
+import os
+
 import numpy as np
 import pandas as pd
 
-from atstaging.dataorg.utils import add_features_by_date
+from atstaging.config import get, set_config
+from atstaging.dataorg.utils import add_features_by_date, load_csv_by_match
+from atstaging.outputs import load_split
+
+set_config('main')
 
 # HELPER FUNCTIONS
 # =====
@@ -84,7 +91,7 @@ def assemble_pacc_oasis(df, cognition, clinical, a_subject='Subject', a_date='Da
     cognition['Subject'] = cognition['OASISID']
     cognition['Date'] = oasis_days_to_date(clinical['days_to_visit'], basedate=basedate)
     cognition['FCSRTTotal'] = cognition['srttotal']
-    cognition['LogicalMemoryDelayedRecall'] = cognition['lmdelay']
+    cognition['LogicalMemoryDelayedRecall'] = cognition['MEMUNITS']
     cognition['DigitSymbolSubstitution'] = cognition['digsym']
 
     clinical['Subject'] = clinical['OASISID']
@@ -95,8 +102,10 @@ def assemble_pacc_oasis(df, cognition, clinical, a_subject='Subject', a_date='Da
 
     return df
 
-def calculate_pacc(df, columns, cn_mask, min_required=2, higher_better=None):
+def calculate_pacc(df, columns, cn_mask, min_required=2, higher_better=None, verbose=False):
 
+    vprint = print if verbose else lambda *args, **kwargs: None
+    
     cn = df[cn_mask].copy()
     n = len(df)
     k = len(columns)
@@ -108,18 +117,21 @@ def calculate_pacc(df, columns, cn_mask, min_required=2, higher_better=None):
     if higher_better is None:
         higher_better = [True] * k
 
+    vprint('')
     for i in range(k):
         col = columns[i]
         mu = cn[col].mean()
         s = cn[col].std()
         z = (df[col] - mu) / s
 
+        vprint(f'{col}: mean={mu}, std={s}')
+
         if not higher_better[i]:
             z *= -1
 
         normed_scores[col] = z
 
-    score = np.nanmean(normed_scores, axis=1)
+    score = np.nansum(normed_scores, axis=1)
     count_present = (~normed_scores.isna()).sum(axis=1)
     score[count_present < min_required] = np.nan
 
@@ -156,15 +168,15 @@ def select_consistent_cognitively_normal(cdr, subject_col='Subject', date_col='D
 # LOAD MASTER
 # ===================
 
-master = pd.read_csv('master.csv')
-master['ControlForStaging'] = master['Split'].str.contains('Baseline') & master['CDRBinned'].eq('0.0') & master['FinalAmyloidStatus'].eq(0) & master['GMMTauStatus'].eq(0)
+master = load_split(None, None)
+master['Stage'] = master['StageLabeled'].replace(['A0T+', 'A1T+', 'NS'], 'Atypical')
 
 # separate into different datasets with PACC information
-master_adni = master.loc[master['DataSet'].eq('ADNI'), ['Subject', 'TauAmyloidMeanDate']]
-master_a4 = master.loc[master['DataSet'].eq('A4'), ['Subject', 'TauAmyloidMeanDate']]
-master_oasis = master.loc[master['DataSet'].eq('OASIS'), ['Subject', 'TauAmyloidMeanDate']]
-master_habs = master.loc[master['DataSet'].eq('HABS'), ['Subject', 'TauAmyloidMeanDate']]
-master_habshd = master.loc[master['DataSet'].eq('HABSHD'), ['Subject', 'TauAmyloidMeanDate']]
+master_adni = master.loc[master['DataSet'].eq('ADNI'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
+master_a4 = master.loc[master['DataSet'].eq('A4'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
+master_oasis = master.loc[master['DataSet'].eq('OASIS'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
+master_habs = master.loc[master['DataSet'].eq('HABS'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
+master_habshd = master.loc[master['DataSet'].eq('HABSHD'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
 
 # ===================
 # COLLECT PACC DATA
@@ -174,10 +186,10 @@ master_habshd = master.loc[master['DataSet'].eq('HABSHD'), ['Subject', 'TauAmylo
 # =====
 
 # Read in data
-cdr = pd.read_csv('adni_clinical/cdr.csv')
-neurobat = pd.read_csv('adni_clinical/neurobat.csv')
-mmse = pd.read_csv('adni_clinical/mmse.csv')
-adas = pd.read_csv('adni_clinical/adas.csv')
+cdr = pd.read_csv('/home/tom.earnest/adni_clinical/cdr.csv')
+neurobat = pd.read_csv('/home/tom.earnest/adni_clinical/neurobat.csv')
+mmse = pd.read_csv('/home/tom.earnest/adni_clinical/mmse.csv')
+adas = pd.read_csv('/home/tom.earnest/adni_clinical/adas.csv')
 
 # Select the stable individuals
 cdr = cdr[~cdr['PHASE'].isin(['ADNI1', 'ADNIGO', 'ADNI2'])].copy()
@@ -196,11 +208,11 @@ master_adni = assemble_pacc_adni(master_adni, neurobat=neurobat, mmse=mmse, adas
 basedate = pd.Timestamp(year=2001, month=1, day=1)
 
 # Read in data
-cdr = pd.read_csv('a4_clinical/RawData/cdr.csv')
-mmse = pd.read_csv('a4_clinical/RawData/mmse.csv')
-fcsrt = pd.read_csv('a4_clinical/RawData/cogfcsr16.csv')
-logimem = pd.read_csv('a4_clinical/RawData/coglogic.csv')
-digits = pd.read_csv('a4_clinical/RawData/cogdigit.csv')
+cdr = pd.read_csv('/home/tom.earnest/a4_clinical/RawData/cdr.csv')
+mmse = pd.read_csv('/home/tom.earnest/a4_clinical/RawData/mmse.csv')
+fcsrt = pd.read_csv('/home/tom.earnest/a4_clinical/RawData/cogfcsr16.csv')
+logimem = pd.read_csv('/home/tom.earnest/a4_clinical/RawData/coglogic.csv')
+digits = pd.read_csv('/home/tom.earnest/a4_clinical/RawData/cogdigit.csv')
 
 # Select the stable individuals
 cdr['Date'] = basedate + pd.to_timedelta(cdr['VISCODE'], unit='W')
@@ -217,8 +229,8 @@ master_a4 = assemble_pacc_a4(master_a4, fcsrt=fcsrt, logimem=logimem, digits=dig
 # HABS
 # =====
 
-cognition = pd.read_csv('habs_tabular/Cognition_HABS_DataRelease_2.0.csv')
-clinical = pd.read_csv('habs_tabular/ClinicalMeasures_HABS_DataRelease_2.0.csv')
+cognition = pd.read_csv('/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/tabular/Cognition_HABS_DataRelease_2.0.csv')
+clinical = pd.read_csv('/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/tabular/ClinicalMeasures_HABS_DataRelease_2.0.csv')
 
 # Select the stable individuals
 cdr = clinical[['SubjIDshort', 'NP_SessionDate', 'CDR_Global']].copy().dropna().sort_values(['SubjIDshort', 'NP_SessionDate'])
@@ -237,8 +249,8 @@ master_habs = assemble_pacc_habs(master_habs, cognition=cognition, clinical=clin
 basedate=pd.Timestamp(year=2001, month=1, day=1)
 
 # load data
-clinical = pd.read_csv('OASIS3_data_files/scans/UDSb4-Form_B4__Global_Staging__CDR__Standard_and_Supplemental/resources/csv/files/OASIS3_UDSb4_cdr.csv')
-cognition = pd.read_csv('OASIS3_data_files/scans/pychometrics-Form_C1__Cognitive_Assessments/resources/csv/files/OASIS3_UDSc1_cognitive_assessments.csv')
+clinical = pd.read_csv('/home/tom.earnest/OASIS3_data_files/scans/UDSb4-Form_B4__Global_Staging__CDR__Standard_and_Supplemental/resources/csv/files/OASIS3_UDSb4_cdr.csv')
+cognition = pd.read_csv('/home/tom.earnest/OASIS3_data_files/scans/pychometrics-Form_C1__Cognitive_Assessments/resources/csv/files/OASIS3_UDSc1_cognitive_assessments.csv')
 clinical['Date'] = oasis_days_to_date(clinical['days_to_visit'], basedate=basedate)
 cognition['Date'] = oasis_days_to_date(cognition['days_to_visit'], basedate=basedate)
 
@@ -251,33 +263,132 @@ cn_baseline = cn_long[cn_long['YearsSinceBaseline'].eq(0)].copy()
 oasis_cn_baseline = assemble_pacc_oasis(cn_baseline, cognition=cognition, clinical=clinical)
 master_oasis = assemble_pacc_oasis(master_oasis, cognition=cognition, clinical=clinical, a_date='TauAmyloidMeanDate')
 
-
-# EXTRA CODE
+# HABSHD
 # =====
 
-# adni = master.loc[master['DataSet'].eq('ADNI'), ['Subject', 'TauAmyloidMeanDate', 'ControlForStaging', 'CDRBinned']]
-# adni.columns = ['Subject', 'Date', 'Control', 'CDRBinned']
-# adni['Subject'] = adni['Subject'].str[:3] + '_S_' + adni['Subject'].str[-4:]
+# load tabular data
+tabular_folder = '/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS-HD/tabular/'
 
-# adni = add_features_by_date(a=adni, b=neuro, fields=['CATANIMSC', 'TRABSCOR', 'LDELTOTAL', 'DIGITSCOR'], a_date='Date', a_subject='Subject',
-#                             b_date='VISDATE', b_name='NeuroBat', b_subject='PTID', include_gap_cols=False)
-# adni = add_features_by_date(a=adni, b=adas, fields=['Q4SCORE'], a_date='Date', a_subject='Subject',
-#                             b_date='USERDATE', b_name='ADAS', b_subject='PTID', include_gap_cols=False)
-# adni = add_features_by_date(a=adni, b=mmse, fields=['MMSCORE'], a_date='Date', a_subject='Subject',
-#                             b_date='VISDATE', b_name='MMSE', b_subject='PTID', include_gap_cols=False)
-# adni['Subject'] = adni['Subject'].str.replace('_','')
-# adni
+tables = [
+    'HD_1_African',
+    'HD_1_Mexican',
+    'HD_1_Non',
+    'HD_2_Mexican',
+    'HD_2_Non',
+    'HD_3_Mexican',
+    'HD_3_Non']
+habshd = pd.concat([load_csv_by_match(tabular_folder, t, dtype={'Med_ID': str}) for t in tables])
+habshd = habshd.drop_duplicates(['Med_ID', 'Visit_ID'])
 
-# # load tabular data
-# tabular_folder = 'habshd_tabular'
+# load MRI information from LONI to link scan dates
+mri = pd.read_csv('/scratch/tom.earnest/atstaging/searches/habshd_t1_10102024_12_05_2024.csv', dtype={'Subject': str})
 
-# tables = [
-#     'HD_1_African',
-#     'HD_1_Mexican',
-#     'HD_1_Non',
-#     'HD_2_Mexican',
-#     'HD_2_Non',
-#     'HD_3_Mexican',
-#     'HD_3_Non']
-# habshd = pd.concat([load_csv_by_match(tabular_folder, t, dtype={'Med_ID': str}) for t in tables])
-# habshd = habshd.drop_duplicates(['Med_ID', 'Visit_ID'])
+# select needed columns
+df = habshd[['Med_ID', 'Visit_ID', 'CDR_Global', 'LM2_A_Total', 'Digit_Symbol_Substitution', 'MMSE_Total']].copy()
+df.columns = ['Subject', 'Visit', 'CDR', 'LogicalMemoryDelayedRecall', 'DigitSymbolSubstitution', 'MMSE']
+df[df == -9999] = np.nan
+
+# add date from MRI
+linker = mri[['Subject', 'Visit', 'Acq Date']].copy()
+linker.columns = ['Subject', 'Visit', 'Date']
+linker['Visit'] = linker['Visit'].map({'Baseline': 1, 'Month 24 follow-up': 2, 'Month 48 follow-up': 3, 'Month 72 follow-up': 4})
+df = df.merge(linker, on=['Subject', 'Visit'], how='left')
+
+# find stable CNs
+cdr = df[['Subject', 'Date', 'CDR']]
+cn_long = select_consistent_cognitively_normal(cdr)
+cn_baseline = cn_long[cn_long['YearsSinceBaseline'].eq(0)].copy()
+
+# add PACC features
+habshd_cn_baseline = add_features_by_date(a=cn_baseline, b=df, fields=['LogicalMemoryDelayedRecall', 'DigitSymbolSubstitution', 'MMSE'], include_gap_cols=False)
+habshd_cn_baseline['FCSRTTotal'] = np.nan
+
+master_habshd = add_features_by_date(a=master_habshd, b=df, fields=['LogicalMemoryDelayedRecall', 'DigitSymbolSubstitution', 'MMSE'], include_gap_cols=False, a_date='TauAmyloidMeanDate')
+master_habshd['FCSRTTotal'] = np.nan
+
+# SCI PACC CUTOFFs
+# ======
+
+# For ADNI PACC, ADNI is the only contributing dataset
+adni_pacc_assessments = ['ADASDelayedRecall', 'LogicalMemoryDelayedRecall', 'TrailsB', 'MMSE']
+adni_pacc_higher_better = [False, True, False, True]
+adni_pacc = calculate_pacc(adni_cn_baseline, cn_mask=[True]*len(adni_cn_baseline), columns=adni_pacc_assessments, higher_better=adni_pacc_higher_better)
+adni_pacc_sci_cutoff = np.nanquantile(adni_pacc, 0.1)
+print(f'SCI cutoff for ADNI-PACC (10th percentile): {adni_pacc_sci_cutoff}')
+
+# For OG PACC, all other datasets contribute
+og_pacc_assessments = ['FCSRTTotal', 'LogicalMemoryDelayedRecall', 'DigitSymbolSubstitution', 'MMSE']
+og_pacc_higher_better = [True]*4
+combined_cns_for_og_pacc = pd.concat([a4_cn_baseline, habs_cn_baseline, habshd_cn_baseline, oasis_cn_baseline], ignore_index=True)
+og_pacc = calculate_pacc(combined_cns_for_og_pacc, cn_mask=[True]*len(combined_cns_for_og_pacc), columns=og_pacc_assessments, higher_better=og_pacc_higher_better)
+og_pacc_sci_cutoff = np.nanquantile(og_pacc, 0.1)
+print(f'SCI cutoff for original PACC (10th percentile): {og_pacc_sci_cutoff}')
+
+# APPLY PACC
+# ======
+
+def atstaging_pacc_computation_helper(df, pacc_type):
+
+    if pacc_type == 'original':
+        columns = ['FCSRTTotal', 'LogicalMemoryDelayedRecall', 'DigitSymbolSubstitution', 'MMSE']
+        higher_better = [True] * 4
+        name = 'PACCOriginal'
+    elif pacc_type == 'adni':
+        columns = ['ADASDelayedRecall', 'LogicalMemoryDelayedRecall', 'TrailsB', 'MMSE']
+        higher_better = [False, True, False, True]
+        name = 'PACCADNI'
+    else:
+        raise ValueError('Did not recognized value for `pacc_type`; must be "adni" or "original"')
+
+    # Compute PACC for training
+    training = df.loc[df['Split'].str.contains('Training'), :]
+    training_cn_mask = training['ControlForStaging']
+    out_training = training.loc[:, ['Subject', 'Session']]
+    out_training[name] = calculate_pacc(training, cn_mask=training_cn_mask, columns=columns, higher_better=higher_better)
+    
+    validation = df.loc[df['Split'].str.contains('Validation'), :]
+    validation_cn_mask = validation['ControlForStaging']
+    out_validation = validation.loc[:, ['Subject', 'Session']]
+    out_validation[name] = calculate_pacc(validation, cn_mask=validation_cn_mask, columns=columns, higher_better=higher_better)
+
+    output = pd.concat([out_training, out_validation])
+
+    return output
+
+pacc_scores_adni = atstaging_pacc_computation_helper(master_adni, 'adni')
+pacc_scores_og = atstaging_pacc_computation_helper(pd.concat([master_a4, master_habs, master_habshd, master_oasis]), 'original')
+
+master_pacc = master.merge(pacc_scores_adni, on=['Subject', 'Session'], how='left')
+master_pacc = master_pacc.merge(pacc_scores_og, on=['Subject', 'Session'], how='left')
+
+# APPLY CLINICAL STAGING
+# =======
+
+master_pacc['AA2024Clinical'] = np.nan
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('1.0+'), 'Stage 4-6', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.5'), 'Stage 3', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCADNI'].le(adni_pacc_sci_cutoff), 'Stage 2', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCOriginal'].le(og_pacc_sci_cutoff), 'Stage 2', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCADNI'].gt(adni_pacc_sci_cutoff), 'Stage 1', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCOriginal'].gt(og_pacc_sci_cutoff), 'Stage 1', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['AA2024Clinical'].eq('nan'), np.nan, master_pacc['AA2024Clinical'])
+
+# RESILIENT vs VULNERABLE
+# =====
+
+mystage_levels = master_pacc['StageMain'].map({'0': 0, '1': 0, '2': 0, '3': 1, '4': 2, '5': 2, '6': 3, 'NS': np.nan}).astype(float)
+clinstage_levels = master_pacc['AA2024Clinical'].map({'Stage 1': 0, 'Stage 2': 1, 'Stage 3': 2, 'Stage 4-6': 3}).astype(float)
+
+master_pacc['ResilientVulnerable'] = np.sign(mystage_levels - clinstage_levels).map({1: 'Resilient', 0: 'Expected', -1: 'Vulnerable'})
+master_pacc.loc[master_pacc['StageMain'].eq('NS'), 'ResilientVulnerable'] = 'Atypical'
+
+# SAVE
+# ======
+
+features = master_pacc[['Subject', 'Session', 'PACCOriginal', 'PACCADNI', 'AA2024Clinical', 'ResilientVulnerable']].copy()
+root_output = get('output_directory')
+opath = os.path.join(root_output, 'masterTables', 'FEATURE_AA2024Clinical.csv')
+
+features.to_csv(opath, index=False)
+
+print(f'Saved stages for {len(features)} subjects at "{opath}".')

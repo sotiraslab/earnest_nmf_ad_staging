@@ -15,7 +15,7 @@ set_config('main')
 
 # Helper functions
 
-def compare_staging_heatmap(data, autosave=True):
+def compare_staging_heatmap(data):
 
     # prep data for plot
     data['Stage'] = np.where(data['StageLabeled'].isin(['A0T+', 'A1T+', 'NS']), 'Atypical', data['StageLabeled'])

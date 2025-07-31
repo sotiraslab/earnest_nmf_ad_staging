@@ -11,11 +11,11 @@ library(stringr)
 library(tidyr)
 
 # Load the data, which is split out by collect_longitudinal_assessments.py
-df <- read.csv('/scratch/tom.earnest/atstaging/longitudinalTables/baseline.csv')
-mmse.long <- read.csv('/scratch/tom.earnest/atstaging/longitudinalTables/mmse_long.csv')
-cdr.long <- read.csv('/scratch/tom.earnest/atstaging/longitudinalTables/cdr_long.csv')
+df <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/baseline.csv')
+mmse.long <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/mmse_long.csv')
+cdr.long <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/cdr_long.csv')
 
-mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T, root.output='/scratch/tom.earnest/atstaging/') {
+mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T, root.output='/Users/earnestt1234/Desktop/atstaging') {
     
     # Select baseline data with stages assigned
     stages <- df %>%
@@ -34,9 +34,10 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
 
     # create longitudinal df for MEM
     long.data <- long.data %>%
-        group_by(Subject) %>%
+        group_by(Subject) %>% 
+        mutate(DateLongitudinal = as_datetime(ymd(DateLongitudinal))) %>%
+        arrange(Subject, DateLongitudinal) %>%
         mutate(
-            DateLongitudinal = as_datetime(ymd(DateLongitudinal)),
             YearsSinceBl = as.numeric(difftime(DateLongitudinal, first(DateLongitudinal), units='days')) / 365.25,
             Score = get(!!MEASURE),
             BaselineScore = first(Score)

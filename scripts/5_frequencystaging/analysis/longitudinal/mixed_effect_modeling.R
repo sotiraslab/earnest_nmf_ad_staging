@@ -55,7 +55,7 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
                    A2T2 = '#feab49',
                    A2T3 = '#fc5b2e',
                    A2T4 = '#d41020',
-                   Atypical = '#808080',
+                   Atypical = '#A661C9',
                    NS = '#c6c7e1',
                    'A0T+' = '#796eb2',
                    'A1T+' = '#3f007d')

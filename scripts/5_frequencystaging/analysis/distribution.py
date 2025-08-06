@@ -33,7 +33,6 @@ baseline['Group'] = (
     '-' +
     np.where(baseline['ControlForStaging'].eq(True), 'NC', 'ADS')
     )
-baseline['Stage'] = baseline['StageLabeled'].replace(['A0T+', 'A1T+', 'NS'], 'Atypical')
 
 scolors = staging_colors()
 
@@ -88,41 +87,3 @@ plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 plt.tight_layout()
 plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_dataset.svg'), dpi=300)
 
-
-# # PARAMETERS
-
-# def pie_chart_atypical_staging(data):
-
-# # MAIN
-
-# set_config('main')
-
-# plt.rcParams.update({'font.family': 'arial'})
-
-# output_directory = get('output_directory')
-# plot_dest = os.path.join(output_directory, 'plots', 'stage_distribution')
-# os.makedirs(plot_dest, exist_ok=True)
-
-# # training set
-# training = load_split('training', 'baseline', omit_control=True, verbose=False)
-
-# pie_chart_typical_staging(training)
-# plt.title(f'Training set (N={len(training)})', loc='left')
-# plt.savefig(os.path.join(plot_dest, 'training_pie.png'), dpi=300)
-
-# pie_chart_atypical_staging(training)
-# n_ns = sum(training['StageLabeled'].isin(['A0T+', 'A1T+', 'NS']))
-# plt.title(f'N={n_ns}', loc='left')
-# plt.savefig(os.path.join(plot_dest, 'training_atypical_pie.png'), dpi=300)
-
-# # validation set
-# validation = load_split('validation', 'baseline', omit_control=True, verbose=False)
-
-# pie_chart_typical_staging(validation)
-# plt.title(f'Validation set (N={len(validation)})', loc='left')
-# plt.savefig(os.path.join(plot_dest, 'validation_pie.png'), dpi=300)
-
-# pie_chart_atypical_staging(validation)
-# n_ns = sum(validation['StageLabeled'].isin(['A0T+', 'A1T+', 'NS']))
-# plt.title(f'N={n_ns}', loc='left')
-# plt.savefig(os.path.join(plot_dest, 'validation_atypical_pie.png'), dpi=300)

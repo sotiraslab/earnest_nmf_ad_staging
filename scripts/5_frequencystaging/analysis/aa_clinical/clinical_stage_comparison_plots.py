@@ -14,7 +14,6 @@ from atstaging.plotting import set_font_properties
 # Load data, set config, setup output
 set_config('main')
 master = load_split(None, None)
-master['Stage'] = master['StageLabeled'].replace(['A0T+', 'A1T+', 'NS'], 'Atypical')
 training = master[master['Split'].eq('TrainingBaseline') & ~master['ControlForStaging']].copy()
 validation = master[master['Split'].eq('ValidationBaseline') & ~master['ControlForStaging']].copy()
 

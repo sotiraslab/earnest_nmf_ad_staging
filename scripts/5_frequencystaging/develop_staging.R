@@ -453,14 +453,16 @@ atstaging <- function(data, staging.results, thr = 2.5) {
   a.stage <- assign.stages(data = bin.data, regions = amy.regions, stage.grouping = unname(amy.stages), p = 'any', atypical = 'NS')
   t.stage <- assign.stages(data = bin.data, regions = tau.regions, stage.grouping = unname(tau.stages), p = 'any', atypical = 'NS')
   
-  result <- data.frame(StageMain = full.stage, StageAmyloid = a.stage, StageTau = t.stage) %>%
-    mutate(StageDual = str_c('A', StageAmyloid, 'T', StageTau),
-           StageDual = ifelse(StageAmyloid == 'NS' | StageTau == 'NS', 'NS', StageDual),
-           StageDual = ifelse(StageAmyloid == '0' & StageTau != '0', 'A-T+', StageDual),
-           StageLabeled = recode(StageMain, '0'='A0T0', '1'='A1T0', '2'='A2T0', '3'='A2T1',
-                                 '4'='A2T2', '5'='A2T3', '6'='A2T4', 'NS'='NS'),
-           StageLabeled = ifelse(StageAmyloid == '0' & StageTau != '0', 'A0T+', StageLabeled),
-           StageLabeled = ifelse(StageAmyloid == '1' & StageTau %in% c('1', '2', '3', '4'), 'A1T+', StageLabeled))
+  result <- data.frame(StageNumeric = full.stage, StageAmyloid = a.stage, StageTau = t.stage) %>%
+    mutate(
+      Stage = recode(StageNumeric, '0'='A0T0', '1'='A1T0', '2'='A2T0', '3'='A2T1',
+                          '4'='A2T2', '5'='A2T3', '6'='A2T4', 'NS'='Atypical'),
+      StageDual = str_c('A', StageAmyloid, 'T', StageTau),
+      StageDual = ifelse(StageAmyloid == '0' & StageTau != '0', 'A-T+', StageDual),
+      StageLabelNS = ifelse(Stage == 'Atypical', 'Other', Stage),
+      StageLabelNS = ifelse(StageAmyloid == '0' & StageTau != '0', 'A0T+', StageLabelNS),
+      StageLabelNS = ifelse(StageAmyloid == '1' & StageTau %in% c('1', '2', '3', '4'), 'A1T+', StageLabelNS),
+      StageLabelNS = ifelse((StageAmyloid != 'NS') & (StageTau == 'NS') & (data$PTCMedialTemporalWScore < 2.5), 'MTL-', StageLabelNS))
   return (result)
 }
 
@@ -470,15 +472,15 @@ valB.staging <- atstaging(master, valB.results)
 valC.staging <- atstaging(master, valC.results)
 valAll.staging <- atstaging(master, valAll.results)
 
-df.staging$StageValA <- valA.staging$StageMain
-df.staging$StageValB <- valB.staging$StageMain
-df.staging$StageValC <- valC.staging$StageMain
-df.staging$StageValAll <- valAll.staging$StageMain
+df.staging$StageValA <- valA.staging$StageNumeric
+df.staging$StageValB <- valB.staging$StageNumeric
+df.staging$StageValC <- valC.staging$StageNumeric
+df.staging$StageValAll <- valAll.staging$StageNumeric
 
 # ==== ARI Analysis =====
 
 # ARI analysis
-cols <- c('StageMain', 'StageValA', 'StageValB', 'StageValC', 'StageValAll')
+cols <- c('StageNumeric', 'StageValA', 'StageValB', 'StageValC', 'StageValAll')
 matdim <- length(cols)
 ARIs <- matrix(data=NA, nrow=matdim, ncol=matdim)
 

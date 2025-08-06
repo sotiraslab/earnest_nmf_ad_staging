@@ -18,7 +18,6 @@ set_config('main')
 def compare_staging_heatmap(data):
 
     # prep data for plot
-    data['Stage'] = np.where(data['StageLabeled'].isin(['A0T+', 'A1T+', 'NS']), 'Atypical', data['StageLabeled'])
     data['AA2024BiologicalStage'] = pd.Categorical(data['AA2024BiologicalStage'], categories=['0','$A+/T_{2}-$','$A+/T_{2MTL}+$','$A+/T_{2MOD}+$','$A+/T_{2HIGH+}$','Atypical'])
     hmap = pd.crosstab(data['Stage'], data['AA2024BiologicalStage'])
     hmap_norm = hmap.div(hmap.sum(axis=1), axis=0) * 100

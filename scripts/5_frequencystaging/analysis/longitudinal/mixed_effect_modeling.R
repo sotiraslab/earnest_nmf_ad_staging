@@ -19,8 +19,7 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
     
     # Select baseline data with stages assigned
     stages <- df %>%
-        select(Subject, StageLabeled, Age, SexMale, Split, ControlForStaging) %>%
-        mutate(Stage = ifelse(StageLabeled %in% c('A0T+', 'A1T+', 'NS'), 'Atypical', StageLabeled))
+        select(Subject, Stage, Age, SexMale, Split, ControlForStaging)
 
     # select data to use
     choices <- list('mmse'=mmse.long, 'cdr'=cdr.long)

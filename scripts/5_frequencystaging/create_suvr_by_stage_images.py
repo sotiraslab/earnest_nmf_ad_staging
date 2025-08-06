@@ -16,8 +16,7 @@ master = load_split(None, None, verbose=False)
 paths = load_paths_tables(output_directory=preproc_folder)
 joiner = paths[['Subject', 'Session', 'amyloid_registered', 'tau_registered']]
 
-df = master[['Subject', 'Session', 'StageLabeled', 'Split', 'ControlForStaging']].merge(joiner, on=['Subject', 'Session'], how='left')
-df['Stage'] = df['StageLabeled'].replace(['A0T+', 'A1T+', 'NS'], 'Atypical')
+df = master[['Subject', 'Session', 'Stage', 'Split', 'ControlForStaging']].merge(joiner, on=['Subject', 'Session'], how='left')
 
 training = df[df['ControlForStaging'].eq(False) & df['Split'].eq('TrainingBaseline')]
 validation = df[df['ControlForStaging'].eq(False) & df['Split'].eq('ValidationBaseline')]
@@ -66,6 +65,7 @@ for key, data in cohorts.items():
         # amyloid
         if os.path.isfile(opath_amy):
             print(f'  - Existing image at {opath_amy}; skipping')
+            continue
         else:
             print(f'  - Creating average image. [{opath_amy}]')
             create_average_image(amy_images, shape=mni_shape, affine=mni_affine, outpath=opath_amy)
@@ -73,6 +73,7 @@ for key, data in cohorts.items():
         # tau
         if os.path.isfile(opath_tau):
             print(f'  - Existing image at {opath_tau}; skipping')
+            continue
         else:
             print(f'  - Creating average image. [{opath_tau}]')
             create_average_image(tau_images, shape=mni_shape, affine=mni_affine, outpath=opath_tau)

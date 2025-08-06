@@ -28,9 +28,9 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
     
     # Load the data with stages
     staging = load_split(split, 'baseline', verbose=False)
-    staging = staging[['Subject', 'StageLabeled']].copy()
+    staging = staging[['Subject', 'Stage']].copy()
     if omit_atypical:
-        staging = staging[~staging['StageLabeled'].isin(['NS', 'A0T+', 'A1T+'])].copy()
+        staging = staging[~staging['Stage'].eq('Atypical')].copy()
     
     # Merge with the longitudinal assessments
     merge_data = {'cdr': cdr_long, 'mmse': mmse_long}[variable]
@@ -44,26 +44,26 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
     
     # group into lifelines format
     survdata['Duration'] =  (survdata['DateLongitudinal'] - survdata.groupby('Subject')['DateLongitudinal'].transform('first')).dt.total_seconds() / (60*60*24*365.25)
-    survgroup = survdata.groupby('Subject').agg({'StageLabeled': 'first', 'Duration': 'max', 'Event': 'any'})
+    survgroup = survdata.groupby('Subject').agg({'Stage': 'first', 'Duration': 'max', 'Event': 'any'})
     survgroup['Event'] = survgroup['Event'].astype(float)
     
     # combine stages
     if combine_tau_stages:
-        survgroup.loc[survgroup['StageLabeled'].isin(['A2T1', 'A2T2']), 'StageLabeled'] = 'A2T1-2'
-        survgroup.loc[survgroup['StageLabeled'].isin(['A2T3', 'A2T4']), 'StageLabeled'] = 'A2T3-4'
+        survgroup.loc[survgroup['Stage'].isin(['A2T1', 'A2T2']), 'Stage'] = 'A2T1-2'
+        survgroup.loc[survgroup['Stage'].isin(['A2T3', 'A2T4']), 'Stage'] = 'A2T3-4'
 
     # Model
     kmf = KaplanMeierFitter()
     fig, ax = plt.subplots()
     
-    groups = sorted(survgroup['StageLabeled'].unique())
+    groups = sorted(survgroup['Stage'].unique())
     colors = staging_colors()
     colors['A0T0'] = 'black'
     colors['A2T1-2'] = colors['A2T2']
     colors['A2T3-4'] = colors['A2T4']
     
     for group in groups:
-        idx = survgroup['StageLabeled'].eq(group)
+        idx = survgroup['Stage'].eq(group)
         T = survgroup.loc[idx, 'Duration']
         E = survgroup.loc[idx, 'Event']
     
@@ -77,7 +77,7 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     # Statistics
-    stats_result = pairwise_logrank_test(survgroup['Duration'], survgroup['StageLabeled'], survgroup['Event'])
+    stats_result = pairwise_logrank_test(survgroup['Duration'], survgroup['Stage'], survgroup['Event'])
     stats = stats_result.summary
     stats['annot'] = pd.cut(stats['p'], bins=[-np.inf, 0.001, 0.01, 0.05, np.inf], labels=['***', '**', '*', ''])
 

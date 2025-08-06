@@ -168,8 +168,8 @@ def select_consistent_cognitively_normal(cdr, subject_col='Subject', date_col='D
 # LOAD MASTER
 # ===================
 
-master = load_split(None, None)
-master['Stage'] = master['StageLabeled'].replace(['A0T+', 'A1T+', 'NS'], 'Atypical')
+master = load_split(None, None, verbose=False)
+master = master[[col for col in master.columns if 'PACC' not in col]]
 
 # separate into different datasets with PACC information
 master_adni = master.loc[master['DataSet'].eq('ADNI'), ['Subject', 'Session', 'TauAmyloidMeanDate', 'Split', 'ControlForStaging']]
@@ -376,11 +376,11 @@ master_pacc['AA2024Clinical'] = np.where(master_pacc['AA2024Clinical'].eq('nan')
 # RESILIENT vs VULNERABLE
 # =====
 
-mystage_levels = master_pacc['StageMain'].map({'0': 0, '1': 0, '2': 0, '3': 1, '4': 2, '5': 2, '6': 3, 'NS': np.nan}).astype(float)
+mystage_levels = master_pacc['StageNumeric'].map({'0': 0, '1': 0, '2': 0, '3': 1, '4': 2, '5': 2, '6': 3, 'NS': np.nan}).astype(float)
 clinstage_levels = master_pacc['AA2024Clinical'].map({'Stage 1': 0, 'Stage 2': 1, 'Stage 3': 2, 'Stage 4-6': 3}).astype(float)
 
 master_pacc['ResilientVulnerable'] = np.sign(mystage_levels - clinstage_levels).map({1: 'Resilient', 0: 'Expected', -1: 'Vulnerable'})
-master_pacc.loc[master_pacc['StageMain'].eq('NS'), 'ResilientVulnerable'] = 'Atypical'
+master_pacc.loc[master_pacc['StageNumeric'].eq('NS'), 'ResilientVulnerable'] = 'Atypical'
 
 # SAVE
 # ======

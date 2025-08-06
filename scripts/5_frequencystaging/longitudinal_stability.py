@@ -9,6 +9,7 @@ import seaborn as sns
 
 from atstaging.config import get, set_config
 from atstaging.outputs import load_split
+from atstaging.plotting import set_font_properties
 
 # PARAMETERS
 N = 5000
@@ -38,8 +39,7 @@ def longitudinal_permutation_test(flow, N):
     null = np.array(null)
     p = (null >= observed).mean()
 
-    plt.rcParams.update({'font.family':'arial',
-                         'font.size':20})
+    set_font_properties()
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -118,7 +118,7 @@ def pipeline(df, stage_labels=None, potential_labels=None,\
     if out_heatmap is not None:
         hmap.savefig(out_heatmap, dpi=300)
 
-def stageflow(df, subject_col='Subject', label_col='StageMain'):
+def stageflow(df, subject_col='Subject', label_col='StageNumeric'):
 
     position_col = 'VisitNumber'
 
@@ -143,7 +143,7 @@ def stagestat(label_from, label_to):
 
 set_config('main')
 potential_labels = ['0', '1', '2', '3', '4', '5', '6', 'NS']
-stage_labels = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'NS']
+stage_labels = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'Atypical']
 
 # outputs
 output_directory = get('output_directory')

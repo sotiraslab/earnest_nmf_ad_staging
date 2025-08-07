@@ -35,7 +35,7 @@ features_a4['Race'] = features_a4['RACE'].map({
     84: 'Other',
     97: 'NA',
     100: 'Other'
-}) 
+})
 features_a4['Hispanic'] = features_a4['ETHNIC'].map({50: 1., 56: 0., 97: np.nan})
 features_a4['Education'] = features_a4['EDCCNTU']
 features_a4['BMI'] = features_a4['BMIBL']
@@ -225,3 +225,8 @@ combined.loc[combined['Race'].isna(), 'Race'] = 'NA'
 root_output = get('output_directory')
 opath = os.path.join(root_output, 'masterTables', 'FEATURE_COVARIATES.csv')
 combined.to_csv(opath, index=False)
+
+# reload and save for R
+temp = load_split(None, None, verbose=False)
+r_opath = os.path.join(root_output, 'filesForR', 'master_with_covariates.csv')
+temp.to_csv(r_opath, index=False)

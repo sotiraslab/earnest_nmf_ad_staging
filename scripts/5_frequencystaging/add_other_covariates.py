@@ -123,6 +123,9 @@ features_gs2['Hispanic'] = np.nan
 features_gs2['Education'] = np.nan
 features_gs2['BMI'] = np.nan
 
+features_gs1 = features_gs1[final_columns].copy()
+features_gs2 = features_gs2[final_columns].copy()
+
 # HABS
 ########
 demo = pd.read_csv('/ceph/chpc/shared/aristeidis_sotiras_group/aris_data/HABS/tabular/Demographics_HABS_DataRelease_2.0.csv')
@@ -220,6 +223,7 @@ combined = pd.concat([
     features_a4, features_adni, features_gs1, features_gs2, features_habs, features_habshd, features_oasis, features_scan
 ], ignore_index=True)
 combined.loc[combined['Race'].isna(), 'Race'] = 'NA'
+combined = combined[final_columns].copy()
 
 # save
 root_output = get('output_directory')

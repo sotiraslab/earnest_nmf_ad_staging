@@ -10,7 +10,7 @@ ROOT.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/'
 # Load data
 PATH.DATA <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_covariates.csv')
 PATH.OUTPUT <- file.path(ROOT.OUTPUT, 'tables')
-dir.create(PATH.OUTPUT)
+dir.create(PATH.OUTPUT, showWarnings = F)
 
 master <- read.csv(PATH.DATA)
 master$TauAmyloidMeanDate <- as_datetime(ymd_hms(master$TauAmyloidMeanDate))
@@ -28,6 +28,7 @@ df <- master %>%
     Education = first(Education),
     BMI = first(BMI),
     CDR = first(CDRBinned),
+    MMSE = first(MMSETotal),
     APOEE4 = first(HasE4),
     "Amyloid-PET tracer" = first(TracerAmyloid),
     "Tau-PET tracer" = first(TracerTau),
@@ -68,7 +69,7 @@ df %>%
   add_n() %>%
   add_p(test = list(all_continuous() ~ "t.test"), include = -Visits) %>%
   as_gt() %>%
-  gtsave(file.path(PATH.OUTPUT, 'gtsummary_by_split.docx')) 
+  gtsave(file.path(PATH.OUTPUT, 'gtsummary_by_split.docx'))
 
 # Table splitting training and validation and disease status
 df %>%

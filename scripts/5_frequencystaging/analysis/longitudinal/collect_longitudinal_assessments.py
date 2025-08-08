@@ -219,3 +219,14 @@ mmse_long.to_csv(mmse_path, index=False)
 # also save the baseline data for analysis in R
 bl = load_split(None, 'baseline', verbose=False)
 bl.to_csv(os.path.join(longitudinal_dir, 'baseline.csv'), index=False)
+
+# also save MMSE as a feature for the master table
+a = load_split(None, None, verbose=False)[['Subject', 'Session', 'TauAmyloidMeanDate']].copy()
+b = pd.concat([a4_mmse, adni_mmse, gs1_mmse, gs2_mmse, habs_mmse, habshd_mmse, oasis_mmse, scan_mmse], axis=0, ignore_index=True)
+b = b[['Subject', 'DateLongitudinal', 'MMSE']].copy()
+b.columns = ['Subject', 'Date', 'MMSETotal']
+c = add_features_by_date(a, b, fields=['MMSETotal'], a_subject='Subject', a_date='TauAmyloidMeanDate',
+                         b_subject='Subject', b_date='Date', b_name='MMSE', include_gap_cols=False)
+c = c.drop(columns='TauAmyloidMeanDate')
+
+c.to_csv(os.path.join(output_directory, 'masterTables', 'FEATURE_MMSE.csv'), index=False)

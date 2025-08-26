@@ -366,7 +366,8 @@ master_pacc = master_pacc.merge(pacc_scores_og, on=['Subject', 'Session'], how='
 
 master_pacc['AA2024Clinical'] = np.nan
 master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('1.0+'), 'Stage 4-6', master_pacc['AA2024Clinical'])
-master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.5'), 'Stage 3', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.5') & master_pacc['PACCADNI'].le(adni_pacc_sci_cutoff), 'Stage 3', master_pacc['AA2024Clinical'])
+master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.5') & master_pacc['PACCOriginal'].le(og_pacc_sci_cutoff), 'Stage 3', master_pacc['AA2024Clinical'])
 master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCADNI'].le(adni_pacc_sci_cutoff), 'Stage 2', master_pacc['AA2024Clinical'])
 master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCOriginal'].le(og_pacc_sci_cutoff), 'Stage 2', master_pacc['AA2024Clinical'])
 master_pacc['AA2024Clinical'] = np.where(master_pacc['CDRBinned'].eq('0.0') & master_pacc['PACCADNI'].gt(adni_pacc_sci_cutoff), 'Stage 1', master_pacc['AA2024Clinical'])

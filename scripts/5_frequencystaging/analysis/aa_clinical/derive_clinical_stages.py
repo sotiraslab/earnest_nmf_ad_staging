@@ -382,6 +382,7 @@ clinstage_levels = master_pacc['AA2024Clinical'].map({'Stage 1': 0, 'Stage 2': 1
 
 master_pacc['ResilientVulnerable'] = np.sign(mystage_levels - clinstage_levels).map({1: 'Resilient', 0: 'Expected', -1: 'Vulnerable'})
 master_pacc.loc[master_pacc['StageNumeric'].eq('NS'), 'ResilientVulnerable'] = 'Atypical'
+master_pacc.loc[master_pacc['AA2024Clinical'].isna(), 'ResilientVulnerable'] = np.nan
 
 # SAVE
 # ======
@@ -393,3 +394,8 @@ opath = os.path.join(root_output, 'masterTables', 'FEATURE_AA2024Clinical.csv')
 features.to_csv(opath, index=False)
 
 print(f'Saved stages for {len(features)} subjects at "{opath}".')
+
+# save a copy for R
+master = load_split(None, None, verbose=False)
+outpath = os.path.join(root_output, 'filesForR', 'master_with_clinical_stages.csv')
+master.to_csv(outpath, index=False)

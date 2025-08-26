@@ -44,11 +44,7 @@ run.ancovas <- function(data) {
   # fit models
   for (i in 1:n.dependents) {
     dependent <- dependents[i]
-    if (dependent == 'Age') {
-      fml <- as.formula(sprintf('%s ~ StageType + SexMale + SummarySUVRAmyloid + SummarySUVRTau', dependent))
-    } else {
-      fml <- as.formula(sprintf('%s ~ StageType + Age + SexMale + SummarySUVRAmyloid + SummarySUVRTau', dependent))
-    }
+    fml <- as.formula(sprintf('%s ~ StageType + SummarySUVRAmyloid + SummarySUVRTau', dependent))
     
     output[i, 'Variable'] <- dependent
     output[i, 'Atypical'] <- mean(data[data$StageType == 'Atypical', dependent], na.rm = T)

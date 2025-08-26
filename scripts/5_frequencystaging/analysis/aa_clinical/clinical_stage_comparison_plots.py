@@ -52,21 +52,21 @@ plt.savefig(os.path.join(ODIR, 'validation_pacc_adni_boxplot.png'), dpi=300)
 def compare_staging_heatmap(data, title=None):
     hmap = pd.crosstab(data['Stage'], data['AA2024Clinical'])
     hmap_norm = hmap.div(hmap.sum(axis=1), axis=0) * 100
-    
+
     fig = plt.figure(figsize=(6, 7))
     im = plt.imshow(hmap_norm, vmin=0, vmax=100, cmap='Blues')
     plt.yticks(range(len(hmap_norm.index)), hmap_norm.index)
     plt.xticks(range(len(hmap_norm.columns)), hmap_norm.columns, rotation=45, ha='right')
-    
+
     for x in range(len(hmap_norm.columns)):
         for y in range(len(hmap_norm.index)):
             value = hmap.iloc[y, x]
             prop = hmap_norm.iloc[y, x]
             color = 'black' if prop < 50 else 'white'
             plt.text(x, y, value, color=color, ha='center', va='center')
-    if title is not None:  
+    if title is not None:
         plt.title(title, loc='left')
-    
+
     ax = plt.gca()
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.2)
@@ -84,7 +84,7 @@ plt.savefig(os.path.join(ODIR, 'validation_compare_staging_heatmap.png'))
 # Resilience vs vulnerability
 
 def resilient_vulernable_heatmap(master, split='training', autosave=True):
-    
+
     cmap = plt.colormaps['PuOr_r'].resampled(256)
     newcolors = cmap(np.linspace(0, 1, 256))
     gray = np.array((0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0)) # gray
@@ -92,10 +92,10 @@ def resilient_vulernable_heatmap(master, split='training', autosave=True):
     newcmap = ListedColormap(newcolors)
 
     split_value = split.capitalize() + 'Baseline'
-    
-    data = master[master['Split'].eq(split_value) & master['ControlForStaging'].eq(False)].copy()
+
+    data = master[master['Split'].eq(split_value) & master['ControlForStaging'].eq(False) & (~master['AA2024Clinical'].isna())].copy()
     hmap = pd.crosstab(data['Stage'], data['AA2024Clinical'])
-    
+
     resilvul = np.array(
         [[0, 1, 1, 1],
          [0, 1, 1, 1],
@@ -105,14 +105,14 @@ def resilient_vulernable_heatmap(master, split='training', autosave=True):
          [-1, -1, 0, 1],
          [-1, -1, -1, 0],
          [-2, -2, -2, -2]])
-    
+
     fig, axes = plt.subplots(ncols=2, figsize=(8, 8), width_ratios=(7, 1))
     plt.subplots_adjust(wspace=0)
     ax1, ax2 = axes
     ax1.imshow(resilvul, cmap=newcmap, vmin=-2, vmax=2)
-    
+
     count_group = {'Resilient': 0, 'Expected': 0, 'Vulnerable': 0, 'Atypical': 0}
-    
+
     for x in range(len(hmap.columns)):
         for y in range(len(hmap.index)):
             value = hmap.iloc[y, x]
@@ -120,14 +120,14 @@ def resilient_vulernable_heatmap(master, split='training', autosave=True):
             pct = round(value/len(data)*100, 2)
             text = f'{value}\n{pct}%'
             ax1.text(x, y, text, color=color, ha='center', va='center')
-    
+
             rv_value = resilvul[y, x]
             group = { -1:'Resilient',  0:'Expected', 1:'Vulnerable', -2: 'Atypical'}[rv_value]
             count_group[group] += value
     ax1.set_yticks(range(len(hmap.index)), hmap.index)
     ax1.set_xticks(range(len(hmap.columns)), hmap.columns, rotation=45, ha='right')
-    ax1.set_title(split.capitalize(), loc='left')
-    
+    ax1.set_title(f'{split.capitalize()} (with clinical stages, n={len(data)})', loc='left')
+
     bottom = 0
     colors = {'Resilient': cmap(0.25), 'Expected': cmap(0.5), 'Vulnerable': cmap(0.75), 'Atypical': 'gray'}
     for k, v in count_group.items():
@@ -137,7 +137,7 @@ def resilient_vulernable_heatmap(master, split='training', autosave=True):
     ax2.set_xlim(-0.4, 0.4)
     ax2.set_ylim(0, sum(count_group.values()))
     ax2.set_xticks([])
-    
+
     ax2.legend(loc='lower center', bbox_to_anchor=(0.5, 1))
     bounds = ax2.get_position().bounds
     ax2.set_position([bounds[0], bounds[1] +  0.2, bounds[2], bounds[3] - 0.4])

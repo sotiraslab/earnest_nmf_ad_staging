@@ -19,7 +19,7 @@ training = SustainManager(training_dir)
 validation = SustainManager(validation_dir)
 
 # plotting output
-odir = os.path.join(root_output, 'plots', 'sustain_model_selection')
+odir = os.path.join(root_output, 'plots', 'sustain', 'model_selection')
 os.makedirs(odir, exist_ok=True)
 
 # Histograms of likelihood

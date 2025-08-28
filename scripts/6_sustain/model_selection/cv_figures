@@ -27,7 +27,7 @@ validation_test_idxs = validation.load_test_indices(cv_folds)
 validation_CVIC, validation_loglike_matrix = validation.sustain.cross_validate_sustain_model(validation_test_idxs)
 
 # plotting output
-odir = os.path.join(root_output, 'plots', 'sustain_model_selection')
+odir = os.path.join(root_output, 'plots', 'sustain', 'model_selection')
 os.makedirs(odir, exist_ok=True)
 
 # CVIC curve

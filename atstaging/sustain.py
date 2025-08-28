@@ -6,7 +6,7 @@ import textwrap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pySuStaIn import ZscoreSustain
+from pySuStaIn import ZscoreSustain, ZScoreSustainData
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
@@ -233,6 +233,10 @@ class SustainManager:
         return self.sustain._AbstractSustain__sustainData.data.shape[0]
 
     @property
+    def n_stages(self):
+        return self.sustain._AbstractSustain__sustainData.getNumStages()
+
+    @property
     def path_cv_subfolder(self):
         return os.path.join(self.sustain_output_folder, 'cv')
     
@@ -338,6 +342,45 @@ class SustainManager:
             n_samples,
             biomarker_labels=self.sustain.biomarker_labels,
             **kwargs)
+    
+    def predict(self, data, n_subtypes, n_samples=1000, prefix=''):
+
+        # load samples for predicitng new data
+        loaded_variables = self.load_pickled_results(n_subtypes=n_subtypes)
+        samples_sequence = loaded_variables['samples_sequence']
+        samples_f = loaded_variables['samples_f']
+
+        # load new data
+        sustain_data = ZScoreSustainData(data, numStages=self.n_stages)
+        ml_subtype, \
+        prob_ml_subtype, \
+        ml_stage, \
+        prob_ml_stage, \
+        prob_subtype, \
+        prob_stage, \
+        prob_subtype_stage = self.sustain.subtype_and_stage_individuals(
+            sustainData=sustain_data,
+            samples_sequence=samples_sequence,
+            samples_f=samples_f,
+            N_samples=n_samples
+        )
+
+        df = pd.DataFrame(
+            {
+                'MLSubtype': ml_subtype.flatten(),
+                'MLStage': ml_stage.flatten(),
+                'ProbMLSubtype': prob_ml_subtype.flatten(),
+                'ProMLStage': prob_ml_stage.flatten()
+            }
+        )
+
+        n_subtypes = prob_subtype.shape[1]
+        probs = pd.DataFrame(prob_subtype, columns=[f'ProbSubtype{i}' for i in range(n_subtypes)])
+
+        result = pd.concat([df, probs], axis=1)
+        result.columns = [prefix + c for c in result.columns]
+
+        return result
 
     def run_cv(self, test_indices, dry=False):
 

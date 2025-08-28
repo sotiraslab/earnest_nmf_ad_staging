@@ -3,7 +3,9 @@ import os
 import pickle
 import textwrap
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from pySuStaIn import ZscoreSustain
 
 from atstaging.config import get
@@ -185,6 +187,25 @@ class SustainManager:
         with open(os.path.join(self.path_model_freeze_subfolder, 'params.pickle'), 'wb') as f:
             pickle.dump(args, f)
 
+    @property
+    def input_data(self):
+        return self.sustain._AbstractSustain__sustainData.data
+
+    def load_pickled_results(self, n_subtypes, fold=None, key=None):
+        subtype_index = n_subtypes - 1
+        fold_str = f'_fold{fold}' if fold is not None else ''
+        picklepath = os.path.join(self.sustain_output_folder, 'pickle_files', 
+                                  f'{self.sustain.dataset_name}{fold_str}_subtype{subtype_index}.pickle')
+        with open(picklepath, 'rb') as f:
+            data = pickle.load(f)
+            if key is None:
+                output = data
+            elif isinstance(key,str):
+                output = data[key]
+            else:
+                output = {k: data[k] for k in key}
+        return output
+
     def load_test_indices(self, cv_folds):
 
         cv_dir = os.path.join(self.path_cv_subfolder, f'cv{cv_folds}')
@@ -202,6 +223,14 @@ class SustainManager:
             self._load_sustain_from_freeze(src)
         else:
             self._load_sustain_from_model(src)
+
+    @property
+    def n_biomarkers(self):
+        return self.sustain._AbstractSustain__sustainData.data.shape[1]
+
+    @property
+    def n_samples(self):
+        return self.sustain._AbstractSustain__sustainData.data.shape[0]
 
     @property
     def path_cv_subfolder(self):
@@ -230,6 +259,85 @@ class SustainManager:
     @property
     def path_main_log(self):
         return os.path.join(self.path_log_subfolder, 'run_main.log')
+    
+    def plot_cv_loglikelihood(self, loglike_matrix):
+        
+        fig, ax = plt.subplots()
+        df_loglike = pd.DataFrame(data = loglike_matrix, columns = ["s_" + str(i+1) for i in range(self.sustain.N_S_max)])
+        df_loglike.boxplot(grid=False, ax=ax)
+        
+        for i in range(self.sustain.N_S_max):
+            y = df_loglike[["s_" + str(i+1)]]
+            x = np.random.normal(1+i, 0.04, size=len(y)) # Add some random "jitter" to the x-axis
+            plt.plot(x, y, 'r.', alpha=0.2)
+        plt.ylabel('Log likelihood')  
+        plt.xlabel('N subtypes') 
+        plt.title('Figure 8: Test set log-likelihood across folds')
+
+        return fig
+                     
+    def plot_cvic(self, CVIC):
+
+        fig = plt.figure()
+        x = np.arange(self.sustain.N_S_max, dtype=int)
+        plt.plot(x, CVIC)
+        plt.xticks(x, x+1)
+        plt.ylabel('CVIC')
+        plt.xlabel('N subtypes') 
+
+        return fig
+    
+    def plot_likelihood_histogram(self, N_S_max=None):
+
+        N_S_max = self.sustain.N_S_max if N_S_max is None else N_S_max
+        
+        fig = plt.figure()
+        
+        for i in range(N_S_max):
+            samples_likelihood = self.load_pickled_results(key='samples_likelihood', n_subtypes=i+1, fold=None)
+            txt = 'subtype' if i == 0 else 'subtypes'
+            plt.hist(samples_likelihood, label=f'{i+1} {txt}')
+
+        plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+        plt.xlabel('Log likelihood')
+        plt.ylabel('Number of samples')
+        plt.title('Histograms of model likelihood')
+
+        return fig
+    
+    def plot_mcmc_trace(self, N_S_max=None):
+
+        N_S_max = self.sustain.N_S_max if N_S_max is None else N_S_max
+
+        fig = plt.figure()
+
+        iterations = self.sustain.N_iterations_MCMC
+        
+        for i in range(N_S_max):
+            samples_likelihood = self.load_pickled_results(key='samples_likelihood', n_subtypes=i+1, fold=None)
+            txt = 'subtype' if i == 0 else 'subtypes'
+            plt.plot(range(iterations), samples_likelihood, label=f'{i+1} {txt}')
+
+        plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+        plt.xlabel('MCMC samples')
+        plt.ylabel('Number of samples')
+        plt.title('MCMC trace')
+
+        return fig
+    
+    def plot_pvd(self, n_subtypes, **kwargs):
+        loaded_variables = self.load_pickled_results(n_subtypes=n_subtypes)
+        samples_sequence = loaded_variables['samples_sequence']
+        samples_f = loaded_variables['samples_f']
+        n_samples = self.n_samples
+
+
+        return self.sustain._plot_sustain_model(
+            samples_sequence,
+            samples_f,
+            n_samples,
+            biomarker_labels=self.sustain.biomarker_labels,
+            **kwargs)
 
     def run_cv(self, test_indices, dry=False):
 

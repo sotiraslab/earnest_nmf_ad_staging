@@ -1,0 +1,49 @@
+import os
+
+import matplotlib.pyplot as plt
+
+from atstaging.config import get, set_config
+from atstaging.plotting import set_font_properties
+from atstaging.sustain import SustainManager
+
+# set configuration
+set_config('main')
+set_font_properties()
+cv_folds = 10
+
+# Load sustain models
+root_output = get('output_directory')
+training_dir = os.path.join(root_output, 'sustain', 'training')
+validation_dir = os.path.join(root_output, 'sustain', 'validation')
+
+training = SustainManager(training_dir)
+validation = SustainManager(validation_dir)
+
+# load CV results (takes a bit of time)
+training_test_idxs = training.load_test_indices(cv_folds)
+training_CVIC, training_loglike_matrix = training.sustain.cross_validate_sustain_model(training_test_idxs)
+
+validation_test_idxs = validation.load_test_indices(cv_folds)
+validation_CVIC, validation_loglike_matrix = validation.sustain.cross_validate_sustain_model(validation_test_idxs)
+
+# plotting output
+odir = os.path.join(root_output, 'plots', 'sustain_model_selection')
+os.makedirs(odir, exist_ok=True)
+
+# CVIC curve
+plt.figure(figsize=(8, 6))
+_ = training.plot_cvic(training_CVIC)
+plt.savefig(os.path.join(odir, 'training_cvic.svg'))
+
+plt.figure(figsize=(8, 6))
+_ = training.plot_cvic(validation_CVIC)
+plt.savefig(os.path.join(odir, 'validation_cvic.svg'))
+
+# CV likelihood
+plt.figure(figsize=(8, 6))
+_ = training.plot_cv_loglikelihood(training_loglike_matrix)
+plt.savefig(os.path.join(odir, 'training_cv_likelihood.svg'))
+
+plt.figure(figsize=(8, 6))
+_ = training.plot_cv_loglikelihood(validation_loglike_matrix)
+plt.savefig(os.path.join(odir, 'validation_cv_likelihood.svg'))

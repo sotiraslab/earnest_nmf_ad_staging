@@ -101,7 +101,11 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None,
 
     return data
 
-def load_subtyped_data(split='training', load_controls=False, include_longitudinal=False, sustain_model='Training'):
+def load_subtyped_data(split='training', load_controls=False, include_longitudinal=False, sustain_model='auto'):
+
+    if sustain_model == 'auto':
+        sustain_model = split.capitalize()
+
     df = load_split(split=split, longitudinal='baseline', omit_control=False, verbose=False)
     if load_controls:
         df = df[df['ControlForStaging']].copy()

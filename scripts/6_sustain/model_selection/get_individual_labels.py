@@ -26,10 +26,10 @@ s7_predictions = training_sustain.predict(wdata, n_subtypes=7, prefix='S7')[['S7
 features = pd.concat([master[['Subject', 'Session']], tmodel_predictions, vmodel_predictions, s7_predictions], axis=1)
 
 # add binned stages
-features['TrainingMLStageBinned'] = pd.cut(features['TrainingMLStage'], [1, 5, 9, np.inf], labels=['1-4', '5-8', '9+'], right=False)
+features['TrainingMLStageBinned'] = pd.cut(features['TrainingMLStage'], [-1, 1, 5, 9, np.inf], labels=['0', '1-4', '5-8', '9+'], right=False)
 features.loc[features['TrainingMLStage'].isna(), 'TrainingMLStageBinned'] = np.nan
 
-features['ValidationMLStageBinned'] = pd.cut(features['ValidationMLStage'], [1, 5, 9, np.inf], labels=['1-4', '5-8', '9+'], right=False)
+features['ValidationMLStageBinned'] = pd.cut(features['ValidationMLStage'], [-1, 1, 5, 9, np.inf], labels=['0', '1-4', '5-8', '9+'], right=False)
 features.loc[features['ValidationMLStage'].isna(), 'ValidationMLStageBinned'] = np.nan
 
 # save

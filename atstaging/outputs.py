@@ -101,6 +101,34 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None,
 
     return data
 
+def load_subtyped_data(split='training', load_controls=False, include_longitudinal=False, sustain_model='Training'):
+    df = load_split(split=split, longitudinal='baseline', omit_control=False, verbose=False)
+    if load_controls:
+        df = df[df['ControlForStaging']].copy()
+    else:
+        # if not loading controls, assumes the Stage 0 individuals should be omitted
+        sustain_stage_col = f'{sustain_model}MLStage'
+        df = df[(~df['ControlForStaging']) & df[sustain_stage_col].ge(1)]
+    
+    if include_longitudinal:
+        long = load_split(split=split, longitudinal=None, verbose=False, omit_control=False)
+        include_indices = long.index.isin(df.index)
+        include_subjects = long['Subject'].isin(df['Subject'].unique())
+        output = long[include_indices | include_subjects].copy()
+    else:
+        output = df
+
+    return output
+
+# def load_subtyped_data(split='training', longitudinal='baseline', omit_control=True, verbose=False,
+#                        omit_baseline_stage0=True, sustain_model='Training', **kwargs):
+#     data = load_split(split=split, longitudinal=longitudinal, omit_control=omit_control, verbose=verbose, **kwargs)
+#     if omit_baseline_stage0:
+#         col = f'{sustain_model}MLStage'
+#         data = data[~(data['Split'].str.contains('Baseline') & data[col].eq(0))].copy()
+    
+#     return data
+
 def load_musestats(kind, output_directory=None):
 
     if kind not in ['amyloid', 'tau']:

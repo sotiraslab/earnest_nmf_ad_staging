@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pySuStaIn import ZscoreSustain, ZScoreSustainData
+from scipy.optimize import linear_sum_assignment
+from scipy.spatial.distance import cdist
 
 from atstaging.config import get
 from atstaging.preprocessing.execute import execute
@@ -187,6 +189,14 @@ class SustainManager:
         with open(os.path.join(self.path_model_freeze_subfolder, 'params.pickle'), 'wb') as f:
             pickle.dump(args, f)
 
+    def frequency_based_biomarker_ordering(self, n_subtypes):
+        ml_subtype = self.load_pickled_results(n_subtypes=n_subtypes)['ml_subtype']
+        order = np.zeros((n_subtypes, self.n_biomarkers))
+        for i in range(n_subtypes):
+            w = self.input_data[ml_subtype.flatten() == i, :]
+            order[i, :] = (w > 2.5).sum(axis=0).argsort()[::-1]
+        return order
+
     @property
     def input_data(self):
         return self.sustain._AbstractSustain__sustainData.data
@@ -223,6 +233,25 @@ class SustainManager:
             self._load_sustain_from_freeze(src)
         else:
             self._load_sustain_from_model(src)
+
+    def map_subtype_indexing(self, n_subtypes=3, verbose=True):
+        ml_subtype_order = self.frequency_based_biomarker_ordering(n_subtypes=n_subtypes)
+        sampled_order = self.load_pickled_results(n_subtypes=n_subtypes, key='ml_sequence_EM')
+        dist = cdist(ml_subtype_order, sampled_order)
+        index_a, index_b = linear_sum_assignment(dist)
+
+        if verbose:
+            print()
+            print('Approximate regional ordering of subtypes as labeled in `ml_subtype`:')
+            print(ml_subtype_order)
+            print()
+            print('Maximum likelihood ordering of subtypes as labeled in `samples_sequence`:')
+            print(sampled_order)
+            print()
+            print('Linear sum assignment:')
+            print(index_a, index_b)
+
+        return index_a, index_b
 
     @property
     def n_biomarkers(self):
@@ -374,6 +403,7 @@ class SustainManager:
             }
         )
         df['MLSubtype'] = 'S' + (df['MLSubtype'].astype(int) + 1).astype(str)
+        df['MLSubtypeRAW'] = ml_subtype.flatten()
 
         n_subtypes = prob_subtype.shape[1]
         probs = pd.DataFrame(prob_subtype, columns=[f'ProbSubtypeS{i+1}' for i in range(n_subtypes)])

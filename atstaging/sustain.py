@@ -373,9 +373,10 @@ class SustainManager:
                 'ProMLStage': prob_ml_stage.flatten()
             }
         )
+        df['MLSubtype'] = 'S' + (df['MLSubtype'].astype(int) + 1).astype(str)
 
         n_subtypes = prob_subtype.shape[1]
-        probs = pd.DataFrame(prob_subtype, columns=[f'ProbSubtype{i}' for i in range(n_subtypes)])
+        probs = pd.DataFrame(prob_subtype, columns=[f'ProbSubtypeS{i+1}' for i in range(n_subtypes)])
 
         result = pd.concat([df, probs], axis=1)
         result.columns = [prefix + c for c in result.columns]

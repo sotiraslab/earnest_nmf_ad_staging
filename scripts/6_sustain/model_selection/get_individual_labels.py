@@ -20,7 +20,7 @@ validation_sustain = SustainManager(os.path.join(root_output, 'sustain', 'valida
 
 # predictions
 tmodel_predictions = training_sustain.predict(wdata, n_subtypes=3, prefix='Training')
-vmodel_predictions = validation_sustain.predict(wdata, n_subtypes=3, prefix='Validation')[['ValidationMLSubtype', 'ValidationMLStage']]
+vmodel_predictions = validation_sustain.predict(wdata, n_subtypes=3, prefix='Validation')[['ValidationMLSubtype', 'ValidationMLStage', 'ValidationMLSubtypeRAW']]
 s7_predictions = training_sustain.predict(wdata, n_subtypes=7, prefix='S7')[['S7MLSubtype', 'S7MLStage']]
 
 features = pd.concat([master[['Subject', 'Session']], tmodel_predictions, vmodel_predictions, s7_predictions], axis=1)

@@ -197,8 +197,13 @@ def set_font_properties():
     font_path = get('font_for_plots')
     font_path_bold = get('font_for_plots_bold')
 
-    font_name = _register_font(font_path)
-    _ = _register_font(font_path_bold)        
+    if font_path:
+        font_name = _register_font(font_path)
+    else:
+        font_name = 'Arial'
+
+    if font_path_bold:
+        _ = _register_font(font_path_bold)        
 
     plt.rcParams.update({
         'font.size': 14,

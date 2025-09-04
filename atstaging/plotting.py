@@ -233,3 +233,12 @@ def staging_colors():
     colors = {k: to_hex(v) for k, v in colors.items()}
 
     return colors
+
+def subtype_colors():
+    colors = {
+        'S0' : 'gray',
+        'S1' : '#db2b39',
+        'S2' : '#053c5e',
+        'S3' : '#f3a712' 
+    }
+    return colors

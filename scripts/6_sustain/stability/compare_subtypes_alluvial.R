@@ -38,9 +38,9 @@ my.alluvial <- function(split) {
   
   colors <- c(
     'S0' = 'gray',
-    'S1' = '#ef767a',
-    'S2' = '#456990',
-    'S3' = '#49beaa' 
+    'S1' = '#db2b39',
+    'S2' = '#053c5e',
+    'S3' = '#f3a712' 
   )
   
   p <- ggplot(p.data, aes(x = Model, stratum = Subtype, alluvium = Subject, fill = Subtype, label = Subtype)) +

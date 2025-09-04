@@ -74,8 +74,8 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
     amy_mapping = {
         'PACParietal': 2,
         'PACFrontal': 1,
-        'PACSensorimotor': 5,
-        'PACOccipital': 6
+        'PACSensorimotor': 6,
+        'PACOccipital': 5
         }
 
     tau_mapping = {
@@ -166,6 +166,7 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
     # Now apply the assignments
     output1D = np.zeros(shape=wta1Dremap.shape)
     for name, value in assignments.items():
+        value = np.nan if value is None else value
         index = mapping[name]
         output1D[wta1Dremap == index] = value
 
@@ -203,7 +204,7 @@ def set_font_properties():
         font_name = 'Arial'
 
     if font_path_bold:
-        _ = _register_font(font_path_bold)        
+        _ = _register_font(font_path_bold)
 
     plt.rcParams.update({
         'font.size': 14,

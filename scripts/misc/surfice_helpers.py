@@ -14,7 +14,8 @@ import os
 import gl
 
 def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
-                    colormap='actc', overlayminmax=None, overlayextreme=None):
+                    colormap='actc', overlayminmax=None, overlayextreme=None,
+                    overwrite=True):
 
     # screen arguments
     side = side.lower()
@@ -46,6 +47,18 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
             name = basename[:-4]
         else:
             raise ValueError('Did not recognized `nifti_path` as NIFTI or compressed NIFTI.')
+        
+    # setup output names
+    outname_lateral = f'{name}_{sidetag}_lateral.png'
+    outpath_lateral = os.path.join(output_directory, outname_lateral)
+
+    outname_medial = f'{name}_{sidetag}_medial.png'
+    outpath_medial  = os.path.join(output_directory, outname_medial)
+
+    if os.path.exists(outpath_lateral) and os.path.exists(outpath_medial) and not overwrite:
+        bname = os.path.basename(nifti_path)
+        print(f'Existing lateral and medial outputs for "{bname}"; not rerunning.')
+        return
 
     # setup output folder
     os.makedirs(output_directory, exist_ok=True)
@@ -66,20 +79,15 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
     # lateral view
     gl.viewsagittal(sagittal_lateral_view)
     gl.cameradistance(.8)
-    outname = f'{name}_{sidetag}_lateral.png'
-    outpath = os.path.join(output_directory, outname)
-    gl.savebmpxy(outpath, 1000, 1000)
+    gl.savebmpxy(outpath_lateral, 1000, 1000)
 
     # medial view
     gl.viewsagittal(sagittal_medial_view)
     gl.cameradistance(.8)
-    outname = f'{name}_{sidetag}_medial.png'
-    outpath = os.path.join(output_directory, outname)
-    gl.savebmpxy(outpath, 1000, 1000)
-
+    gl.savebmpxy(outpath_medial, 1000, 1000)
 
 def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colormap='actc',
-                          overlayminmax=None, overlayextreme=None):
+                          overlayminmax=None, overlayextreme=None, overwrite=True):
     plot_hemisphere(
         nifti_path=nifti_path,
         side='left',
@@ -87,7 +95,8 @@ def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colorm
         output_directory=output_directory,
         output_name=output_name,
         overlayminmax=overlayminmax,
-        overlayextreme=overlayextreme
+        overlayextreme=overlayextreme,
+        overwrite=overwrite
         )
 
     plot_hemisphere(
@@ -97,6 +106,7 @@ def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colorm
         output_directory=output_directory,
         output_name=output_name,
         overlayminmax=overlayminmax,
-        overlayextreme=overlayextreme
+        overlayextreme=overlayextreme,
+        overwrite=overwrite
         )
 

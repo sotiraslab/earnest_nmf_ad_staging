@@ -10,6 +10,9 @@ ROOT.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/'
 master.path <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_sustain.csv')
 master <- read.csv(master.path)
 
+surfice.t.lo <- 2
+surfice.t.hi <- 10
+
 pipeline <- function(split) {
   df <- master %>%
     filter(Split == split, ControlForStaging == 'False', TrainingMLStage != 0)
@@ -98,17 +101,24 @@ pipeline <- function(split) {
  dir.create(dirname(plot.path), showWarnings = F, recursive = T)
  ggsave(plot.path, width = 8, height = 6, units = 'in')
  
- # save coefficients as JSON
+ # save table
+ table.path <- file.path(ROOT.OUTPUT, 'plots', 'sustain', 'ols', sprintf('%s_ols.csv', key))
+ write.csv(results, table.path, row.names = F)
+ 
+ # save coefficients as JSON for surfice plotting
  for (subtype in subtypes) {
    vals <- results[results$Subtype == subtype, 't']
    p <- results[results$Subtype == subtype, 'p_adj']
    vals <- ifelse(p < 0.05, vals, 0)
+   vals[vals > surfice.t.hi] <- surfice.t.hi
+   vals[vals < - surfice.t.hi] <- -surfice.t.hi
+   vals <- ifelse(vals < 0, 10 + abs(vals), vals)
    names(vals) <- results[results$Subtype == subtype, 'Region']
-   vals <- as.list(vals)
+   vals.list <- as.list(vals)
    
-   out.json <- file.path(ROOT.OUTPUT, 'wta_json', sprintf('%s_%s_ols_coefficients.json', key, subtype))
+   out.json <- file.path(ROOT.OUTPUT, 'wta_json', sprintf('%s_%s_ols_surfice_coefficients.json', key, subtype))
    dir.create(dirname(out.json), showWarnings = F, recursive = T)
-   write_json(vals, out.json, pretty = TRUE, auto_unbox = TRUE)
+   write_json(vals.list, out.json, pretty = TRUE, auto_unbox = TRUE, na = 'null')
  }
  
  # return
@@ -123,3 +133,12 @@ pipeline <- function(split) {
 out.train <- pipeline('TrainingBaseline')
 out.validation <- pipeline('ValidationBaseline')
 
+# =====
+gap.size <- 2
+full.range <- surfice.t.hi + gap.size + surfice.t.hi
+start.negs <- surfice.t.hi + gap.size
+
+print('Colormap creation node spacing:')
+print(as.integer(c(0, surfice.t.lo, surfice.t.hi, start.negs, full.range) / full.range * 255))
+# results <- out.train$table
+# subtype <- 'S2'

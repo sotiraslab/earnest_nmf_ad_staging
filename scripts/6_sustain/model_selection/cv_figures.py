@@ -33,17 +33,21 @@ os.makedirs(odir, exist_ok=True)
 # CVIC curve
 plt.figure(figsize=(8, 6))
 _ = training.plot_cvic(training_CVIC)
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'training_cvic.svg'))
 
 plt.figure(figsize=(8, 6))
 _ = training.plot_cvic(validation_CVIC)
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'validation_cvic.svg'))
 
 # CV likelihood
 plt.figure(figsize=(8, 6))
 _ = training.plot_cv_loglikelihood(training_loglike_matrix)
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'training_cv_likelihood.svg'))
 
 plt.figure(figsize=(8, 6))
 _ = training.plot_cv_loglikelihood(validation_loglike_matrix)
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'validation_cv_likelihood.svg'))

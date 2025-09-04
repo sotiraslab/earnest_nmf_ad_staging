@@ -25,17 +25,21 @@ os.makedirs(odir, exist_ok=True)
 # Histograms of likelihood
 plt.figure(figsize=(8, 6))
 _ = training.plot_likelihood_histogram()
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'training_likelihood_hist.svg'))
 
 plt.figure(figsize=(8, 6))
 _ = validation.plot_likelihood_histogram()
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'validation_likelihood_hist.svg'))
 
 # MCMC tracers
 plt.figure(figsize=(8, 6))
 _ = training.plot_mcmc_trace()
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'training_mcmc_trace.svg'))
 
 plt.figure(figsize=(8, 6))
 _ = validation.plot_mcmc_trace()
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'validation_mcmc_trace.svg'))

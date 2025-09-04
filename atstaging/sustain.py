@@ -305,7 +305,6 @@ class SustainManager:
             plt.plot(x, y, 'r.', alpha=0.2)
         plt.ylabel('Log likelihood')  
         plt.xlabel('N subtypes') 
-        plt.title('Figure 8: Test set log-likelihood across folds')
 
         return fig
                      

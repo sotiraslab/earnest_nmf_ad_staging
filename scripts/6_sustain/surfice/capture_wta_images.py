@@ -60,6 +60,14 @@ def classifier(image):
             'colormap': 'custom-tmap_2_22',
             'overlayminmax': (0.1, 22)
         }
+    elif 'wscores' in image:
+        subdir = bname[:-7]
+        args = {
+            'output_directory': os.path.join(outdir, 'wscore_subtype_progression', subdir),
+            'colormap': 'viridis',
+            'overlayminmax': (0, 10),
+            'overlayextreme': 1
+        }
     else:
         raise ValueError('No arguments detected for image: ', bname)
     

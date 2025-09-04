@@ -165,6 +165,7 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
 
     # Now apply the assignments
     output1D = np.zeros(shape=wta1Dremap.shape)
+    assignments = {k:v for k,v in assignments.items() if k in mapping.keys()}
     for name, value in assignments.items():
         value = np.nan if value is None else value
         index = mapping[name]

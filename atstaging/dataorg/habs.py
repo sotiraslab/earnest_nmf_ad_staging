@@ -10,6 +10,7 @@ from atstaging.dataorg.utils import (
     bin_cdr,
     link_modalities, 
     load_csv_by_match,
+    nan_eq,
     report_download_coverage,
     report_feature_distribution,
     report_missingness)
@@ -79,9 +80,9 @@ def create_feature_table(preproc_table, habs_tabular_directory, verbose=True):
                                     a_viscode='HABSPhaseTau', b_viscode='StudyArc')
     # recoding
     features['Age'] = features['NP_Age']
-    features['SexMale'] = features['BiologicalSex'].eq('M').astype(float)
-    features['HasE4'] = features['E4_Status'].eq('e4+').astype(float)
-    features['AmyloidPositive'] = features['PIB_FS_SUVR_Group'].eq('PIB+').astype(float)
+    features['SexMale'] = nan_eq(features['BiologicalSex'], 'M')
+    features['HasE4'] = nan_eq(features['E4_Status'], 'e4+')
+    features['AmyloidPositive'] = nan_eq(features['PIB_FS_SUVR_Group'], 'PIB+')
     features['CDR'] = features['CDR_Global']
     features['CDRSumBoxes'] = features['CDR_SB']
     features['CDRBinned'] = bin_cdr(features['CDR'])

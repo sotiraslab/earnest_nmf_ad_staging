@@ -424,6 +424,20 @@ def longitudinal_features(bl, long, long_features,
             
     return join
 
+def nan_compare(a, operator, b, convert_float=True):
+    operators = ['eq', 'ne', 'lt', 'le', 'gt', 'gt']
+    if operator not in operators:
+        raise ValueError(f'Operator must be one of {operators}, not `{operator}`')
+    method = getattr(a, operator)
+    result = method(b)
+    if convert_float:
+        result = result.astype(float)
+    result[a.isna()] = np.nan
+    return result
+
+def nan_eq(a, b):
+    return nan_compare(a, 'eq', b, convert_float=True)
+
 def print_missing(df, col):
     data = df[col]
     print(f'Count of missing values for "{col}": {data.isna().sum()}')

@@ -15,6 +15,7 @@ from atstaging.dataorg.utils import (
     bin_cdr,
     get_bids_entities,
     link_modalities,
+    nan_eq,
     report_download_coverage,
     report_missingness,
     report_feature_distribution
@@ -124,7 +125,7 @@ def create_feature_table(preproc_table, oasis3_demographics, oasis3_cdr, oasis3_
     features = add_features_by_subject(features, demo, fields=['AgeatEntry', 'GENDER', 'APOE'],
                                     a_subject='Subject', b_subject='OASISID', drop_missing=False)
     features['Age'] = features['AgeatEntry'] + ((features['TauAmyloidMeanDate'] - features['BaselineDate']).dt.total_seconds() / (60 * 60 * 24 * 365.25))
-    features['SexMale'] = features['GENDER'].eq(1).astype(float)
+    features['SexMale'] = nan_eq(features['GENDER'], 1)
     features['HasE4'] = features['APOE'].astype(str).str.contains('4')
 
     cl = pd.read_csv(oasis3_centiloid)

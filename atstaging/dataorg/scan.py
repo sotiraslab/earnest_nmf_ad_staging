@@ -12,6 +12,7 @@ import pandas as pd
 from atstaging.dataorg.utils import (
     assign_training_validation,
     link_modalities,
+    nan_compare,
     report_download_coverage,
     report_feature_distribution,
     report_missingness)
@@ -216,7 +217,7 @@ def create_feature_table(preproc_table, nacc_uds, gap_imaging_visit='120D', verb
     grouped['SexMale'] = (grouped['SEX'] == 1).astype(float)
 
     # >>> APOE
-    grouped['HasE4'] = grouped['NACCNE4S'].ge(1).astype(float)
+    grouped['HasE4'] = nan_compare(grouped['NACCNE4S'], 1)
     grouped.loc[grouped['NACCNE4S'].eq(9), 'HasE4'] = pd.NA
 
     # >>> amyloid

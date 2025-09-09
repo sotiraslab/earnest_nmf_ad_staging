@@ -63,9 +63,9 @@ def load_master(master_folder=None, filters=True, features=True, verbose=True):
     return master
 
 def load_split(split='training', longitudinal='baseline', validation_sub=None,
-               split_column='Split', omit_control=False, verbose=True):
+               split_column='Split', omit_control=False, verbose=True, master_folder=None):
     
-    master = load_master(filters=True, features=True, verbose=verbose)
+    master = load_master(master_folder=master_folder, filters=True, features=True, verbose=verbose)
     data_split_series = master[split_column]
 
     # validate

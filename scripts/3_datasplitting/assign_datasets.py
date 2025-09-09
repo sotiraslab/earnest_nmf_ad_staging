@@ -16,6 +16,7 @@ from atstaging.outputs import load_master, load_musestats
 from atstaging.config import set_config, get
 
 set_config('main')
+preproc_dir = '/ceph/chpc/shared/aristeidis_sotiras_group/tom_pet_processing/'
 
 # PREP
 
@@ -26,8 +27,8 @@ os.makedirs(plot_folder, exist_ok=True)
 
 # load datasets
 master = load_master(filters=False, features=False)
-muse_amyloid = load_musestats('amyloid')
-muse_tau = load_musestats('tau')
+muse_amyloid = load_musestats('amyloid', output_directory=preproc_dir)
+muse_tau = load_musestats('tau', output_directory=preproc_dir)
 
 # calc cortical summary SUVRs
 amyloid_summary_suvr = calculate_cortical_summary_suvr(muse=muse_amyloid, pet='amyloid')

@@ -8,6 +8,7 @@ from atstaging.dataorg.utils import (
     assign_training_validation,
     bin_cdr,
     link_modalities,
+    nan_eq,
     report_download_coverage,
     report_feature_distribution,
     report_missingness,
@@ -60,13 +61,13 @@ def create_feature_table(preproc, path_a4_subjinfo, path_a4_petva, path_a4_cdr, 
                                        a_subject='Subject', b_subject='BID')
     features['BaselineAge'] = features['AGEYR']
     features['Age'] = features['AGEYR'] + (pd.to_timedelta(features['VisitTau'].astype(int), unit='W').dt.total_seconds() / (60 * 60 * 24 * 365.25))
-    features['SexMale'] = features['SEX'].eq(2).astype(float)
+    features['SexMale'] = nan_eq(features['SEX'], 2)
     features['HasE4'] = features['APOEGNPRSNFLG'].astype(float)
     
     petva = pd.read_csv(path_a4_petva)
     features = add_features_by_subject(features, petva, fields=['overall_score'],
                                        a_subject='Subject', b_subject='BID')
-    features['AmyloidPositive'] = features['overall_score'].eq('positive').astype(float)
+    features['AmyloidPositive'] = nan_eq(features['overall_score'], 'positive')
     
     cdr = pd.read_csv(path_a4_cdr)
     cdr['Date'] = basedate + pd.to_timedelta(cdr['VISCODE'], unit='W')

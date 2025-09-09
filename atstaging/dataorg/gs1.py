@@ -10,6 +10,8 @@ from atstaging.dataorg.utils import (
     bin_cdr, 
     link_modalities,
     load_csv_by_match,
+    nan_compare,
+    nan_eq,
     report_download_coverage,
     report_feature_distribution,
     report_missingness
@@ -95,7 +97,7 @@ def create_feature_table(preproc_table, tabular_folder):
     # Age, Sex
     demo = demo[['Subject Identifier for the Study', 'Age', 'Sex']]
     demo['Subject'] = 'S' + demo['Subject Identifier for the Study']
-    demo['SexMale'] = demo['Sex'].eq('M').astype(float)
+    demo['SexMale'] = nan_eq(demo['Sex'], 'M')
     features = add_features_by_subject(features, demo, fields=['Age', 'SexMale'], a_subject='Subject', b_subject='Subject')
 
     # APOE
@@ -108,7 +110,7 @@ def create_feature_table(preproc_table, tabular_folder):
     imag['Date'] = imag['Date/Time of Imaging Assessment']
     imag = imag.loc[imag['Imaging Assessment Test Name'].eq('CENTILOID'), ['Subject', 'Date', 'Character Result/Finding in Std Format']]
     imag['Centiloid'] = imag['Character Result/Finding in Std Format']
-    imag['AmyloidPositive'] = imag['Centiloid'].gt(24).astype(float)
+    imag['AmyloidPositive'] = nan_compare(imag['Centiloid'], 'gt', 24)
     features = add_features_by_date(features, imag, fields=['Centiloid', 'AmyloidPositive'], a_subject='Subject', b_subject='Subject',
                                     a_date='ScanDateAmyloid', b_date='Date', b_name='Centiloid')
 

@@ -47,9 +47,9 @@ run.ancovas <- function(data) {
     fml <- as.formula(sprintf('%s ~ StageType + SummarySUVRAmyloid + SummarySUVRTau', dependent))
     
     output[i, 'Variable'] <- dependent
-    output[i, 'Atypical'] <- mean(data[data$StageType == 'Atypical', dependent], na.rm = T)
-    output[i, 'A1T0-A2T0'] <- mean(data[data$StageType == 'A1T0-A2T0', dependent], na.rm = T)
-    output[i, 'A2T1-A2T4'] <- mean(data[data$StageType == 'A2T1-A2T4', dependent], na.rm = T)
+    output[i, 'Atypical'] <- round(mean(data[data$StageType == 'Atypical', dependent], na.rm = T), 2)
+    output[i, 'A1T0-A2T0'] <- round(mean(data[data$StageType == 'A1T0-A2T0', dependent], na.rm = T), 2)
+    output[i, 'A2T1-A2T4'] <- round(mean(data[data$StageType == 'A2T1-A2T4', dependent], na.rm = T), 2)
     
     # https://www.r-bloggers.com/2021/07/how-to-perform-ancova-in-r/
     ancova_model <- lm(fml, data = data)
@@ -61,7 +61,7 @@ run.ancovas <- function(data) {
     f_stat <- summary(ancova_model)$fstatistic
     overall_f <- f_stat[1]
     overall_p <- pf(f_stat[1], f_stat[2], f_stat[3], lower.tail = FALSE)
-    output[i, 'F'] <- overall_f
+    output[i, 'F'] <- round(overall_f, 2)
     output[i, 'p'] <- overall_p
     
     # add stars to posthoc comparisons

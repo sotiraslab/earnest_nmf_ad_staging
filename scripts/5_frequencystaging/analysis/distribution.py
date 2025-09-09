@@ -147,9 +147,10 @@ plt.xlabel('CDR')
 plt.ylabel('Frequency (%)')
 plt.ylim(0, 100)
 plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_cdr_validation.svg'), dpi=300)
+plt.tight_layout()
+plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_cdr_training.svg'), dpi=300)
 
-# Plot stages by CDR (training)
+# Plot stages by CDR (validation)
 cdrs = ['0.0', '0.5', '1.0+']
 stages = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'Atypical']
 
@@ -177,4 +178,5 @@ plt.xlabel('CDR')
 plt.ylabel('Frequency (%)')
 plt.ylim(0, 100)
 plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+plt.tight_layout()
 plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_cdr_validation.svg'), dpi=300)

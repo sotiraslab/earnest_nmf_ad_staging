@@ -96,11 +96,6 @@ print('Any NAs in final amyloid status?', master['FinalAmyloidStatus'].isna().an
 diagnostic_plot_amyloid_positivity(master, test_score='SummarySUVRAmyloid', test_label='FinalAmyloidStatus')
 plt.savefig(os.path.join(plot_folder, 'diagnostic_plot_final.png'), dpi=300)
 
-# Save as a features table to add to master
-tosave = master[['Subject', 'Session', 'SummarySUVRAmyloid', 'ROCAmyloidStatus', 'FinalAmyloidStatus']]
-savepath = os.path.join(output_folder, 'masterTables', 'FEATURE_AMYLOIDSTATUS.csv')
-tosave.to_csv(savepath, index=False)
-
 # TAU Status
 # Gaussian mixture model
 
@@ -155,6 +150,18 @@ for dataset, df in master.groupby('DataSet'):
     print()
     print(f'DATASET={dataset}')
     print(pd.crosstab(temp, df['GMMTauStatus']))
+
+# Mark some hi-amyloid controls as being amyloid positive
+master['Control'] = (master['CDRBinned'].eq('0.0') & ~master['CDRBinned'].isna()) & master['FinalAmyloidStatus'].eq(0) & master['GMMTauStatus'].eq(0)
+master.loc[master['Control'] & master['SummarySUVRAmyloid'].gt(1.35), 'FinalAmyloidStatus'] = 1
+master['ManuallyAssignedAmyloidPositive'] = master['Control'] & master['SummarySUVRAmyloid'].gt(1.35)
+
+# SAVE
+
+# Save as a features table to add to master
+tosave = master[['Subject', 'Session', 'SummarySUVRAmyloid', 'ROCAmyloidStatus', 'FinalAmyloidStatus', 'ManuallyAssignedAmyloidPositive']]
+savepath = os.path.join(output_folder, 'masterTables', 'FEATURE_AMYLOIDSTATUS.csv')
+tosave.to_csv(savepath, index=False)
 
 # Save as a features table to add to master
 tosave = master[['Subject', 'Session', 'SummarySUVRTau', 'GMMTauStatus']]

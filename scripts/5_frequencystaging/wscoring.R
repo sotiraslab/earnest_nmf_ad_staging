@@ -55,7 +55,7 @@ report.sizes('Validation B', valB.all, valB.bl, valB.control)
 report.sizes('Validation C', valC.all, valC.bl, valC.control)
 
 # identify W-score columns
-wscore.inputs <- colnames(master)[grepl('PAC.*|PTC.*', colnames(master), perl = T)]
+wscore.inputs <- colnames(master)[grepl('PAC.*SUVR|PTC.*SUVR', colnames(master), perl = T)]
 
 # helper function for W-scoring
 wscore.routine <- function(fulldata, control.subset) {

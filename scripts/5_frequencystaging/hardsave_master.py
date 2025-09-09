@@ -12,6 +12,7 @@ OUTPATH = '/scratch/tom.earnest/atstaging/masterTables/_hardsave.csv'
 # main
 set_config('main')
 df = load_split(split=None, longitudinal=None)
+df = df.loc[:, ~df.columns.str.contains('WScore')]
 df.to_csv(OUTPATH, index=False)
 
 

@@ -15,11 +15,7 @@ root_output_directory = get('output_directory')
 
 # LOAD DATA
 df = load_split('validation', 'baseline', verbose=False)
-control_mask = (
-    (df['CDRBinned'].isna() | df['CDRBinned'].eq('0.0')) &
-    df['FinalAmyloidStatus'].eq(0) &
-    df['GMMTauStatus'].eq(0)
-    )
+control_mask = df['ControlForStaging']
 df = df[~control_mask].copy()
 biomarker_labels = list(df.columns[df.columns.str.contains('WScore')])
 sustain_data = df[biomarker_labels].copy().to_numpy()

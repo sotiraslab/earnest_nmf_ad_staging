@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from atstaging.config import get, set_config 
+from atstaging.config import get, set_config
 from atstaging.outputs import load_split
 from atstaging.plotting import staging_colors, set_font_properties
 
@@ -25,28 +25,28 @@ mmse_long['Event'] = mmse_long['MMSE'].le(24)
 # Run the survival analyses
 
 def survival_analysis(variable='cdr', split='training', omit_atypical=True, combine_tau_stages=True, autosave=True):
-    
+
     # Load the data with stages
     staging = load_split(split, 'baseline', verbose=False)
     staging = staging[['Subject', 'Stage']].copy()
     if omit_atypical:
         staging = staging[~staging['Stage'].eq('Atypical')].copy()
-    
+
     # Merge with the longitudinal assessments
     merge_data = {'cdr': cdr_long, 'mmse': mmse_long}[variable]
     survdata = merge_data[merge_data['Subject'].isin(staging['Subject'])].copy()
     survdata = survdata[survdata['Subject'].duplicated(keep=False)].copy()
     survdata = survdata.merge(staging, on='Subject', how='left')
-    
+
     # determine who has event at baseline
     bl_event = survdata.groupby('Subject')['Event'].transform('first')
     survdata = survdata[~bl_event].copy()
-    
+
     # group into lifelines format
     survdata['Duration'] =  (survdata['DateLongitudinal'] - survdata.groupby('Subject')['DateLongitudinal'].transform('first')).dt.total_seconds() / (60*60*24*365.25)
     survgroup = survdata.groupby('Subject').agg({'Stage': 'first', 'Duration': 'max', 'Event': 'any'})
     survgroup['Event'] = survgroup['Event'].astype(float)
-    
+
     # combine stages
     if combine_tau_stages:
         survgroup.loc[survgroup['Stage'].isin(['A2T1', 'A2T2']), 'Stage'] = 'A2T1-2'
@@ -54,19 +54,19 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
 
     # Model
     kmf = KaplanMeierFitter()
-    fig, ax = plt.subplots()
-    
+    fig, ax = plt.subplots(figsize=(10,5))
+
     groups = sorted(survgroup['Stage'].unique())
     colors = staging_colors()
     colors['A0T0'] = 'black'
     colors['A2T1-2'] = colors['A2T2']
     colors['A2T3-4'] = colors['A2T4']
-    
+
     for group in groups:
         idx = survgroup['Stage'].eq(group)
         T = survgroup.loc[idx, 'Duration']
         E = survgroup.loc[idx, 'Event']
-    
+
         kmf.fit(T, E, label=group)
         kmf.plot_survival_function(ax=ax, color=colors[group], label=f'{group} (n={int(idx.sum())})')
 
@@ -88,6 +88,7 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
         os.makedirs(odir, exist_ok=True)
 
         bname = f'survival_split-{split}_var-{variable}_omitNS-{omit_atypical}_combineTauStages-{combine_tau_stages}'
+        plt.tight_layout()
         fig.savefig(os.path.join(odir, bname + '.png'), dpi=300)
         stats.to_csv(os.path.join(odir, bname + '.csv'))
 

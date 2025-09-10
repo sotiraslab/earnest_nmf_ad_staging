@@ -3,11 +3,14 @@ library(ggplot2)
 library(gt)
 library(gtsummary)
 library(stringr)
+library(this.path)
 
 # Set where to find files
 ROOT.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/'
 MUSE.VALUES <- '/Users/earnestt1234/Desktop/_muse_tau.csv'
 MUSE.ROIS <- '/Users/earnestt1234/Desktop/muse_rois_clean.csv'
+PATH.STATSFUNCS <- normalizePath(file.path(this.dir(), '..', '..', '..', 'rsource', 'statsfuncs.R'))
+source(PATH.STATSFUNCS)
 
 # Load main data
 PATH.DATA <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_clinical_stages.csv')
@@ -34,9 +37,6 @@ volume.merger$GMVolume <- total_volume
 master_with_vol <- left_join(master, volume.merger, by = c('Subject', 'Session'))
 
 # ICV normalization
-icv.df <- read.csv(file.path(ROOT.OUTPUT, 'masterTables', 'FEATURE_ICV.csv')) %>%
-  dplyr::select(Subject, Session, ICV)
-master_with_vol <- left_join(master_with_vol, icv.df, by=c('Subject', 'Session'))
 master_with_vol$GMVolume <- master_with_vol$GMVolume / master_with_vol$ICV
 
 training <- master_with_vol %>%
@@ -44,32 +44,64 @@ training <- master_with_vol %>%
 validation <- master_with_vol %>%
   filter(Split == 'ValidationBaseline', ControlForStaging == 'False')
 
-my.table <- training %>%
-  dplyr::select(
-    ResilientVulnerable,
-    Age,
-    SexMale,
-    Education,
-    BMI,
-    HasE4,
-    GMVolume,
-    SummarySUVRAmyloid,
-    SummarySUVRTau) %>%
-  tbl_summary(
-    by = ResilientVulnerable,
-    digits = all_continuous() ~ 2,
-    missing = 'no',
-    statistic = list(
-      all_continuous() ~ "{mean} ({sd})",
-      all_categorical() ~ "{n} ({p}%)"
-    )
-  ) %>%
-  add_p(test = list(all_continuous() ~ 'oneway.test'),
-        test.args=all_tests("fisher.test")~list(simulate.p.value=TRUE)
-        ) %>%
-  add_q(method='fdr') %>%
-  as_gt() %>%
-  gtsave(file.path(ROOT.OUTPUT, 'tables', 'compare_resilient_vulnerable.docx'))
+# ====== Model ==========
+
+pipeline <- function(data) {
+  dependents <- c(
+    'Age', 'SexMale', 'Education', 'BMI', "HasE4", 'MMSETotal', 'CDRSumBoxes',
+    'GMVolume', 'SummarySUVRAmyloid', 'SummarySUVRTau'
+  )
+  binary.dependents <- c('SexMale', 'HasE4')
+  
+  result.rows <- vector(mode = 'list', length = length(dependents))
+  
+  for (i in 1:length(dependents)) {
+    dependent <- dependents[i]
+    
+    if (dependent %in% binary.dependents) {
+      result.rows[[i]] <- run.chisq.binary.dependent(
+        dependent = dependent,
+        independent = 'ResilientVulnerable',
+        data = data
+      )
+    } else {
+      result.rows[[i]] <- run.ancova(
+        dependent = dependent,
+        independent = 'ResilientVulnerable',
+        covariates = c('Age', 'SexMale'),
+        data = data
+      )
+    }
+  }
+  
+  result <- bind_rows(result.rows)
+  
+  # include multiple comparisons adjustment
+  pair.cols <- colnames(result)[str_detect(colnames(result), ' vs. ')]
+  id.cols <- colnames(result)[! colnames(result) %in% pair.cols]
+  result.star <- result %>%
+    mutate(across(all_of(pair.cols), function (x) ifelse(p < 0.05, x, NA))) %>%
+    pivot_longer(all_of(pair.cols), names_to = 'Comparison', values_to = 'comp_p') %>%
+    mutate(comp_p_adj = p.adjust(comp_p, method = 'fdr'),
+           annot = as.character(cut(comp_p_adj,
+                                    breaks = c(0, 0.001, 0.01, 0.05, Inf),
+                                    labels = c('***', "**", "*", ""),
+                                    include.lowest = T)),
+           annot = ifelse(is.na(annot), '', annot),
+           p = round(p, 3)
+    ) %>%
+    pivot_wider(id_cols = all_of(id.cols), names_from = Comparison, values_from = annot)
+  
+  return (result.star)
+}
+
+train.result <- pipeline(training)
+validation.result <- pipeline(validation)
+
+odir <- file.path(ROOT.OUTPUT, 'tables')
+dir.create(odir, showWarnings = F)
+write.csv(train.result, file.path(odir, 'resilient_vulnerable_models.csv'), row.names = F)
+write.csv(validation.result, file.path(odir, 'resilient_vulnerable_models.csv'), row.names = F)
 
 # ====== Show distribution by data set =======
 
@@ -123,6 +155,8 @@ stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
   if (! is.null(colors)) {
     p <- p + scale_fill_manual(values=colors)
   }
+  
+  print(p)
   
   return(p)
 }

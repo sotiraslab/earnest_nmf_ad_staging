@@ -40,7 +40,7 @@ colors = {
     'NS': scolors['Atypical']
     }
 
-plt.figure(figsize=(4, 7))
+plt.figure(figsize=(5, 7))
 baseline['Amyloid stage'] = baseline['StageAmyloid']
 
 sns.stripplot(data=baseline, x="Group", y='SummarySUVRAmyloid', hue='Amyloid stage',
@@ -50,6 +50,7 @@ sns.stripplot(data=baseline, x="Group", y='SummarySUVRAmyloid', hue='Amyloid sta
               palette=colors)
 plt.xticks(rotation=45, ha='right')
 plt.ylabel('Cortical amyloid (SUVR)')
+plt.legend(loc='upper left', bbox_to_anchor=(1,1))
 
 plt.tight_layout()
 plt.savefig(os.path.join(odir, 'amyloid_status_concordance.svg'), dpi=300)
@@ -64,7 +65,7 @@ colors = {
     'NS': scolors['Atypical']
     }
 
-plt.figure(figsize=(4, 7))
+plt.figure(figsize=(5, 7))
 baseline['Tau stage'] = baseline['StageTau']
 sns.stripplot(data=baseline, x="Group", y='SummarySUVRTau', hue='Tau stage',
               alpha=0.5, jitter=.333,
@@ -73,6 +74,7 @@ sns.stripplot(data=baseline, x="Group", y='SummarySUVRTau', hue='Tau stage',
               palette=colors)
 plt.xticks(rotation=45, ha='right')
 plt.ylabel('Cortical tau (SUVR)')
+plt.legend(loc='upper left', bbox_to_anchor=(1,1))
 
 plt.tight_layout()
 plt.savefig(os.path.join(odir, 'tau_status_concordance.svg'), dpi=300)

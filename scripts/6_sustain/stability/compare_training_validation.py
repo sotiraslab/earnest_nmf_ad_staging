@@ -33,16 +33,13 @@ v_sequence, v_freq = v_sustain.sustain.combine_cross_validated_sequences(N_folds
 
 # get the order for plotting subtypes
 # basically trying to establish which sutypes in training match to the validation ones
-# 1st, in the training set, the subtype order is matched between the ML labels and the sequence samples (map_subtype_indexing())
-# 2nd, the subtype order is matched between the training sequence labels and the validation sequence labels (the linear_sum_assignment)
-# Those indices are also mapped back to the training ML order so that the orders are the same as presented in the PVDs and whatnot
-# A little complicated but deals with the differences in subtype ordering output by pysustain and between different training data
 _, t_subtype_order = t_sustain.map_subtype_indexing(n_subtypes=3, verbose=False)
-t_sequence_avg = t_sequence.mean(axis=2)
+
+# this is basically reimplementing map_subtype_indexing()
+# but using the validation sequence instead of the training
 v_sequence_avg = v_sequence.mean(axis=2)
-dist = cdist(t_sequence_avg, v_sequence_avg)
-_, index = linear_sum_assignment(dist)
-v_subtype_order = np.array([t_subtype_order[i] for i in index])
+dist = cdist(t_sustain.frequency_based_biomarker_ordering(n_subtypes=3), v_sequence_avg)
+_, v_subtype_order = linear_sum_assignment(dist)
 
 # helper func
 def cosine_similarity(x, y):

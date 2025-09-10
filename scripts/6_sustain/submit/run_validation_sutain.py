@@ -36,7 +36,7 @@ N_iterations_MCMC = int(1e5)
 
 # i/o
 output_folder = os.path.join(root_output_directory, 'sustain', 'validation')
-os.makedirs(output_folder)
+os.makedirs(output_folder, exist_ok=True)
 dataset_name = 'atstaging'
 
 # random state

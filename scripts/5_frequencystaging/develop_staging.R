@@ -9,11 +9,11 @@ sh(library(stringr))
 sh(library(tidyr))
 
 # ---- Paths -----
-PATH.MASTER <- '/scratch/tom.earnest/atstaging//masterTables/_hardsave.csv'
-PATH.WSCORES <- '/scratch/tom.earnest/atstaging//masterTables/FEATURE_WSCORES.csv'
-PATH.HEATMAP.SCRIPT <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/stage_heatmaps.R'
-PATH.STAGING.SCRIPT <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/assign_stages.R'
-PATH.OUTPUT <- '/scratch/tom.earnest/atstaging/plots/stage_development'
+PATH.MASTER <- '/Users/earnestt1234/Desktop/atstaging/masterTables/_hardsave.csv'
+PATH.WSCORES <- '/Users/earnestt1234/Desktop/atstaging/masterTables/FEATURE_WSCORES.csv'
+PATH.HEATMAP.SCRIPT <- '/Users/earnestt1234/Documents/GitHub/at_nmf_sustain/scripts/rsource/stage_heatmaps.R'
+PATH.STAGING.SCRIPT <- '/Users/earnestt1234/Documents/GitHub/at_nmf_sustain/scripts/rsource/assign_stages.R'
+PATH.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/plots/stage_development'
 
 dir.create(PATH.OUTPUT, showWarnings = F)
 
@@ -484,7 +484,7 @@ cols <- c('StageNumeric', 'StageValA', 'StageValB', 'StageValC', 'StageValAll')
 matdim <- length(cols)
 ARIs <- matrix(data=NA, nrow=matdim, ncol=matdim)
 
-join <- cbind(master, df.staging)
+join <- cbind(master[c('CDRBinned', 'FinalAmyloidStatus', 'GMMTauStatus')], df.staging)
 join <- join %>%
   filter(! ((CDRBinned == '0.0' | is.na(CDRBinned))  & FinalAmyloidStatus == 0 & GMMTauStatus == 0))
 
@@ -541,6 +541,6 @@ write.csv(filter.staging, file.path(master.folder, 'FILTER_STAGING.csv'), quote 
 feature.staging <- cbind(master[, c('Subject', 'Session')], df.staging)
 feature.staging$ControlForStaging <- (
   str_detect(master$Split, 'Baseline') &
-  ((master$CDRBinned == '0.0' | is.na(master$CDRBinned)) & master$FinalAmyloidStatus == 0 & master$GMMTauStatus == 0)
+  ((master$CDRBinned == '0.0' & ! is.na(master$CDRBinned)) & master$FinalAmyloidStatus == 0 & master$GMMTauStatus == 0)
 )
 write.csv(feature.staging, file.path(master.folder, 'FEATURE_STAGING.csv'), quote = F, na = '', row.names = F)

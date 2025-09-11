@@ -116,7 +116,7 @@ pipeline <- function(split) {
    names(vals) <- results[results$Subtype == subtype, 'Region']
    vals.list <- as.list(vals)
    
-   out.json <- file.path(ROOT.OUTPUT, 'wta_json', sprintf('%s_%s_ols_surfice_coefficients.json', key, subtype))
+   out.json <- file.path(ROOT.OUTPUT, 'wta_json', 'ols', sprintf('%s_%s_ols_surfice_coefficients.json', key, subtype))
    dir.create(dirname(out.json), showWarnings = F, recursive = T)
    write_json(vals.list, out.json, pretty = TRUE, auto_unbox = TRUE, na = 'null')
  }

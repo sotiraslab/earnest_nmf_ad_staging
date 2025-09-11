@@ -7,7 +7,7 @@ from atstaging.outputs import load_subtyped_data
 set_config('main')
 root_output = get('output_directory')
 
-odir = os.path.join(root_output, 'wta_json')
+odir = os.path.join(root_output, 'wta_json', 'wscore_averages')
 os.makedirs(odir, exist_ok=True)
 
 def pipeline(split):
@@ -32,5 +32,7 @@ def pipeline(split):
         with open(opath, 'w') as f:
             json.dump(data, f, indent=4)
 
-pipeline('training')
-pipeline('validation')
+    return wmean
+
+train = pipeline('training')
+val = pipeline('validation')

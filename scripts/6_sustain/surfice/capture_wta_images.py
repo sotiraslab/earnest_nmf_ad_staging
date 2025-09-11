@@ -62,24 +62,31 @@ def classifier(image):
         }
     elif 'wscores' in image:
         subdir = bname[:-7]
+        colormap = 'viridis' if 'amyloid' in bname else 'inferno'
         args = {
             'output_directory': os.path.join(outdir, 'wscore_subtype_progression', subdir),
-            'colormap': 'viridis',
-            'overlayminmax': (0, 10),
+            'colormap': colormap,
+            'overlayminmax': (2, 7),
             'overlayextreme': 1
         }
     else:
         raise ValueError('No arguments detected for image: ', bname)
-    
+
     odir = args['output_directory']
     os.makedirs(odir, exist_ok=True)
 
     return args
 
 # run
-images = [x for x in os.listdir(indir) if x.endswith('.nii.gz')]
 
-for image in images:
-    image = os.path.join(indir, image)
-    args = classifier(image)
-    plot_both_hemispheres(nifti_path=image, overwrite=False, **args)
+for subfolder in os.listdir(indir):
+    subfolder_fullpath = os.path.join(indir, subfolder)
+    if not os.path.isdir(subfolder_fullpath):
+        continue
+
+    images = [x for x in os.listdir(subfolder_fullpath) if x.endswith('.nii.gz')]
+
+    for image in images:
+        image_fullpath = os.path.join(subfolder_fullpath, image)
+        args = classifier(image_fullpath)
+        plot_both_hemispheres(nifti_path=image_fullpath, overwrite=False, **args)

@@ -15,7 +15,7 @@ surfice.t.hi <- 10
 
 pipeline <- function(split) {
   df <- master %>%
-    filter(Split == split, ControlForStaging == 'False', TrainingMLStage != 0)
+    filter(Split == split, ControlForStaging == 'False', TrainingMLStage != 0, TrainingSubtypeValid == 1)
   
   samplesize <- nrow(df)
   name <- ifelse(str_detect(split, 'Training'), 'Training', 'Validation')
@@ -75,7 +75,7 @@ pipeline <- function(split) {
   
   # plot
   colors <- c(
-    'S0' = 'gray',
+    'NA' = 'gray',
     'S1' = '#db2b39',
     'S2' = '#053c5e',
     'S3' = '#f3a712' 

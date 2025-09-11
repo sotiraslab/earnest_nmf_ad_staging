@@ -21,8 +21,8 @@ my.alluvial <- function(split) {
   df <- master %>%
     filter(Split == split, ControlForStaging == 'False') %>%
     mutate(
-      Training = ifelse(TrainingMLStage == 0, 'S0', TrainingMLSubtype),
-      Validation =ifelse(ValidationMLStage == 0, 'S0', ValidationMLSubtype)
+      Training = ifelse(TrainingMLStage == 0, 'NA', TrainingMLSubtype),
+      Validation =ifelse(ValidationMLStage == 0, 'NA', ValidationMLSubtype)
     ) 
   
   samplesize <- nrow(df)
@@ -37,7 +37,7 @@ my.alluvial <- function(split) {
     )
   
   colors <- c(
-    'S0' = 'gray',
+    'NA' = 'gray',
     'S1' = '#db2b39',
     'S2' = '#053c5e',
     'S3' = '#f3a712' 
@@ -75,8 +75,8 @@ my.confmat <- function(split) {
   df <- master %>%
     filter(Split == split, ControlForStaging == 'False') %>%
     mutate(
-      Training = ifelse(TrainingMLStage == 0, 'S0', TrainingMLSubtype),
-      Validation =ifelse(ValidationMLStage == 0, 'S0', ValidationMLSubtype)
+      Training = ifelse(TrainingMLStage == 0 | TrainingSubtypeValid == 0, 'NA', TrainingMLSubtype),
+      Validation =ifelse(ValidationMLStage == 0 | ValidationSubtypeValid == 0, 'NA', ValidationMLSubtype)
     )
   
   samplesize <- nrow(df)
@@ -88,8 +88,8 @@ my.confmat <- function(split) {
     as.data.frame() %>%
     rename(Training=Var1, Validation=Var2) %>%
     mutate(
-      Training = factor(Training, levels = c('S3', 'S2', 'S1', 'S0')),
-      Validation = factor(Validation, levels = c('S0', 'S1', 'S2', 'S3'))
+      Training = factor(Training, levels = c('S3', 'S2', 'S1', 'NA')),
+      Validation = factor(Validation, levels = c('NA', 'S1', 'S2', 'S3'))
     )
   
   p <- ggplot(crosstab, aes(x=Validation, y=Training, fill=Freq, label = Freq)) + 

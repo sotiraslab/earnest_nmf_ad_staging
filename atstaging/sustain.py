@@ -398,7 +398,7 @@ class SustainManager:
                 'MLSubtype': ml_subtype.flatten(),
                 'MLStage': ml_stage.flatten(),
                 'ProbMLSubtype': prob_ml_subtype.flatten(),
-                'ProMLStage': prob_ml_stage.flatten()
+                'ProbMLStage': prob_ml_stage.flatten()
             }
         )
         df['MLSubtype'] = 'S' + (df['MLSubtype'].astype(int) + 1).astype(str)
@@ -406,8 +406,10 @@ class SustainManager:
 
         n_subtypes = prob_subtype.shape[1]
         probs = pd.DataFrame(prob_subtype, columns=[f'ProbSubtypeS{i+1}' for i in range(n_subtypes)])
+        certain = np.isclose(probs.sum(axis=1), 1)
 
         result = pd.concat([df, probs], axis=1)
+        result['SubtypeValid'] = certain.astype(float)
         result.columns = [prefix + c for c in result.columns]
 
         return result

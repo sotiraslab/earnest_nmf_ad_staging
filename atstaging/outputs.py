@@ -101,7 +101,7 @@ def load_split(split='training', longitudinal='baseline', validation_sub=None,
 
     return data
 
-def load_subtyped_data(split='training', load_controls=False, include_longitudinal=False, sustain_model='auto'):
+def load_subtyped_data(split='training', load_controls=False, include_longitudinal=False, sustain_model='auto', omit_invalid=True):
 
     if sustain_model == 'auto':
         sustain_model = split.capitalize()
@@ -121,6 +121,10 @@ def load_subtyped_data(split='training', load_controls=False, include_longitudin
         output = long[include_indices | include_subjects].copy()
     else:
         output = df
+
+    if omit_invalid:
+        validcol = f'{sustain_model}SubtypeValid'
+        output = output[output[validcol].eq(1)].copy()
 
     return output
 

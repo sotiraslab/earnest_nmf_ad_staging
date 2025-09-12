@@ -2,6 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 import mpltern
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -18,8 +19,9 @@ training = load_subtyped_data('training', sustain_model='Training')
 validation = load_subtyped_data('validation', sustain_model='Training')
 both = pd.concat([training, validation], axis=0, ignore_index=True)
 
+subtypes = ['S1', 'S2', 'S3']
+
 def ternary_plot(data):
-    subtypes = ['S1', 'S2', 'S3']
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='ternary')
@@ -46,12 +48,86 @@ def ternary_plot(data):
     ax.legend()
     ax.text(-0.05, 0.5, 0.5, f'individuals outside gray area: {pct_certain}%', va='center', ha='center', size=10)
 
-# def probability_boxplot()
+    return fig
 
-ternary_plot(training)
-ternary_plot(validation)
+def probability_boxplot():
+    data = both.copy()
 
-data = both
+    data['Subtype'] = data['TrainingMLSubtype']
+    data['Group'] = data['Split'].str.replace('Baseline', '')
+    fig = plt.figure(figsize=(3, 4))
+    sns.boxplot(data=data, x='Group', y='TrainingProbMLSubtype', hue='Subtype', palette=colors, hue_order=subtypes)
+    plt.ylim(0, 1.05)
+    plt.ylabel('P(subtype)')
 
-plt.figure()
-sns.boxplot(data=data, x='Split', y='TrainingProbMLSubtype', hue='TrainingMLSubtype', palette=colors)
+    return fig
+
+def probability_cutoff_plot():
+    thresholds = np.linspace(0., 1., 21)
+    pdata = pd.DataFrame({'Cutoff': thresholds})
+    for subtype in subtypes:
+        tcol = f'Training{subtype}'
+        vcol =  f'Validation{subtype}'
+        pdata[tcol] = np.nan
+        pdata[vcol] = np.nan
+        for i, thr in enumerate(thresholds):
+            index = pdata.index[i]
+            tsub = training[training['TrainingMLSubtype'].eq(subtype)]
+            pdata.loc[index, tcol] = tsub['TrainingProbMLSubtype'].gt(thr).mean()
+
+            vsub = validation[validation['TrainingMLSubtype'].eq(subtype)]
+            pdata.loc[index, vcol] = vsub['TrainingProbMLSubtype'].gt(thr).mean()
+
+    fig = plt.figure(figsize=(6,4))
+    long = pdata.melt(id_vars='Cutoff', var_name='tmp', value_name='P(subtype) > cutoff')
+    long['Split'] = np.where(long['tmp'].str.contains('Training'), 'Training', 'Validation')
+    long['Subtype'] = long['tmp'].str.extract('(S\d)')
+    sns.lineplot(data=long, x='Cutoff', y='P(subtype) > cutoff', hue='Subtype', style='Split', palette=colors)
+
+    return fig
+
+def probability_subtype_by_stage(data, name=None):
+
+    data['Stage'] = data['TrainingMLStage'].astype(int)
+    data['P(subtype)'] = data['TrainingProbMLSubtype']
+    data['Subtype'] = data['TrainingMLSubtype']
+
+    fig = plt.figure(figsize=(6, 4))
+    sns.boxplot(data=data, x='Stage', y='P(subtype)', hue='Subtype',
+                palette=colors, hue_order=subtypes)
+    plt.axhline(0.5, color='k', linestyle='dashed')
+    plt.ylim(0, 1.05)
+    plt.legend(loc='lower left', bbox_to_anchor=(0, 0))
+
+    if name is not None:
+        plt.title(f'{name} (n={len(data)})', loc='left')
+
+    return fig
+
+odir = os.path.join(root_output, 'plots', 'sustain', 'subtype_probability')
+os.makedirs(odir, exist_ok=True)
+
+fig =  ternary_plot(training)
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'training_ternary.svg'), dpi=300)
+
+fig =  ternary_plot(validation)
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'validation_ternary.svg'), dpi=300)
+
+fig = probability_boxplot()
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'probability_subtype_boxplot.svg'), dpi=300)
+
+fig = probability_cutoff_plot()
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'probability_cutoff_plot.svg'), dpi=300)
+
+fig = probability_subtype_by_stage(training, 'Training')
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'psubtype_by_stage_training.svg'), dpi=300)
+
+fig = probability_subtype_by_stage(validation, 'Validation')
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'psubtype_by_stage_validation.svg'), dpi=300)
+

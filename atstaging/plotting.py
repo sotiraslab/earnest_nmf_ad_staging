@@ -237,6 +237,7 @@ def staging_colors():
 def subtype_colors():
     colors = {
         'S0' : 'gray',
+        'NA' : 'gray',
         'S1' : '#db2b39',
         'S2' : '#053c5e',
         'S3' : '#f3a712' 

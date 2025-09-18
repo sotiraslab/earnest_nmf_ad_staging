@@ -14,6 +14,7 @@ dir.create(PATH.OUTPUT, showWarnings = F)
 
 master <- read.csv(PATH.DATA)
 master$Subtype <- master$TrainingMLSubtype
+master$TauLaterality <- abs(master$PTCLeftParietalTemporalSUVR - master$PTCRightParietalTemporalSUVR)
   
 training <- master %>%
   filter(
@@ -45,7 +46,8 @@ staging.table <- function(df, savepath=NULL) {
       CDRSumBoxes,
       MMSETotal,
       SummarySUVRAmyloid,
-      SummarySUVRTau) %>%
+      SummarySUVRTau,
+      TauLaterality) %>%
     rename(
       Male=SexMale,
       MMSE=MMSETotal,

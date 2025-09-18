@@ -70,6 +70,8 @@ stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
   }
   
   # annotations
+  x.order <- unique(plot.data[[xcol]])
+  y.order <- unique(plot.data[[ycol]])
   annot.data <- plot.data %>%
     mutate(XFactor = factor(!!sym(xcol), levels = x.order),
            YFactor = factor(!!sym(ycol), levels = rev(y.order))) %>%

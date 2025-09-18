@@ -65,7 +65,7 @@ pipeline <- function(split, var, autosave = TRUE) {
   } else {
     label <- var
   }
-  p <- ggplot(validation, aes(x=Stage, y=!!sym(var), fill=Stage)) +
+  p <- ggplot(data, aes(x=Stage, y=!!sym(var), fill=Stage)) +
     geom_boxplot() +
     scale_fill_manual(values = colors) +
     geom_text(data = posthoc.sig, aes(x = a, y = y, label = annotation), inherit.aes = F, size=6) + 

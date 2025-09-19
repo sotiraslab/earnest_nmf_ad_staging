@@ -99,7 +99,7 @@ plt.savefig(os.path.join(plot_folder, 'diagnostic_plot_final.png'), dpi=300)
 # TAU Status
 # Gaussian mixture model
 
-def gmm_intersection_cutoff(data, n_std=2):
+def gmm_intersection_cutoff(data):
 
     x = np.array(data)
 

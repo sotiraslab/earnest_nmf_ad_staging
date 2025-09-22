@@ -1,7 +1,5 @@
 import os
 
-import pandas as pd
-
 from atstaging.config import get, set_config
 from atstaging.outputs import load_subtyped_data
 

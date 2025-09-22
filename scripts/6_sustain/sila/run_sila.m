@@ -28,6 +28,9 @@ for i = 1:length(infiles)
     output.Session = df.Session;
     output.SubjID = df.SubjID;
     
+    % IMPORTANT!  SILA sorts output by subjID, so we need to do the same
+    output = sortrows(output, "SubjID");
+    
     disp(" ");
     fprintf('Running SILA for file: %s\n', fullpath);
     

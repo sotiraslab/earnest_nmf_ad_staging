@@ -4,6 +4,7 @@
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(this.path)
 library(tibble)
 library(tidyr)
 
@@ -23,11 +24,16 @@ control.name <- 'Control'
 odir <- file.path(ROOT.OUTPUT, 'plots', 'sustain', 'cross_sectional_associations')
 dir.create(odir, showWarnings = F)
 
+# === Load ANOVA helper funcs ======
+
+path.anova <- normalizePath(file.path(this.dir(), '..', '..', 'rsource', 'anova.R'))
+source(path.anova)
+
 # === Load data ======
 
 master <- read.csv(path.master)
 master$TauLaterality <- abs(master$PTCLeftParietalTemporalWScore - master$PTCRightParietalTemporalWScore)
-master$Subtype <- ifelse(df$ControlForStaging == "True", control.name, df$TrainingMLSubtype)
+master$Subtype <- ifelse(master$ControlForStaging == "True", control.name, master$TrainingMLSubtype)
 
 training <- master %>%
   filter(
@@ -42,127 +48,6 @@ validation <- master %>%
   )
 
 # === Helper functions ======
-
-my.anova <- function(x, y, data, correction='fdr', print = F) {
-  fml <- as.formula(sprintf('%s ~ %s', y, x))
-  anova <- aov(fml, data = data)
-  posthoc <- as.data.frame(TukeyHSD(anova, method = correction)[[x]])
-  posthoc.res <- posthoc %>%
-    rownames_to_column('comparison') %>%
-    mutate(annotation = cut(`p adj`,
-                            breaks = c(0, 0.001, 0.01, 0.05, Inf),
-                            labels = c('***', "**", "*", ""),
-                            include.lowest = T)
-    )
-  if (print) {
-    print(fml)
-    print(summary(anova))
-  }
-  
-  output <- list(anova = anova, posthoc = posthoc.res)
-  return (output)
-}
-
-get_geom_sig_y_positions <- function(posthoc.res, ordered.x,
-                                     start.pos = 1, gap = 1){
-  
-  # preprocessing
-  posthoc.sig <- filter(posthoc.res, `p adj` < 0.05)
-  comparisons <- str_split(posthoc.sig$comparison, '-')
-  
-  if (nrow(posthoc.sig) == 0) {
-    return(NULL)
-  }
-  
-  # data holders
-  extents <- list()
-  y_position <- rep(NA, nrow(posthoc.sig))
-  
-  # main loop
-  for (i in seq_along(comparisons)){
-    x <- comparisons[[i]]
-    positions <- match(x, ordered.x)
-    
-    ypos <- NA
-    check.pos <- start.pos
-    while (is.na(ypos)) {
-      
-      # first iteration
-      if (! as.character(check.pos) %in% names(extents)) {
-        ypos <- check.pos
-        extents[[as.character(check.pos)]] = sort(positions)
-        next
-      }
-      
-      # if entry already found, check if we can still fit new bar
-      existing <- extents[[as.character(check.pos)]]
-      if (max(existing) < min(positions)) {
-        ypos <- check.pos
-        both <- c(existing, positions)
-        extents[[as.character(check.pos)]] = c(min(both), max(both))
-      }
-      check.pos <- check.pos + gap
-    }
-    
-    # record found position
-    y_position[i] <- ypos
-  }
-  
-  return (y_position)
-}
-
-anova.plot <- function(x, y, data, colors, correction='fdr',
-                       sig.y.start = 1, sig.y.gap = 1, y_lab = NULL) {
-  
-  # get anova stats
-  anova.result <- my.anova(x = x, y = y, data = data, correction = correction, print = F)
-  posthoc.res <- anova.result$posthoc
-  posthoc.sig <- filter(posthoc.res, `p adj` < 0.05)
-  comparisons <- str_split(posthoc.sig$comparison, '-')
-  n.sig <- nrow(posthoc.sig)
-  
-  # get means by group
-  n.categories <- length(unique(data[[x]]))
-  means <- group_by(data, !!sym(x)) %>%
-    summarise(Mean = mean(!!sym(y), na.rm=T)) %>%
-    mutate(x=seq(0.5, by=1, length.out=n.categories),
-           xend=seq(1.5, by=1, length.out=n.categories))
-  
-  # plot
-  y_position = get_geom_sig_y_positions(posthoc.res = posthoc.res,
-                                        ordered.x = sort(unique(data[[x]])),
-                                        start.pos = sig.y.start,
-                                        gap = sig.y.gap)
-  
-  ylab <- ifelse(is.null(y_lab), y, y_lab)
-  p <- ggplot(data = data, aes(x = !!sym(x), y = !!sym(y), fill = !!sym(x))) +
-    geom_point(position = position_jitter(width = 0.2, seed=42, height = 0), shape=21, size=3) +
-    geom_segment(data=means, aes(x=x, xend=xend, y=Mean, yend=Mean),
-                 color='black',
-                 linewidth=1) + 
-    scale_fill_manual(values=colors) +
-    theme_light() +
-    theme(legend.position = 'none',
-          text = element_text(size=20)) +
-    xlab(x) +
-    ylab(ylab)
-    
-  if (! is.null(y_position)) {
-    p <- p + geom_signif(
-      comparisons=comparisons,
-      annotations = posthoc.sig$annotation,
-      y_position = y_position,
-      tip_length = 0.01,
-      size=.75,
-      textsize = 7,
-      vjust = 0.5)
-  }
-  print(p)
-  
-  output <- list(plot = p, anova = anova.result$anova, posthoc = posthoc.res)
-  return (output)
-    
-}
 
 pipeline <- function(split, y, sig.y.start = 1, sig.y.gap = 1, y_lab=NULL) {
   

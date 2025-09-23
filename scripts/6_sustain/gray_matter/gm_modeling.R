@@ -15,6 +15,11 @@ path.master <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_sustain.csv')
 path.rois <- file.path(ROOT.OUTPUT, 'muse', 'amyloid_rois.csv')
 path.muse.info <- file.path(ROOT.OUTPUT, 'muse', 'muse_dict.csv')
 
+path.script <- normalizePath(file.path(this.dir(), '..', '..', 'rsource', 'longitudinal_change.R'))
+
+odir <- file.path(ROOT.OUTPUT, 'plots', 'sustain', 'atrophy', 'tmaps')
+dir.create(odir, showWarnings = F, recursive = T)
+
 # === Load data ======
 
 # master
@@ -49,48 +54,70 @@ training <- master %>%
     (ControlForStaging == "True") | (TrainingMLStage != 0 &  TrainingSubtypeValid ==1 )
   )
 
-# === Model ======
+# === Longitudinal change =======
 
-subtype <- 'S2'
-
-df <- training %>%
-  filter(Subtype == subtype | Subtype == 'Control')
-
-data <- vector(mode = 'list', length = length(gm.cols))
+source(path.script)
 
 for (i in 1:length(gm.cols)) {
-  col <- gm.cols[i]
-  fml <- as.formula(sprintf("%s ~ Subtype", col))
-  
-  # control.mask <- df$Subtype == 'Control'
-  # control.data <- df[control.mask, col]
-  # df[[col]] <- (df[[col]] - mean(control.data)) / (sd(control.data))
-  # 
-  m <- lm(fml, data = df)
-  m.sum <- summary(m)
-  m.table <- m.sum$coefficients
-  result <- list(region = col, coefficient = m.table[2, 1], t = m.table[2, 3], p = m.table[2, 4])
-  
-  data[[i]] <- result
+  print(sprintf('[%s/%s]', i, length(gm.cols)))
+  training <- calc.longitudinal.change(
+    training,
+    master,
+    gm.cols[i],
+    date.column = 'TauAmyloidMeanDate',
+    id.column = 'Subject',
+    plot = F)
 }
 
-lm.table <- bind_rows(data)
-lm.table <- lm.table %>%
-  mutate(
-    t = ifelse(p < 0.05, t, 0)
-  )
+lm.cols <- str_c('Delta', gm.cols)
 
-# =======
+# === Model ======
 
-merger <- lm.table %>%
-  mutate(
-    Name = str_replace(region, '_VOLUME', ''),
-    TVal = t
-  ) %>%
-  select(Name, TVal)
 
-to.image <- info %>%
-  select(ROI, Name) %>%
-  left_join(merger, by = 'Name')
+subtypes <- c('S1', 'S2', 'S3')
 
-write.csv(to.image, '~/Desktop/muse_to_image.csv', row.names = F)
+has.longitudinal <- ! is.na(training[[lm.cols[1]]])
+
+for (subtype in subtypes) {
+  df <- training %>%
+    filter(Subtype == subtype | Subtype == 'Control', has.longitudinal)
+  print(sprintf('N observations: %s', nrow(df)))
+  
+  data <- vector(mode = 'list', length = length(gm.cols))
+  
+  for (i in 1:length(lm.cols)) {
+    col <- lm.cols[i]
+    fml <- as.formula(sprintf("%s ~ Subtype", col))
+    
+    m <- lm(fml, data = df)
+    m.sum <- summary(m)
+    m.table <- m.sum$coefficients
+    result <- list(region = col, coefficient = m.table[2, 1], t = m.table[2, 3], p = m.table[2, 4])
+    
+    data[[i]] <- result
+  }
+  
+  lm.table <- bind_rows(data)
+  lm.table <- lm.table %>%
+    mutate(
+      p_adj = p.adjust(p, method = 'fdr'),
+      t = ifelse(p_adj < 0.05, t, 0)
+    )
+  
+  merger <- lm.table %>%
+    mutate(
+      Name = str_replace(region, '_VOLUME', ''),
+      Name = str_replace(Name, 'Delta', ''),
+      TVal = t
+    ) %>%
+    select(Name, TVal)
+  
+  to.image <- info %>%
+    select(ROI, Name) %>%
+    left_join(merger, by = 'Name')
+  
+  opath <- file.path(odir, sprintf('tmap_%s.csv', subtype))
+  write.csv(to.image, opath, row.names = F)
+}
+
+

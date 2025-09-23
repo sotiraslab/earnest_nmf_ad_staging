@@ -15,7 +15,7 @@ import gl
 
 def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
                     colormap='actc', overlayminmax=None, overlayextreme=None,
-                    overwrite=True):
+                    overwrite=True, smoothed=True):
 
     # screen arguments
     side = side.lower()
@@ -26,13 +26,14 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
     if side not in ['left', 'right']:
         raise ValueError('`side` must be "left" or "right".')
 
+    smoothed = '_smoothed' if smoothed else ''
     if side == 'left':
-        mesh_path = '/Applications/Surfice/BrainNet/BrainMesh_ICBM152_smoothed.lh.mz3'
+        mesh_path = f'/Applications/Surfice/BrainNet/BrainMesh_ICBM152{smoothed}.lh.mz3'
         sagittal_lateral_view = 0
         sagittal_medial_view = 1
         sidetag = 'LH'
     else:
-        mesh_path = '/Applications/Surfice/BrainNet/BrainMesh_ICBM152_smoothed.rh.mz3'
+        mesh_path = f'/Applications/Surfice/BrainNet/BrainMesh_ICBM152{smoothed}.rh.mz3'
         sagittal_lateral_view = 1
         sagittal_medial_view = 0
         sidetag = 'RH'
@@ -64,6 +65,7 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
     os.makedirs(output_directory, exist_ok=True)
 
     # begin plotting
+    print(mesh_path)
     gl.meshload(mesh_path)
 
     # add image
@@ -87,7 +89,7 @@ def plot_hemisphere(nifti_path, side, output_directory, output_name=None,
     gl.savebmpxy(outpath_medial, 1000, 1000)
 
 def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colormap='actc',
-                          overlayminmax=None, overlayextreme=None, overwrite=True):
+                          overlayminmax=None, overlayextreme=None, smoothed=True, overwrite=True):
     plot_hemisphere(
         nifti_path=nifti_path,
         side='left',
@@ -96,7 +98,8 @@ def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colorm
         output_name=output_name,
         overlayminmax=overlayminmax,
         overlayextreme=overlayextreme,
-        overwrite=overwrite
+        overwrite=overwrite,
+        smoothed=smoothed
         )
 
     plot_hemisphere(
@@ -107,6 +110,7 @@ def plot_both_hemispheres(nifti_path, output_directory, output_name=None, colorm
         output_name=output_name,
         overlayminmax=overlayminmax,
         overlayextreme=overlayextreme,
-        overwrite=overwrite
+        overwrite=overwrite,
+        smoothed=smoothed
         )
 

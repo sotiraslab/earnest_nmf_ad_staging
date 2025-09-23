@@ -38,13 +38,17 @@ master$Subtype <- ifelse(master$ControlForStaging == "True", control.name, maste
 training <- master %>%
   filter(
     Split == 'TrainingBaseline',
-    (ControlForStaging == "True") | (TrainingMLStage != 0 &  TrainingSubtypeValid ==1 )
+    ControlForStaging == "False",
+    TrainingMLStage != 0,
+    TrainingSubtypeValid ==1
   )
 
 validation <- master %>%
   filter(
     Split == 'ValidationBaseline',
-    (ControlForStaging == "True") | (TrainingMLStage != 0 &  TrainingSubtypeValid ==1 )
+    ControlForStaging == "False",
+    TrainingMLStage != 0,
+    TrainingSubtypeValid ==1
   )
 
 # === Helper functions ======

@@ -10,7 +10,7 @@ library(tidyr)
 
 # === Setup ======
 ROOT.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging'
-path.master <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_sustain.csv')
+path.master <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_nps.csv')
 
 colors <- c(
   'Control' = 'gray',
@@ -35,6 +35,29 @@ master <- read.csv(path.master)
 master$TauLaterality <- abs(master$PTCLeftParietalTemporalWScore - master$PTCRightParietalTemporalWScore)
 master$Subtype <- ifelse(master$ControlForStaging == "True", control.name, master$TrainingMLSubtype)
 
+composites <- c('CompositeMEM', 'CompositeEXF', 'CompositeLAN', 'CompositeVSP')
+master <- master %>%
+  mutate(
+    across(all_of(composites), function(x) ifelse(is.infinite(x), NA, x))
+    )
+
+# # residualize composites
+# master$CompositeGLO <- (
+#   master$CompositeMEM + master$CompositeEXF + master$CompositeLAN + master$CompositeVSP
+# ) / 4
+# 
+# nps.present <- master %>% drop_na(all_of(composites))
+# nps.resid <- nps.present[, c('Subject', 'Session')]
+# for (col in composites) {
+#   dest <- sprintf('%sResidualized', col)
+#   fml <- as.formula(sprintf('%s ~ SummarySUVRAmyloid', col))
+#   m <- lm(fml, data = nps.present)
+#   nps.resid[[dest]] <- m$residuals
+# }
+# 
+# master <- left_join(master, nps.resid, by = c('Subject', 'Session'))
+
+# ==== Split Data ========
 training <- master %>%
   filter(
     Split == 'TrainingBaseline',
@@ -53,7 +76,7 @@ validation <- master %>%
 
 # === Helper functions ======
 
-pipeline <- function(split, y, sig.y.start = 1, sig.y.gap = 1, y_lab=NULL) {
+pipeline <- function(split, y, sig.y.start = 1, sig.y.gap = 1, y_lab=NULL, save = T, show = T) {
   
   data <- list('training' = training, 'validation' = validation)[[split]]
   
@@ -61,24 +84,29 @@ pipeline <- function(split, y, sig.y.start = 1, sig.y.gap = 1, y_lab=NULL) {
                        correction = 'fdr', sig.y.start = sig.y.start,
                        sig.y.gap = sig.y.gap, y_lab = y_lab)
   
-  # save stuff
-  stub <- sprintf('%s_%s', y, split)
+  if (show) {
+    print(result$plot)
+  }
   
-  # save plot
-  
-  pname <- sprintf('%s_swarmplot.svg', stub)
-  ggsave(file.path(odir, pname), height = 6, width = 4, units = 'in')
-  
-  # save anova
-  aname <- sprintf('%s_anova.csv', stub)
-  anova <- result$anova
-  anova.table <- summary(anova)[[1]]
-  write.csv(anova.table, file.path(odir, aname), row.names = F)
-  
-  # save posthoc 
-  sname <- sprintf('%s_posthoc.csv', stub)
-  posthoc <- result$posthoc
-  write.csv(posthoc, file.path(odir, sname), row.names = F)
+  if (save) {
+    # save stuff
+    stub <- sprintf('%s_%s', y, split)
+    
+    # save plot
+    pname <- sprintf('%s_swarmplot.svg', stub)
+    ggsave(file.path(odir, pname), height = 6, width = 4, units = 'in')
+    
+    # save anova
+    aname <- sprintf('%s_anova.csv', stub)
+    anova <- result$anova
+    anova.table <- summary(anova)[[1]]
+    write.csv(anova.table, file.path(odir, aname), row.names = F)
+    
+    # save posthoc 
+    sname <- sprintf('%s_posthoc.csv', stub)
+    posthoc <- result$posthoc
+    write.csv(posthoc, file.path(odir, sname), row.names = F)
+  }
 }
 
 # === Run ======
@@ -91,6 +119,10 @@ result <- pipeline('training', 'SummarySUVRTau', sig.y.start = 2.5, sig.y.gap = 
 result <- pipeline('training', 'TauLaterality', sig.y.start = 10, sig.y.gap = 1, y_lab = 'Tau Laterality')
 result <- pipeline('training', 'CDRSumBoxes', sig.y.start = 8, sig.y.gap = 1, y_lab = 'CDR (sum of boxes)')
 result <- pipeline('training', 'MMSETotal', sig.y.start = 31, sig.y.gap = 1.2, y_lab = 'MMSE')
+result <- pipeline('training', 'CompositeMEM', sig.y.start = 2, sig.y.gap = 1, y_lab = 'Memory')
+result <- pipeline('training', 'CompositeEXF', sig.y.start = 5, sig.y.gap = 1, y_lab = 'Executive Functioning')
+result <- pipeline('training', 'CompositeLAN', sig.y.start = 5, sig.y.gap = 1, y_lab = 'Language')
+result <- pipeline('training', 'CompositeVSP', sig.y.start = 3, sig.y.gap = 1, y_lab = 'Visuospatial')
 
 # Validation
 result <- pipeline('validation', 'Age', sig.y.start = 92, sig.y.gap = 2)
@@ -100,3 +132,7 @@ result <- pipeline('validation', 'SummarySUVRTau', sig.y.start = 2.5, sig.y.gap 
 result <- pipeline('validation', 'TauLaterality', sig.y.start = 10, sig.y.gap = 1, y_lab = 'Tau Laterality')
 result <- pipeline('validation', 'CDRSumBoxes', sig.y.start = 8, sig.y.gap = 1, y_lab = 'CDR (sum of boxes)')
 result <- pipeline('validation', 'MMSETotal', sig.y.start = 31, sig.y.gap = 1.2, y_lab = 'MMSE')
+result <- pipeline('validation', 'CompositeMEM', sig.y.start = 2, sig.y.gap = 1, y_lab = 'Memory')
+result <- pipeline('validation', 'CompositeEXF', sig.y.start = 7, sig.y.gap = 1, y_lab = 'Executive Functioning')
+result <- pipeline('validation', 'CompositeLAN', sig.y.start = 5, sig.y.gap = 1, y_lab = 'Language')
+result <- pipeline('validation', 'CompositeVSP', sig.y.start = 3, sig.y.gap = 1, y_lab = 'Visuospatial')

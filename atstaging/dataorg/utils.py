@@ -296,6 +296,8 @@ def link_modalities(tau, amyloid, t1, subject_col='Subject',
     vprint(f'Starting T1: {_nstring(t1, subject_col)}')
     vprint(f'Starging amyloid: {_nstring(amyloid, subject_col)}')
     vprint(f'Starting tau: {_nstring(tau, subject_col)}')
+    all_subs = set(list(t1[subject_col]) + list(amyloid[subject_col]) + list(tau[subject_col]))
+    vprint(f'Unique subjects across modalities: {len(all_subs)}')
 
     # link amyloid & tau
     t_suffix = "Tau"

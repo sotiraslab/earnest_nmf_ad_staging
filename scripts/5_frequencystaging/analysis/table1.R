@@ -30,8 +30,7 @@ df <- master %>%
     CDR = first(CDRBinned),
     MMSE = first(MMSETotal),
     APOEE4 = first(HasE4),
-    "Amyloid-PET tracer" = first(TracerAmyloid),
-    "Tau-PET tracer" = first(TracerTau),
+    Tracers = str_c(first(TracerAmyloid),'/',first(TracerTau)),
     "Amyloid SUVR" = first(SummarySUVRAmyloid),
     "Tau SUVR" = first(SummarySUVRTau),
     Visits = as.numeric(n()),
@@ -50,9 +49,14 @@ df <- master %>%
     Race = factor(Race, levels = c('White', 'Black', "Asian", 'Other')),
     APOEE4 = ifelse(APOEE4 == 1, 'Positive', 'Negative'),
     Followup = as.numeric(difftime(DateLast, DateFirst, units = 'days') / 365.25),
-    "Followup (y)" = ifelse(Followup == 0, NA, Followup)
+    "Followup (y)" = ifelse(Followup == 0, NA, Followup),
+    Tracers = factor(Tracers, levels = c('FBP/FTP', 'FBB/FTP', 'FBB/P26', 'PIB/FTP'))
     ) %>%
-  select(-Disease, -Group, -Control, -DateFirst, -DateLast, -Followup)
+  select(-Group, -Control, -DateFirst, -DateLast, -Followup)
+
+cols <- colnames(df)
+new.order <- c('Disease', cols[cols != 'Disease'])
+df <- df[, new.order]
 
 # Table splitting training and validation
 df %>%
@@ -73,7 +77,7 @@ df %>%
 
 # Table splitting training and validation and disease status
 df %>%
-  select(-Subject, -Split) %>%
+  select(-Subject, -Split, -Disease) %>%
   tbl_summary(
     by = SplitDisease,
     digits = all_continuous() ~ 2,

@@ -14,8 +14,8 @@ source(PATH.STATSFUNCS)
 # functions
 residualize.loadings <- function(data) {
   cols <- colnames(data)
-  pacs <- cols[str_detect(cols, 'PAC.*SUVR')]
-  ptcs <- cols[str_detect(cols, 'PTC.*SUVR')]
+  pacs <- cols[str_detect(cols, 'PAC.*WScore')]
+  ptcs <- cols[str_detect(cols, 'PTC.*WScore')]
   
   for (pac in pacs) {
     dest <- sprintf('%sResidualized', pac)

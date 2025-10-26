@@ -35,9 +35,6 @@ def nmf_similarity_heatmap(pathA, indicesA, pathB, indicesB, ax=None, savepath=N
             cmpB = WB_unit[:, j]
             sim[i, j] = np.dot(cmpA, cmpB)
 
-    # plot
-    set_font_properties()
-
     if ax is None:
         ax = plt.gca()
 
@@ -107,40 +104,63 @@ array_val_indices_TAU = [valA_tau_indices, valB_tau_indices, valC_tau_indices, v
 savedir = os.path.join(output_directory, 'plots', 'validation_nmf_similarity')
 os.makedirs(savedir, exist_ok=True)
 
-# Amyloid
-fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 4), dpi=300, sharey=True,
-                         width_ratios=[len(x) for x in array_val_indices_AMY])
-
-for i in range(4):
-    ax = axes[i]
-
-    pathA = training_amy_path
-    indicesA = training_amy_indices
-
-    pathB = array_val_path_AMY[i]
-    indicesB = array_val_indices_AMY[i]
-
-    print(f'panel {i}...')
-    nmf_similarity_heatmap(pathA, indicesA, pathB, indicesB, ax=ax)
-
+# Valdation - amyloid
+set_font_properties(8)
+plt.figure(figsize=(2, 3), dpi=300)
+nmf_similarity_heatmap(
+    training_amy_path, training_amy_indices,
+    valAll_amy_path, valAll_amy_indices,
+    )
 plt.tight_layout()
-plt.savefig(os.path.join(savedir, 'amyloid_compare.png'))
+plt.savefig(os.path.join(savedir, 'amyloid_all.svg'))
 
-# Tau
-fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(20, 20/3), dpi=300, sharey=True,
-                         width_ratios=[len(x) for x in array_val_indices_TAU])
-
-for i in range(4):
-    ax = axes[i]
-
-    pathA = training_tau_path
-    indicesA = training_tau_indices
-
-    pathB = array_val_path_TAU[i]
-    indicesB = array_val_indices_TAU[i]
-
-    print(f'panel {i}...')
-    nmf_similarity_heatmap(pathA, indicesA, pathB, indicesB, ax=ax)
-
+# Validation - tau
+set_font_properties(7)
+plt.figure(figsize=(2, 3), dpi=300)
+nmf_similarity_heatmap(
+    training_tau_path, training_tau_indices,
+    valAll_tau_path, valAll_tau_indices,
+    )
 plt.tight_layout()
-plt.savefig(os.path.join(savedir, 'tau_compare.png'))
+plt.savefig(os.path.join(savedir, 'tau_all.svg'))
+
+# Colorbar
+
+
+# # Amyloid
+# fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 4), dpi=300, sharey=True,
+#                          width_ratios=[len(x) for x in array_val_indices_AMY])
+
+# for i in range(4):
+#     ax = axes[i]
+
+#     pathA = training_amy_path
+#     indicesA = training_amy_indices
+
+#     pathB = array_val_path_AMY[i]
+#     indicesB = array_val_indices_AMY[i]
+
+#     print(f'panel {i}...')
+#     nmf_similarity_heatmap(pathA, indicesA, pathB, indicesB, ax=ax)
+
+# plt.tight_layout()
+# plt.savefig(os.path.join(savedir, 'amyloid_compare.png'))
+
+# # Tau
+# fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(20, 20/3), dpi=300, sharey=True,
+#                          width_ratios=[len(x) for x in array_val_indices_TAU])
+
+# for i in range(4):
+#     ax = axes[i]
+
+#     pathA = training_tau_path
+#     indicesA = training_tau_indices
+
+#     pathB = array_val_path_TAU[i]
+#     indicesB = array_val_indices_TAU[i]
+
+#     print(f'panel {i}...')
+#     nmf_similarity_heatmap(pathA, indicesA, pathB, indicesB, ax=ax)
+
+# plt.tight_layout()
+# plt.savefig(os.path.join(savedir, 'tau_compare.png'))

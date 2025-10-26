@@ -188,7 +188,7 @@ def paint_winner_take_all(biomarker, assignments, threshold, use_saved=True, out
 
     return return_value
 
-def set_font_properties():
+def set_font_properties(fontsize=14):
 
     def _register_font(font_path):
         font_manager.fontManager.addfont(font_path)
@@ -208,7 +208,7 @@ def set_font_properties():
         _ = _register_font(font_path_bold)
 
     plt.rcParams.update({
-        'font.size': 14,
+        'font.size': fontsize,
         'font.family': font_name
         })
 
@@ -240,6 +240,6 @@ def subtype_colors():
         'NA' : 'gray',
         'S1' : '#db2b39',
         'S2' : '#053c5e',
-        'S3' : '#f3a712' 
+        'S3' : '#f3a712'
     }
     return colors

@@ -69,6 +69,15 @@ def classifier(image):
             'overlayminmax': (2, 7),
             'overlayextreme': 1
         }
+    elif 'wpositivity' in image:
+        rng = (0.4, 0.85) if 'amyloid' in image else (0.1, 0.25)
+        colormap = 'blue-green' if 'amyloid' in image else 'red-yellow'
+        args = {
+            'output_directory': os.path.join(outdir, 'wscore_positivity'),
+            'colormap':colormap,
+            'overlayminmax': rng,
+            'overlayextreme': 1
+        }
     else:
         raise ValueError('No arguments detected for image: ', bname)
 

@@ -224,6 +224,7 @@ def staging_colors():
         'A2T3': t_cmap(.6),
         'A2T4': t_cmap(.8),
         'Atypical': '#A661C9',
+        'NS':'#A661C9',
         'Other': ns_cmap(0.),
         'A0T+': ns_cmap(1/3),
         'A1T+': ns_cmap(2/3),

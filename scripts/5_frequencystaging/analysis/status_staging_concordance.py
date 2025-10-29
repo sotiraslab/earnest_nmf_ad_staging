@@ -18,9 +18,9 @@ from atstaging.plotting import staging_colors, set_font_properties
 
 # Preparation
 set_config('main')
-set_font_properties()
+set_font_properties(6)
 
-baseline = load_split(None, 'baseline')
+baseline = load_split(None, 'baseline', verbose=False)
 baseline['Group'] = (
     np.where(baseline['Split'].eq('TrainingBaseline'), 'Training', 'Validation') +
     '-' +
@@ -34,47 +34,51 @@ os.makedirs(odir, exist_ok=True)
 
 # Amyloid
 colors = {
-    '0': 'gray',
-    '1': scolors['A1T0'],
-    '2': scolors['A2T0'],
+    'A0': 'gray',
+    'A1': scolors['A1T0'],
+    'A2': scolors['A2T0'],
     'NS': scolors['Atypical']
     }
 
-plt.figure(figsize=(5, 7))
-baseline['Amyloid stage'] = baseline['StageAmyloid']
+plt.figure(figsize=(3, 1.25))
+baseline['Amyloid stage'] = baseline['StageAmyloid'].replace({'0':'A0', '1':'A1', '2':'A2'})
 
-sns.stripplot(data=baseline, x="Group", y='SummarySUVRAmyloid', hue='Amyloid stage',
-              alpha=0.5, jitter=.333,
+sns.stripplot(data=baseline, y="Group", x='SummarySUVRAmyloid', hue='Amyloid stage',
+              alpha=0.5, jitter=.333, size=2.5,
               order=['Training-NC', 'Training-ADS', 'Validation-NC', 'Validation-ADS'],
               hue_order=colors.keys(),
               palette=colors)
-plt.xticks(rotation=45, ha='right')
-plt.ylabel('Cortical amyloid (SUVR)')
-plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+plt.xlabel('Cortical amyloid (SUVR)')
+plt.ylabel('')
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), frameon=False)
+
 
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'amyloid_status_concordance.svg'), dpi=300)
+plt.savefig(os.path.join(odir, 'amyloid_status_concordance.svg'))
 
 # Tau
 colors = {
-    '0': 'gray',
-    '1': scolors['A2T1'],
-    '2': scolors['A2T2'],
-    '3': scolors['A2T3'],
-    '4': scolors['A2T4'],
+    'T0': 'gray',
+    'T1': scolors['A2T1'],
+    'T2': scolors['A2T2'],
+    'T3': scolors['A2T3'],
+    'T4': scolors['A2T4'],
     'NS': scolors['Atypical']
     }
 
-plt.figure(figsize=(5, 7))
-baseline['Tau stage'] = baseline['StageTau']
-sns.stripplot(data=baseline, x="Group", y='SummarySUVRTau', hue='Tau stage',
-              alpha=0.5, jitter=.333,
+plt.figure(figsize=(3, 1.25))
+baseline['Tau stage'] = (
+    baseline['StageTau']
+    .replace({'0':'T0', '1':'T1', '2':'T2', '3':'T3', '4':'T4'})
+    )
+sns.stripplot(data=baseline, y="Group", x='SummarySUVRTau', hue='Tau stage',
+              alpha=0.5, jitter=.333, size=2.5,
               order=['Training-NC', 'Training-ADS', 'Validation-NC', 'Validation-ADS'],
               hue_order=colors.keys(),
               palette=colors)
-plt.xticks(rotation=45, ha='right')
-plt.ylabel('Cortical tau (SUVR)')
-plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+plt.xlabel('Cortical tau (SUVR)')
+plt.ylabel('')
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), frameon=False)
 
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'tau_status_concordance.svg'), dpi=300)
+plt.savefig(os.path.join(odir, 'tau_status_concordance.svg'))

@@ -67,6 +67,8 @@ wscore.heatmap.routine <- function(df, plotpath=NULL) {
 bootstrap.staging.routine <- function(df, plotpath=NULL) {
   wscore.cols <- colnames(df)[str_detect(colnames(df), 'WScore')]
   nice.names <- gsub('WScore', '', wscore.cols)
+  nice.names <- gsub('PTC', 'PTC-', nice.names)
+  nice.names <- gsub('PAC', 'PAC-', nice.names)
   wscores <- df[, wscore.cols]
   colnames(wscores) <- nice.names
   wmat <- ifelse(wscores > thr, 1, 0)
@@ -144,7 +146,7 @@ bootstrap.staging.routine <- function(df, plotpath=NULL) {
            B = factor(B, levels=colnames(df.w)))
   
   p <- ggplot(data = plot.data, aes(x = B, y = A, fill = plot.p)) +
-    geom_tile(linewidth=1, color='white') +
+    geom_tile(linewidth=0.1, color='white') +
     coord_equal() +
     scale_fill_colormap(colormap='viridis') +
     scale_x_discrete(expand=c(0,0)) +
@@ -176,7 +178,8 @@ bootstrap.staging.routine <- function(df, plotpath=NULL) {
   output <- list(
     data = observed.diffs,
     plot = p,
-    stages = stages
+    stages = stages,
+    plot.data = plot.data
   )
   
   return(output)
@@ -204,6 +207,38 @@ valAll <- do.call(rbind, list(valA, valB, valC))
 
 wscore.heatmap.routine(training, plotpath = file.path(PATH.OUTPUT, 'training_wscore_positivity.svg'))
 training.results <- bootstrap.staging.routine(training, plotpath = file.path(PATH.OUTPUT, 'training_bootstrap_staging.svg'))
+
+# = Nice version of training plot ========
+
+plot.data <- training.results$plot.data
+
+final <- ggplot(data = plot.data, aes(x = B, y = A, fill = plot.p)) +
+  geom_tile(linewidth=.5, color='white') +
+  scale_fill_colormap(
+    colormap='viridis',
+    guide = guide_colorbar(
+      barheight = unit(1, "in"), # Set the height of the colorbar
+      barwidth = unit(0.1, "in")  # Set the width of the colorbar
+    )) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "white"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        axis.ticks = element_blank(),
+        text = element_text(size=8),
+        legend.title = element_text(size=5),
+        legend.text = element_text(size=5),
+        axis.title = element_blank(),
+        legend.ticks.length = unit(0.01, 'in')) +
+  labs(fill="-log10(p)")
+print(final)
+
+ggsave(
+  file.path(PATH.OUTPUT, 'final_training_staging_figure.svg'), final,
+  width = 4, height = 2, units = 'in'
+  )
 
 # ==== Bootstrap staging: Validation A ====
 
@@ -311,10 +346,11 @@ sink()
 # ==== Positivity rate by dataset =====
 
 # Plot of positivity rate
-
 positivity.rate <- function(df, fieldname, thr=2.5) {
   wscore.cols <- colnames(df)[str_detect(colnames(df), 'WScore')]
-  nice.names <- gsub('WScore', '', wscore.cols)
+  nice.names <- gsub('WScore', '', wscore.cols) %>%
+    str_replace('PAC', 'PAC-') %>%
+    str_replace('PTC', 'PTC-')
   wscores <- df[, wscore.cols]
   colnames(wscores) <- nice.names
   wmat <- ifelse(wscores > thr, 1, 0)
@@ -426,12 +462,14 @@ atstaging <- function(data, staging.results, thr = 2.5) {
   stages <- staging.results$stages
   
   # "WScore" suffix is dropped from staging results, so added back here
-  names(stages) <- str_c(names(stages), "WScore")
+  names(stages) <- str_c(names(stages), "WScore") %>%
+    str_replace('-', '')
   
   # pull out amyloid & tau regions
   amy.regions <- names(stages)[str_detect(names(stages), 'PAC.*WScore')]
   tau.regions <- names(stages)[str_detect(names(stages), 'PTC.*WScore')]
   all.regions <- c(amy.regions, tau.regions)
+  all.regions <- all.regions
   
   # get stage indices for amyloid and tau
   # add correction for indices potentially not starting at 1
@@ -480,7 +518,8 @@ df.staging$StageValAll <- valAll.staging$StageNumeric
 # ==== ARI Analysis =====
 
 # ARI analysis
-cols <- c('StageNumeric', 'StageValA', 'StageValB', 'StageValC', 'StageValAll')
+cols <- c('StageNumeric', 'StageValAll', 'StageValA', 'StageValB', 'StageValC')
+nice.names <- c('Training', 'Validation', 'ValidationA', 'ValidationB', 'ValidationC')
 matdim <- length(cols)
 ARIs <- matrix(data=NA, nrow=matdim, ncol=matdim)
 
@@ -501,12 +540,12 @@ for (i in 1:matdim) {
 }
 
 plot.data <- as.data.frame(ARIs)
-colnames(plot.data) <- cols
-plot.data$SystemA <- cols
+colnames(plot.data) <- nice.names
+plot.data$SystemA <- nice.names
 plot.data <- plot.data %>%
   pivot_longer(-SystemA, names_to = 'SystemB', values_to = 'ARI') %>%
-  mutate(SystemA = factor(SystemA, levels=rev(cols)),
-         SystemB = factor(SystemB, levels=cols),
+  mutate(SystemA = factor(SystemA, levels=rev(nice.names)),
+         SystemB = factor(SystemB, levels=nice.names),
          ARIround = round(ARI, 2),
          ARIminmax = (ARI - min(ARI)) / (max(ARI) - min(ARI)),
          TextColor = ifelse(ARIminmax < 0.4, 'white', 'black'))
@@ -514,8 +553,10 @@ plot.data <- plot.data %>%
 ggplot(plot.data) +
   geom_tile(aes(x=SystemB, y=SystemA, fill=ARI)) +
   scale_fill_colormap(colormap='viridis') +
-  coord_equal() +
-  geom_text(aes(x=SystemB, y=SystemA, label=ARIround, color=TextColor)) +
+  geom_text(
+    aes(x=SystemB, y=SystemA, label=ARIround, color=TextColor),
+    size = 2.5
+    ) +
   scale_color_identity() +
   scale_x_discrete(expand=c(0,0)) +
   scale_y_discrete(expand=c(0,0)) +
@@ -523,10 +564,10 @@ ggplot(plot.data) +
         panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = "#440154ff"),
         axis.text.x = element_text(angle=30, hjust=1),
-        text = element_text(size=15))
+        text = element_text(size=7))
 
 ggsave(file.path(PATH.OUTPUT, 'ari_staging_analysis.svg'),
-       width = 8, height = 8, units = 'in')
+       width = 4.5, height = 2.5, units = 'in')
 
 # ==== SAVE ====
 
@@ -544,3 +585,245 @@ feature.staging$ControlForStaging <- (
   ((master$CDRBinned == '0.0' & ! is.na(master$CDRBinned)) & master$FinalAmyloidStatus == 0 & master$GMMTauStatus == 0)
 )
 write.csv(feature.staging, file.path(master.folder, 'FEATURE_STAGING.csv'), quote = F, na = '', row.names = F)
+
+# ==== MANUSCRIPT FIGURES - VALIDATION =====
+
+odir <- file.path(PATH.OUTPUT, 'updated_figures')
+dir.create(odir, showWarnings = F)
+
+# POSITIVITY ORDER
+data <- training.order %>%
+  left_join(valAll.order, by='Region')
+colnames(data) <- c('Region', 'Training', 'Validation')
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Order') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'Validation')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Order = factor(Order)
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Order, label=Order)) +
+  geom_tile() +
+  geom_text(size=2.25) +
+  scale_fill_colormap(colormap='jet', discrete = T, reverse = T) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks = element_blank()
+        )
+
+ggsave(
+  file.path(odir, 'validation_positivity_order.svg'),
+  width = 5/3, height = 2.5, units = 'in'
+  )
+
+# POSITIVITY RATE
+data <- training.pos %>%
+  left_join(valAll.pos, by='Region') %>%
+  mutate(Training = Training*100,
+         ValidationCombined = ValidationCombined *100)
+colnames(data) <- c('Region', 'Training', 'Validation')
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Positivity') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'Validation')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Label = round(Positivity, 1),
+    Color = ifelse(Positivity < 40, 'white', 'black')
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Positivity, label=Label)) +
+  geom_tile() +
+  geom_text(size=2.5, aes(color=Color)) +
+  scale_fill_colormap(colormap='cubehelix') +
+  scale_color_manual(values = c('black'='black', 'white'='white')) + 
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank()
+        ) +
+  guides(color = 'none')
+
+ggsave(
+  file.path(odir, 'validation_positivity_rate.svg'),
+  width = 2.5, height = 2.5, units = 'in'
+)
+
+# Friedman test for this analysis
+sink(file.path(odir, 'validation_friedman.txt'))
+friedman.test(as.matrix(data))
+sink()
+
+# STAGE ASSIGNMENT
+
+data <- training.stages %>%
+  left_join(valAll.stages, by='Region')
+colnames(data) <- c('Region', 'Training', 'Validation')
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Stage') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'Validation')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Stage = factor(Stage)
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Stage, label=Stage)) +
+  geom_tile() +
+  geom_text(size=2.5) +
+  scale_fill_colormap(colormap='viridis', discrete = T, reverse = T) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = 'none'
+        )
+
+ggsave(
+  file.path(odir, 'validation_stages.svg'),
+  width = 5/3, height = 2.5, units = 'in'
+)
+
+# ==== MANUSCRIPT FIGURES =====
+
+# POSITIVITY ORDER
+data <- training.order %>%
+  left_join(valA.order, by='Region') %>%
+  left_join(valB.order, by='Region') %>%
+  left_join(valC.order, by='Region')
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Order') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'ValidationA', 'ValidationB', 'ValidationC')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Order = factor(Order)
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Order, label=Order)) +
+  geom_tile() +
+  geom_text(size=2.25) +
+  scale_fill_colormap(colormap='jet', discrete = T, reverse = T) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks = element_blank()
+  )
+
+ggsave(
+  file.path(odir, 'subset_positivity_order.svg'),
+  width = 2, height = 2.5, units = 'in'
+)
+
+# POSITIVITY RATE
+data <- training.pos %>%
+  left_join(valA.pos, by='Region') %>%
+  left_join(valB.pos, by='Region') %>%
+  left_join(valC.pos, by='Region') %>%
+  mutate(Training = Training*100,
+         ValidationA = ValidationA *100,
+         ValidationB = ValidationB *100,
+         ValidationC = ValidationC *100)
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Positivity') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'ValidationA', 'ValidationB', 'ValidationC')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Label = round(Positivity, 1),
+    Color = ifelse(Positivity < 40, 'white', 'black')
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Positivity, label=Label)) +
+  geom_tile() +
+  geom_text(size=2.5, aes(color=Color)) +
+  scale_fill_colormap(colormap='cubehelix') +
+  scale_color_manual(values = c('black'='black', 'white'='white')) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank()
+  ) +
+  guides(color = 'none')
+
+ggsave(
+  file.path(odir, 'subset_positivity_rate.svg'),
+  width = 3.3, height = 2.5, units = 'in'
+)
+
+# Friedman test for this analysis
+sink(file.path(odir, 'subsets_friedman.txt'))
+friedman.test(as.matrix(data))
+sink()
+
+# STAGE ASSIGNMENT
+
+data <- training.stages %>%
+  left_join(valA.stages, by='Region') %>%
+  left_join(valB.stages, by='Region') %>%
+  left_join(valC.stages, by='Region')
+
+plot.data <- data %>%
+  pivot_longer(-Region, names_to = 'Split', values_to = 'Stage') %>%
+  mutate(
+    Split = factor(Split, levels = c('Training', 'ValidationA', 'ValidationB', 'ValidationC')),
+    Region = factor(Region, levels = rev(names(training.results$stages))),
+    Stage = factor(Stage)
+  )
+
+ggplot(plot.data, aes(x=Split, y=Region, fill=Stage, label=Stage)) +
+  geom_tile() +
+  geom_text(size=2.5) +
+  scale_fill_colormap(colormap='viridis', discrete = T, reverse = T) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#440154ff"),
+        axis.text.x = element_text(angle=30, hjust=1),
+        text = element_text(size=6),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = 'none'
+  )
+
+ggsave(
+  file.path(odir, 'subset_stages.svg'),
+  width = 2, height = 2.5, units = 'in'
+)

@@ -104,7 +104,11 @@ def load_muse_roi_table():
     df = pd.read_csv(file)
     return df
 
-def load_muse_roi_table_cleaned():
+def load_muse_roi_table_cleaned(fix_LR=True):
+    """Loads a cleaned version of the table listing MUSE ROIs.
+    For a few regions (not cortical GM), there is mislabelling of left/right side, which is fixed with `fix_LR`.
+    Only included as an option since this wasn't found out until near the end of the project.
+    But it doesn't affect results."""
     df = load_muse_roi_table()
     df['TissueType'] = df['Tissue_Type']
     df['FullName'] = df['Name']
@@ -113,6 +117,11 @@ def load_muse_roi_table_cleaned():
     df['IsCerebellum'] = df['Lobe_Name'].eq('Cerebellum')
     df['Hemisphere'] = df['Hemisphere'].str.lower()
     out = df[['ROI', 'FullName', 'Name', 'Hemisphere', 'TissueType', 'IsBrain', 'IsCerebellum']].copy()
+
+    if fix_LR:
+        out.loc[out['Name'].str.contains('left') & out['Hemisphere'].ne('left'), 'Hemisphere'] = 'left'
+        out.loc[out['Name'].str.contains('right') & out['Hemisphere'].ne('right'), 'Hemisphere'] = 'right'
+        out.loc[out['Name'].eq('brain_stem'), 'Hemisphere'] = 'both'
     return out
     
 def run_deepmrseg_muse(inpath, outpath):

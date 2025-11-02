@@ -2,6 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(gt)
 library(gtsummary)
+library(lubridate)
 library(stringr)
 library(this.path)
 
@@ -38,6 +39,11 @@ master_with_vol <- left_join(master, volume.merger, by = c('Subject', 'Session')
 
 # ICV normalization
 master_with_vol$GMVolume <- master_with_vol$GMVolume / master_with_vol$ICV
+
+# remove cases with MRI not acquired near PET
+master_with_vol <- master_with_vol %>%
+  mutate(T1Gap = abs(difftime(ymd_hms(TauAmyloidMeanDate), ymd(ScanDateT1), units='days')),
+         GMVolume = ifelse(T1Gap > 366, NA, GMVolume))
 
 training <- master_with_vol %>%
   filter(Split == 'TrainingBaseline', ControlForStaging == 'False')
@@ -88,8 +94,10 @@ pipeline <- function(data) {
                                     labels = c('***', "**", "*", ""),
                                     include.lowest = T)),
            annot = ifelse(is.na(annot), '', annot),
-           p = round(p, 3)
-    ) %>%
+           annot = str_c(ifelse(comp_p_adj < 0.001, '<0.001', round(comp_p_adj, 3)), annot),
+           p = round(p, 3),
+           p = ifelse(p < 0.001, '<0.001', p)
+    )  %>%
     pivot_wider(id_cols = all_of(id.cols), names_from = Comparison, values_from = annot)
   
   return (result.star)
@@ -100,8 +108,8 @@ validation.result <- pipeline(validation)
 
 odir <- file.path(ROOT.OUTPUT, 'tables')
 dir.create(odir, showWarnings = F)
-write.csv(train.result, file.path(odir, 'resilient_vulnerable_models.csv'), row.names = F)
-write.csv(validation.result, file.path(odir, 'resilient_vulnerable_models.csv'), row.names = F)
+write.csv(train.result, file.path(odir, 'training_resilient_vulnerable_models.csv'), row.names = F)
+write.csv(validation.result, file.path(odir, 'validation_resilient_vulnerable_models.csv'), row.names = F)
 
 # ====== Show distribution by data set =======
 

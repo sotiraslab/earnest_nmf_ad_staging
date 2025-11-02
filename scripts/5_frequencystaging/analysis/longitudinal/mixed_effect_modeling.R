@@ -15,6 +15,8 @@ df <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/baselin
 mmse.long <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/mmse_long.csv')
 cdr.long <- read.csv('/Users/earnestt1234/Desktop/atstaging/longitudinalTables/cdr_long.csv')
 
+emm_options(pbkrtest.limit = 10000)
+
 mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T, root.output='/Users/earnestt1234/Desktop/atstaging') {
     
     # Select baseline data with stages assigned
@@ -61,9 +63,12 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
                    'A1T+' = '#3f007d')
     
     p <- ggplot(long.data, aes(x=YearsSinceBl, y=Score, color=Stage, fill=Stage)) +
-        geom_smooth(alpha=.3, method='lm') +
+        geom_smooth(alpha=.3, method='lm', linewidth=.5) +
         theme_bw() +
-        theme(text = element_text(size=15)) +
+        theme(text = element_text(size=8, color='black'),
+              axis.text.x = element_text(color='black'),
+              axis.text.y = element_text(color='black'),
+              legend.position = 'none') +
         ylab(YLAB) +
         xlab('Years') +
         scale_color_manual(values = colors) +
@@ -81,7 +86,7 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
         dir.create(odir, showWarnings = F, recursive = T)
 
         bname <- sprintf('mem_split-%s_var-%s', split, variable)
-        ggsave(filename = file.path(odir, str_c(bname, '.svg')), width=8, height=6, units='in')
+        ggsave(filename = file.path(odir, str_c(bname, '.svg')), width=3.65, height=2, units='in')
         
         fe <- summary(model)$coefficients
         write.csv(fe, file.path(odir, str_c(bname, '_fixed_effects.csv')))
@@ -92,7 +97,8 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
                      annotation = cut(p.value,
                                       breaks = c(0, 0.001, 0.01, 0.05, Inf),
                                       labels = c('***', "**", "*", ""),
-                                      include.lowest = T))
+                                      include.lowest = T),
+                   p.value = ifelse(p.value == 0, '<0.001', p.value))
         write.csv(em.summary, file.path(odir, str_c(bname, '_emmeans.csv')))
     }
 

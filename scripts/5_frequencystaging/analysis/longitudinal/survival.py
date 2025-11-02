@@ -54,7 +54,7 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
 
     # Model
     kmf = KaplanMeierFitter()
-    fig, ax = plt.subplots(figsize=(10,5))
+    fig, ax = plt.subplots(figsize=(3.65,2))
 
     groups = sorted(survgroup['Stage'].unique())
     colors = staging_colors()
@@ -68,18 +68,45 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
         E = survgroup.loc[idx, 'Event']
 
         kmf.fit(T, E, label=group)
-        kmf.plot_survival_function(ax=ax, color=colors[group], label=f'{group} (n={int(idx.sum())})')
+
+        # manual plotting
+        curve = kmf.survival_function_
+        x = curve.index
+        y = curve.iloc[:, 0]
+        plt.plot(
+            x, y,
+            color=colors[group], drawstyle='steps',
+            linewidth=0.75, zorder=3)
+
+        ci = kmf.confidence_interval_
+        x = ci.index
+        y1 = ci.iloc[:, 0]
+        y2 = ci.iloc[:, 1]
+        plt.fill_between(
+            x, y1, y2,
+            color=colors[group], alpha=0.2,
+            edgecolor='none', step='post', zorder=2
+            )
+        # kmf.plot_survival_function(
+        #     ax=ax, color=colors[group], legend=False,
+        #     linewidth=0.5, edgecolor='none')
 
     # formatting
     plt.xlabel('Years')
     ylabel = {'cdr': 'P(CDR<1)', 'mmse': 'P(MMSE≥24)'}[variable]
     plt.ylabel(ylabel)
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.grid(zorder=1, alpha=0.3)
+    # plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     # Statistics
     stats_result = pairwise_logrank_test(survgroup['Duration'], survgroup['Stage'], survgroup['Event'])
     stats = stats_result.summary
+    stats.insert(0, 'contrast', stats.index.get_level_values(0) + '-' + stats.index.get_level_values(1))
+    stats['test_statistic'] = stats['test_statistic'].round(2)
+    stats = stats.drop(columns=['-log2(p)'])
     stats['annot'] = pd.cut(stats['p'], bins=[-np.inf, 0.001, 0.01, 0.05, np.inf], labels=['***', '**', '*', ''])
+    stats['p'] = stats['p'].round(3)
+    stats['p'] = np.where(stats['p'] < 0.001, '<0.001', stats['p'].astype(str))
 
     # saving
     if autosave:
@@ -89,21 +116,21 @@ def survival_analysis(variable='cdr', split='training', omit_atypical=True, comb
 
         bname = f'survival_split-{split}_var-{variable}_omitNS-{omit_atypical}_combineTauStages-{combine_tau_stages}'
         plt.tight_layout()
-        fig.savefig(os.path.join(odir, bname + '.png'), dpi=300)
-        stats.to_csv(os.path.join(odir, bname + '.csv'))
+        fig.savefig(os.path.join(odir, bname + '.svg'))
+        stats.to_csv(os.path.join(odir, bname + '.csv'), index=False)
 
     return fig, stats
 
-set_font_properties()
+set_font_properties(8)
 
 # Training
 fig, stats = survival_analysis(variable='cdr', split='training', omit_atypical=True, combine_tau_stages=False)
 fig, stats = survival_analysis(variable='mmse', split='training', omit_atypical=True, combine_tau_stages=False)
-fig, stats = survival_analysis(variable='cdr', split='training', omit_atypical=True, combine_tau_stages=True)
-fig, stats = survival_analysis(variable='mmse', split='training', omit_atypical=True, combine_tau_stages=True)
+# fig, stats = survival_analysis(variable='cdr', split='training', omit_atypical=True, combine_tau_stages=True)
+# fig, stats = survival_analysis(variable='mmse', split='training', omit_atypical=True, combine_tau_stages=True)
 
 # Validation
 fig, stats = survival_analysis(variable='cdr', split='validation', omit_atypical=True, combine_tau_stages=False)
 fig, stats = survival_analysis(variable='mmse', split='validation', omit_atypical=True, combine_tau_stages=False)
-fig, stats = survival_analysis(variable='cdr', split='validation', omit_atypical=True, combine_tau_stages=True)
-fig, stats = survival_analysis(variable='mmse', split='validation', omit_atypical=True, combine_tau_stages=True)
+# fig, stats = survival_analysis(variable='cdr', split='validation', omit_atypical=True, combine_tau_stages=True)
+# fig, stats = survival_analysis(variable='mmse', split='validation', omit_atypical=True, combine_tau_stages=True)

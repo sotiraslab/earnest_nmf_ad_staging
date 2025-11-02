@@ -98,9 +98,9 @@ plt.ylim(0, 100)
 plt.tight_layout()
 plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_dataset.svg'))
 
-#%% Create a separate figure for legend
+# Create a separate figure for legend
 
-plt.figure(figsize=(3.5, .5), dpi=300)
+plt.figure(figsize=(3.5, .5))
 
 for i, stage in enumerate(stages):
     plt.barh(
@@ -118,92 +118,36 @@ plt.legend(
 plt.tight_layout()
 plt.savefig(os.path.join(plot_dest, 'legend.svg'), bbox_inches='tight')
 
-# # Plot NS types by group
-# groups = ['Training-NC', 'Training-ADS', 'Validation-NC', 'Validation-ADS']
-# stages = ['Other', 'A0T+', 'A1T+', 'MTL-']
+# Plot NS types by group
+baseline['StageLabelNS'] = baseline['StageLabelNS'].replace({'Other': 'Atypical Tau'})
+groups = ['Training-NC', 'Training-ADS', 'Validation-NC', 'Validation-ADS']
+stages = ['A0T+', 'A1T+', 'MTL-', 'Atypical Tau']
+scolors['Atypical Tau'] = scolors['Other']
 
-# plt.figure(figsize=(6, 6))
+plt.figure(figsize=(3.5, 3))
 
-# for i, group in enumerate(groups):
-#     x = i
-#     bottom = 0
-#     sub = baseline[baseline['Group'].eq(group) & baseline['Stage'].eq('Atypical')].copy()
-#     for j, stage in enumerate(stages):
-#         n = (sub['StageLabelNS'].eq(stage)).sum()
-#         pct = n / len(sub) * 100
-#         color = scolors[stage]
-#         label = '_' * i + stage
-#         plt.bar(x=x, height=pct, bottom=bottom, color=color, edgecolor='black', label=label)
-#         bottom += pct
+for i, group in enumerate(groups):
+    x = i
+    bottom = 0
+    sub = baseline[baseline['Group'].eq(group) & baseline['Stage'].eq('NS')].copy()
+    print()
+    print(group)
+    print(sub['StageLabelNS'].value_counts()/len(sub)*100)
+    for j, stage in enumerate(stages):
+        n = (sub['StageLabelNS'].eq(stage)).sum()
+        pct = n / len(sub) * 100
+        color = scolors[stage]
+        label = '_' * i + stage
+        plt.bar(x=x, height=pct, bottom=bottom, color=color, edgecolor='black', label=label)
+        bottom += pct
 
-#     plt.text(i, 102, len(sub), ha='center', va='center')
+    plt.text(i, 102, str(len(sub)), ha='center', va='center')
 
-# plt.xticks(range(len(groups)), groups, rotation=45, ha='right')
-# plt.ylabel('Frequency (%)')
-# plt.ylim(0, 100)
-# plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+plt.xticks(range(len(groups)), groups, rotation=30, ha='right')
+plt.ylabel('Frequency (%)')
+plt.ylim(0, 100)
+plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
-# plt.tight_layout()
-# plt.savefig(os.path.join(plot_dest, 'atypical_distribution_by_group.svg'), dpi=300)
 
-# # Plot stages by CDR (training)
-# cdrs = ['0.0', '0.5', '1.0+']
-# stages = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'Atypical']
-
-# plt.figure(figsize=(6, 6))
-
-# for i, cdr in enumerate(cdrs):
-#     x = i
-#     bottom = 0
-#     sub = baseline[
-#         baseline['CDRBinned'].eq(cdr)
-#         & baseline['Split'].eq('TrainingBaseline')
-#         & ~baseline['ControlForStaging']].copy()
-#     for j, stage in enumerate(stages):
-#         n = (sub['Stage'].eq(stage)).sum()
-#         pct = n / len(sub) * 100
-#         color = scolors[stage]
-#         label = '_' * i + stage
-#         plt.bar(x=x, height=pct, bottom=bottom, color=color, edgecolor='black', label=label)
-#         bottom += pct
-
-#     plt.text(i, 102, len(sub), ha='center', va='center')
-
-# plt.xticks(range(len(cdrs)), cdrs)
-# plt.xlabel('CDR')
-# plt.ylabel('Frequency (%)')
-# plt.ylim(0, 100)
-# plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-# plt.tight_layout()
-# plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_cdr_training.svg'), dpi=300)
-
-# # Plot stages by CDR (validation)
-# cdrs = ['0.0', '0.5', '1.0+']
-# stages = ['A0T0', 'A1T0', 'A2T0', 'A2T1', 'A2T2', 'A2T3', 'A2T4', 'Atypical']
-
-# plt.figure(figsize=(6, 6))
-
-# for i, cdr in enumerate(cdrs):
-#     x = i
-#     bottom = 0
-#     sub = baseline[
-#         baseline['CDRBinned'].eq(cdr)
-#         & baseline['Split'].eq('ValidationBaseline')
-#         & ~baseline['ControlForStaging']].copy()
-#     for j, stage in enumerate(stages):
-#         n = (sub['Stage'].eq(stage)).sum()
-#         pct = n / len(sub) * 100
-#         color = scolors[stage]
-#         label = '_' * i + stage
-#         plt.bar(x=x, height=pct, bottom=bottom, color=color, edgecolor='black', label=label)
-#         bottom += pct
-
-#     plt.text(i, 102, len(sub), ha='center', va='center')
-
-# plt.xticks(range(len(cdrs)), cdrs)
-# plt.xlabel('CDR')
-# plt.ylabel('Frequency (%)')
-# plt.ylim(0, 100)
-# plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-# plt.tight_layout()
-# plt.savefig(os.path.join(plot_dest, 'stage_distribution_by_cdr_validation.svg'), dpi=300)
+plt.tight_layout()
+plt.savefig(os.path.join(plot_dest, 'distribution_of_NS.svg'), bbox_inches='tight')

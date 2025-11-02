@@ -79,9 +79,15 @@ pipeline <- function(data) {
                                       labels = c('***', "**", "*", ""),
                                       include.lowest = T)),
              annot = ifelse(is.na(annot), '', annot),
-             p = round(p, 3)
+             annot = str_c(ifelse(comp_p_adj < 0.001, '<0.001', round(comp_p_adj, 3)), annot),
+             p = round(p, 3),
+             p = ifelse(p < 0.001, '<0.001', p)
       ) %>%
-      pivot_wider(id_cols = all_of(id.cols), names_from = Comparison, values_from = annot)
+      pivot_wider(id_cols = all_of(id.cols), names_from = Comparison, values_from = annot) %>%
+      mutate(Variable = str_replace(Variable, 'Residualized', ''),
+             Variable = str_replace(Variable, 'WScore', ''),
+             Variable = str_replace(Variable, 'PAC', 'PAC-'),
+             Variable = str_replace(Variable, 'PTC', 'PTC-'))
     
     return (result.star)
 }

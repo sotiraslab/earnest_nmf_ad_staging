@@ -18,17 +18,18 @@ set_config('main')
 def compare_staging_heatmap(data):
 
     # prep data for plot
-    data['AA2024BiologicalStage'] = pd.Categorical(data['AA2024BiologicalStage'], categories=['0','$A+/T_{2}-$','$A+/T_{2MTL}+$','$A+/T_{2MOD}+$','$A+/T_{2HIGH+}$','Atypical'])
+    data['AA2024BiologicalStage'] = pd.Categorical(data['AA2024BiologicalStage'], categories=['0','$A+/T_{2}-$','$A+/T_{2MTL}+$','$A+/T_{2MOD}+$','$A+/T_{2HIGH+}$','NS'])
+    data['Stage'] = data['Stage'].replace({'Atypical':'NS'})
     hmap = pd.crosstab(data['Stage'], data['AA2024BiologicalStage'])
     hmap_norm = hmap.div(hmap.sum(axis=1), axis=0) * 100
 
     # formatting for plot
-    set_font_properties()
+    set_font_properties(7)
     params = {'mathtext.default': 'regular'}
     plt.rcParams.update(params)
 
     # plot
-    fig = plt.figure(figsize=(6, 7))
+    fig = plt.figure(figsize=(2.5, 2.5))
     im = plt.imshow(hmap_norm, vmin=0, vmax=100, cmap='Blues')
     plt.yticks(range(len(hmap_norm.index)), hmap_norm.index)
     plt.xticks(range(len(hmap_norm.columns)), hmap_norm.columns, rotation=45, ha='right')
@@ -38,11 +39,11 @@ def compare_staging_heatmap(data):
             value = hmap.iloc[y, x]
             prop = hmap_norm.iloc[y, x]
             color = 'black' if prop < 50 else 'white'
-            plt.text(x, y, value, color=color, ha='center', va='center')
+            plt.text(x, y, value, color=color, ha='center', va='center', size=6)
 
     ax = plt.gca()
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.2)
+    cax = divider.append_axes("right", size="10%", pad=0.1)
     cbar = plt.colorbar(im, cax=cax)
     cbar.set_label('Row-wise percentage', rotation=270)
 
@@ -69,8 +70,8 @@ def determine_aa2024_biological_stages():
 
 
 
-    stages = assign_frequency_stage(stage_data[['A', 'B', 'C', 'D']].to_numpy(), groupings=[0,1,2,3], atypical='Atypical')
-    stages = stages.rename_categories({'0': '0', '1': '$A+/T_{2}-$', '2':'$A+/T_{2MTL}+$', '3':'$A+/T_{2MOD}+$', '4':'$A+/T_{2HIGH+}$', 'NS': 'Atypical'})
+    stages = assign_frequency_stage(stage_data[['A', 'B', 'C', 'D']].to_numpy(), groupings=[0,1,2,3], atypical='NS')
+    stages = stages.rename_categories({'0': '0', '1': '$A+/T_{2}-$', '2':'$A+/T_{2MTL}+$', '3':'$A+/T_{2MOD}+$', '4':'$A+/T_{2HIGH+}$', 'NS': 'NS'})
 
     output = df[['Subject', 'Session']].copy()
     output['AA2024BiologicalStage'] = stages

@@ -17,14 +17,17 @@ colors <- list(A0T0 = 'white',
                A2T2 = '#feab49',
                A2T3 = '#fc5b2e',
                A2T4 = '#d41020',
-               Atypical = '#A661C9')
+               NS = '#A661C9')
 
 pipeline <- function(split, var, autosave = TRUE) {
   name <- if (split == 'TrainingBaseline') "Training" else "Validation"
   
   data <- df %>%
     filter(Split == split) %>%
-    mutate(Stage = factor(Stage, levels = names(colors)))
+    mutate(
+      Stage = ifelse(Stage == 'Atypical', 'NS', Stage),
+      Stage = factor(Stage, levels = names(colors))
+      )
   size <- nrow(data)
   
   # modeling

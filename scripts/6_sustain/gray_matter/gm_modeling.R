@@ -44,7 +44,7 @@ master <- left_join(master, merger, by = c('Subject', 'Session'))
 # ICV normalization
 master <- master %>%
   mutate(
-    across(all_of(gm.cols), function(x) x / ICV)
+    across(all_of(gm.cols), function(x) (x / ICV) * 1e6)
   )
 
 # separate groups
@@ -71,8 +71,15 @@ for (i in 1:length(gm.cols)) {
 
 lm.cols <- str_c('Delta', gm.cols)
 
-# === Model ======
+diff.to.t1 <- abs(difftime(
+  ymd_hms(training$TauAmyloidMeanDate),
+  ymd(training$ScanDateT1),
+  units = 'days'
+  )) / 365.25
+omit <- diff.to.t1 >= 366
+training[omit, lm.cols] <- NA
 
+# === Model ======
 
 subtypes <- c('S1', 'S2', 'S3')
 

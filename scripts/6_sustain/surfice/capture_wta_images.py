@@ -63,10 +63,11 @@ def classifier(image):
     elif 'wscores' in image:
         subdir = bname[:-7]
         colormap = 'viridis' if 'amyloid' in bname else 'inferno'
+        overlayminmax = (4, 9) if 'amyloid' in bname else (2, 7)
         args = {
             'output_directory': os.path.join(outdir, 'wscore_subtype_progression', subdir),
             'colormap': colormap,
-            'overlayminmax': (2, 7),
+            'overlayminmax': overlayminmax,
             'overlayextreme': 1
         }
     elif 'wpositivity' in image:

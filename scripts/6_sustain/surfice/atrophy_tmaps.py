@@ -55,8 +55,8 @@ for image in images:
     plot_both_hemispheres(
         nifti_path=image,
         output_directory=outdir,
-        colormap='custom-bgr',
-        overlayminmax=(-5, 5),
-        overlayextreme=3,
+        colormap='red-yellow',
+        overlayminmax=(-2, -5.2),
+        overlayextreme=0,
         smoothed=False
         )

@@ -200,3 +200,20 @@ ggsave(file.path(odir, 'longitudinal_stages_training.svg'), width = 6, height = 
 
 stages.over.time(validation)
 ggsave(file.path(odir, 'longitudinal_stages_validation.svg'), width = 6, height = 6, units = "in", dpi = 300)
+
+# ======
+
+# p.data <- training %>%
+#   group_by(Subject) %>%
+#   filter(n() >= 2) %>%
+#   summarise(
+#     Baseline = first(TrainingMLSubtype),
+#     Followup = last(TrainingMLSubtype),
+#     ProbBaseline = first(TrainingProbMLSubtype),
+#     BaselineStage = first(TrainingMLStage),
+#     FollowupStage = last(TrainingMLStage),
+#     FollowupValid = last(TrainingSubtypeValid)
+#   ) %>%
+#   ungroup() %>%
+#   mutate(Followup = ifelse(FollowupStage == 0 | FollowupValid == 'False', 'NA', Followup),
+#          Stable = Baseline == Followup)

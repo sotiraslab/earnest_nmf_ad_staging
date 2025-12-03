@@ -37,6 +37,8 @@ for i, subfolder in enumerate(subfolders):
         print()
         if os.path.isfile(opath_amyloid) and not OVERWRITE:
             print(f'> Existing amyloid output for "{name}"; skipping.')
+        elif not amyloid_assignments:
+            print(f'> No amyloid mapping for "{name}"; skipping.')
         else:
             print(f'> Creating amyloid output for "{name}".')
             paint_winner_take_all(
@@ -50,6 +52,8 @@ for i, subfolder in enumerate(subfolders):
 
         if os.path.isfile(opath_tau) and not OVERWRITE:
             print(f'> Existing tau output for "{name}"; skipping.')
+        elif not tau_assignments:
+            print(f'> No tau mapping for "{name}"; skipping.')
         else:
             print(f'> Creating tau output for "{name}".')
             paint_winner_take_all(

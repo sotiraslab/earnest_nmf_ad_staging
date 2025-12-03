@@ -79,6 +79,13 @@ def classifier(image):
             'overlayminmax': rng,
             'overlayextreme': 1
         }
+    elif 'tau_v_amyloid' in image:
+        args = {
+            'output_directory': os.path.join(outdir, 'tau_v_amyloid'),
+            'colormap': 'custom-bgr',
+            'overlayminmax': (-10, 10),
+            'overlayextreme': 3
+        }
     else:
         raise ValueError('No arguments detected for image: ', bname)
 

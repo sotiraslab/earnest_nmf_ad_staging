@@ -295,7 +295,7 @@ class SustainManager:
     
     def plot_cv_loglikelihood(self, loglike_matrix):
         
-        fig, ax = plt.subplots()
+        ax = plt.gca()
         df_loglike = pd.DataFrame(data = loglike_matrix, columns = ["s_" + str(i+1) for i in range(self.sustain.N_S_max)])
         df_loglike.boxplot(grid=False, ax=ax)
         
@@ -304,26 +304,24 @@ class SustainManager:
             x = np.random.normal(1+i, 0.04, size=len(y)) # Add some random "jitter" to the x-axis
             plt.plot(x, y, 'r.', alpha=0.2)
         plt.ylabel('Log likelihood')  
-        plt.xlabel('N subtypes') 
+        plt.xlabel('N subtypes')
+        plt.xticks(np.arange(i+1) + 1, np.arange(i+1) + 1)
 
-        return fig
+        return plt.gcf()
                      
     def plot_cvic(self, CVIC):
 
-        fig = plt.figure()
         x = np.arange(self.sustain.N_S_max, dtype=int)
         plt.plot(x, CVIC)
         plt.xticks(x, x+1)
         plt.ylabel('CVIC')
         plt.xlabel('N subtypes') 
 
-        return fig
+        return plt.gcf()
     
     def plot_likelihood_histogram(self, N_S_max=None):
 
         N_S_max = self.sustain.N_S_max if N_S_max is None else N_S_max
-        
-        fig = plt.figure()
         
         for i in range(N_S_max):
             samples_likelihood = self.load_pickled_results(key='samples_likelihood', n_subtypes=i+1, fold=None)
@@ -335,13 +333,11 @@ class SustainManager:
         plt.ylabel('Number of samples')
         plt.title('Histograms of model likelihood')
 
-        return fig
+        return plt.gcf()
     
     def plot_mcmc_trace(self, N_S_max=None):
 
         N_S_max = self.sustain.N_S_max if N_S_max is None else N_S_max
-
-        fig = plt.figure()
 
         iterations = self.sustain.N_iterations_MCMC
         
@@ -355,7 +351,7 @@ class SustainManager:
         plt.ylabel('Number of samples')
         plt.title('MCMC trace')
 
-        return fig
+        return plt.gcf()
     
     def plot_pvd(self, n_subtypes, **kwargs):
         loaded_variables = self.load_pickled_results(n_subtypes=n_subtypes)
@@ -491,3 +487,7 @@ class SustainManager:
 
         print('> Creating run scripts for main run...')
         self.create_run_main_scripts()
+
+    def update_output_folder(self, path: str):
+        self.sustain_output_folder = path
+        self.sustain.output_folder = path

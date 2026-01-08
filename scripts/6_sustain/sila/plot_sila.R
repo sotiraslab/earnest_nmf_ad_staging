@@ -86,10 +86,10 @@ p.data <- training.bl %>%
   )
 
 p <- ggplot(p.data, aes(x=Region, y=EAO, fill=Subtype)) +
-  geom_boxplot() +
+  geom_boxplot(color='black') +
   scale_fill_manual(values = colors) +
   theme_bw() +
-  theme(text = element_text(size = 14)) +
+  theme(text = element_text(size = 6)) +
   scale_y_continuous(breaks = c(50, 60, 70, 80, 90, 100))
 
 xmin <- c(-0.3, -0.3, 0)
@@ -114,33 +114,42 @@ for (i in 1:length(cols)) {
     
     # significance, draw bar
     p <- p + geom_signif(
-      y_position = 100 + (j * 3),
+      y_position = 100 + (j * 4),
       xmin = i + xmin[j],
       xmax = i + xmax[j],
       annotation = annot,
       tip_length = .01,
       size = 0.5,
-      textsize = 5
+      textsize = 3
       ) 
   }
 }
 
 print(p)
 path.plot <- file.path(odir, sprintf('eao_boxplot.svg'))
-ggsave(path.plot, width = 8, height = 6, units = 'in')
+ggsave(path.plot, width = 4, height = 3, units = 'in')
 
-# Plot EAO tau/amyloid
-result <- anova.plot(x = 'Subtype', y = 'DiffEAO', data = training.bl, colors = colors,
-           sig.y.start = 25, sig.y.gap = 3)
+# Plot EAO tau/amyloid =======
+source(path.anova)
+
+result <- anova.plot(
+  x = 'Subtype', y = 'DiffEAO', data = training.bl,
+  colors = colors,
+  sig.y.start = 25, sig.y.gap = 3,
+  point.size = 2, point.linewidth = .5,
+  stat.textsize=3, stat.size=.5
+  )
 p <- result$plot +
   geom_hline(yintercept = 0, color = 'black', linetype='dashed') +
-  theme(text = element_text(size = 14)) +
+  theme_bw() + 
+  theme(text = element_text(size = 6),
+        legend.position = 'none') +
   ylab('Tau EAO - Amyloid EAO') +
   scale_y_continuous(breaks = seq(-25, 25, 5))
 
 print(p)
 path.plot <- file.path(odir, sprintf('eao_tau_amyloid_difference.svg'))
-ggsave(path.plot, width = 4, height = 6, units = 'in')
+ggsave(path.plot, width = 2, height = 3, units = 'in')
 
 
 # ==== Plot against model ======

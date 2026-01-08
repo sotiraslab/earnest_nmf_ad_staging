@@ -19,18 +19,14 @@ master$TauAmyloidMeanDate <- as_datetime(ymd_hms(master$TauAmyloidMeanDate))
 training.ads <- master %>%
   filter(
     Split == 'TrainingBaseline',
-    ControlForStaging == "False",
-    TrainingMLStage != 0,
-    TrainingSubtypeValid ==1 
+    ControlForStaging == "False"
   ) %>%
   pull(Subject)
 
 validation.ads <- master %>%
   filter(
     Split == 'ValidationBaseline',
-    ControlForStaging == "False",
-    TrainingMLStage != 0,
-    TrainingSubtypeValid ==1 
+    ControlForStaging == "False"
   ) %>%
   pull(Subject)
 
@@ -62,56 +58,31 @@ df <- master %>%
     Race = first(Race),
     Hispanic = first(Hispanic),
     Education = first(Education),
-    BMI = first(BMI),
     CDR = first(CDRBinned),
     MMSE = first(MMSETotal),
     APOEE4 = first(HasE4),
-    "Amyloid-PET tracer" = first(TracerAmyloid),
-    "Tau-PET tracer" = first(TracerTau),
     "Amyloid SUVR" = first(SummarySUVRAmyloid),
-    "Tau SUVR" = first(SummarySUVRTau),
-    Visits = as.numeric(n()),
-    DateFirst = first(TauAmyloidMeanDate),
-    DateLast = last(TauAmyloidMeanDate)
+    "Tau SUVR" = first(SummarySUVRTau)
     ) %>%
   ungroup() %>%
   mutate(
     Sex = factor(ifelse(Sex == 1, 'M', 'F'), levels = c('M', 'F')),
     Disease = ifelse(Control == 'True', 'NC', 'ADS'),
     Split = str_extract(Group, '(Training|Validation)'),
-    SplitDisease = str_c(Split, '-', Disease),
     CDR = ifelse(CDR == '', NA, CDR),
     CDR = factor(CDR, levels = c('0.0', '0.5', '1.0+')),
     Race = ifelse(Race == '', NA, Race),
     Race = factor(Race, levels = c('White', 'Black', "Asian", 'Other')),
-    APOEE4 = ifelse(APOEE4 == 1, 'Positive', 'Negative'),
-    Followup = as.numeric(difftime(DateLast, DateFirst, units = 'days') / 365.25),
-    "Followup (y)" = ifelse(Followup == 0, NA, Followup)
+    APOEE4 = ifelse(APOEE4 == 1, 'Positive', 'Negative')
     ) %>%
-  select(-Disease, -Group, -Control, -DateFirst, -DateLast, -Followup)
+  select(-Group, -Control)
 
-# Table splitting training and validation
+# Discovery set
 df %>%
-  select(-Subject, -SplitDisease) %>%
-  tbl_summary(
-    by = Split,
-    digits = all_continuous() ~ 2,
-    missing = 'no',
-    statistic = list(
-      all_continuous() ~ "{mean} ({sd})",
-      all_categorical() ~ "{n} ({p}%)"
-    )
-  ) %>%
-  add_n() %>%
-  add_p(test = list(all_continuous() ~ "t.test"), include = -Visits) %>%
-  as_gt() %>%
-  gtsave(file.path(PATH.OUTPUT, 'SUSTAIN_gtsummary_by_split.docx'))
-
-# Table splitting training and validation and disease status
-df %>%
+  filter(Subject %in% c(training.ads, training.nc)) %>%
   select(-Subject, -Split) %>%
   tbl_summary(
-    by = SplitDisease,
+    by = Disease,
     digits = all_continuous() ~ 2,
     missing = 'no',
     statistic = list(
@@ -120,6 +91,24 @@ df %>%
     )
   ) %>%
   add_n() %>%
-  add_p(test = list(all_continuous() ~ 'oneway.test'), include = -Visits) %>%
+  add_p() %>%
   as_gt() %>%
-  gtsave(file.path(PATH.OUTPUT, 'SUSTAIN_gtsummary_by_split_disease.docx')) 
+  gtsave(file.path(PATH.OUTPUT, 'SUSTAIN_table1_discovery.docx'))
+
+# Replication set
+df %>%
+  filter(Subject %in% c(validation.ads, validation.nc)) %>%
+  select(-Subject, -Split) %>%
+  tbl_summary(
+    by = Disease,
+    digits = all_continuous() ~ 2,
+    missing = 'no',
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    )
+  ) %>%
+  add_n() %>%
+  add_p() %>%
+  as_gt() %>%
+  gtsave(file.path(PATH.OUTPUT, 'SUSTAIN_table1_replication.docx'))

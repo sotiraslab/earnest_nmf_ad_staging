@@ -91,15 +91,21 @@ stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
   
   # plot
   p <- ggplot() +
-    geom_bar(data = plot.data, aes(fill=!!sym(ycol), y=Percent, x=!!sym(xcol)), stat="identity", color='black') +
-    geom_text(data = group.sums, aes(x=!!sym(xcol), y=105, label=total), size=6) +
+    geom_bar(
+      data = plot.data,
+      aes(
+        fill=!!sym(ycol), y=Percent, x=!!sym(xcol)),
+      stat="identity", color='black', linewidth=.2) +
+    geom_text(data = group.sums, aes(x=!!sym(xcol), y=105, label=total), size=1) +
     theme_classic() +
     ylab('Observations (%)') +
     xlab(xcol) +
     scale_y_continuous(expand=expansion(mult=c(0, .1)), breaks = c(0, 25, 50, 75, 100)) +
     guides(fill=guide_legend(title=ycol)) +
-    theme(text = element_text(size=20),
-          axis.line.y = element_blank()) +
+    theme(text = element_text(size=6),
+          axis.line.y = element_blank(),
+          legend.text = element_text(size=6),
+          legend.key.size = unit(.1, 'in')) +
     geom_segment(aes(y=0,yend=100,x=-Inf,xend=-Inf), color='black', linewidth=1)
   
   if (annotate) {
@@ -108,7 +114,7 @@ stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
       aes(x = AnnotX, y = AnnotY, label = Annot),
       inherit.aes = F,
       color = annotate.color,
-      size = 6)
+      size = 1)
   }
   
   if (! is.null(colors)) {
@@ -135,10 +141,10 @@ subtypes.over.time <- function(data) {
 }
 
 subtypes.over.time(training)
-ggsave(file.path(odir, 'longitudinal_subtypes_training.svg'), width = 6, height = 6, units = "in", dpi = 300)
+ggsave(file.path(odir, 'longitudinal_subtypes_training.svg'), width = 1.7, height = 1.7, units = "in", dpi = 300)
 
 subtypes.over.time(validation)
-ggsave(file.path(odir, 'longitudinal_subtypes_validation.svg'), width = 6, height = 6, units = "in", dpi = 300)
+ggsave(file.path(odir, 'longitudinal_subtypes_validation.svg'), width = 1.7, height = 1.7, units = "in", dpi = 300)
 
 # ===== Stages over time =====
 
@@ -177,10 +183,11 @@ stages.over.time <- function(data) {
     )
   
   ggplot(p.data, aes(x=Subtype, y=Stage, fill=Visit)) +
-    geom_boxplot() +
+    geom_boxplot(linewidth=.2, outlier.size=.5) +
     theme_bw() +
-    theme(text = element_text(size = 14),
-          axis.text.x = element_text(color = c(colors[['S1']], colors[['S2']], colors[['S3']]))) +
+    theme(text = element_text(size = 6),
+          legend.key.size = unit(c(.1), 'in'),
+          legend.margin = margin(t = 0, r = 0, b = 0, l = -.1, unit = "in")) +
     scale_fill_manual(values = c('Baseline'='azure2', 'Followup'='azure4')) +
     geom_signif(
       y_position = c(11.5, 11.5, 11.5),
@@ -188,18 +195,19 @@ stages.over.time <- function(data) {
       xmax = t.df$xmax,
       annotation = t.df$annotation,
       tip_length = 0,
-      size = 0.5,
-      textsize = 5
+      size = 0.2,
+      textsize = 2
     ) +
-    scale_y_continuous(breaks = c(1, 3, 5, 7, 9, 11))
+    scale_y_continuous(breaks = c(1, 3, 5, 7, 9, 11)) +
+    coord_cartesian(ylim=c(1, 12))
 }
 
 
 stages.over.time(training)
-ggsave(file.path(odir, 'longitudinal_stages_training.svg'), width = 6, height = 6, units = "in", dpi = 300)
+ggsave(file.path(odir, 'longitudinal_stages_training.svg'), width = 1.7, height = 1.7, units = "in", dpi = 300)
 
 stages.over.time(validation)
-ggsave(file.path(odir, 'longitudinal_stages_validation.svg'), width = 6, height = 6, units = "in", dpi = 300)
+ggsave(file.path(odir, 'longitudinal_stages_validation.svg'), width = 1.7, height = 1.7, units = "in", dpi = 300)
 
 # ======
 

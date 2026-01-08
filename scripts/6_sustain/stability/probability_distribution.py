@@ -13,7 +13,7 @@ from atstaging.plotting import subtype_colors, set_font_properties
 set_config('main')
 root_output = get('output_directory')
 colors = subtype_colors()
-set_font_properties()
+set_font_properties(6)
 
 training = load_subtyped_data('training', sustain_model='Training')
 validation = load_subtyped_data('validation', sustain_model='Training')
@@ -23,7 +23,7 @@ subtypes = ['S1', 'S2', 'S3']
 
 def ternary_plot(data):
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(2, 2))
     ax = fig.add_subplot(projection='ternary')
     pct_certain = round(data['TrainingProbMLSubtype'].gt(.5).mean() * 100, 2)
 
@@ -33,7 +33,12 @@ def ternary_plot(data):
         p2 = sub['TrainingProbSubtypeS2']
         p3 = sub['TrainingProbSubtypeS3']
         color = colors[subtype]
-        ax.scatter(p1, p2, p3, color=color, edgecolor='black', label=subtype, zorder=2)
+        ax.scatter(
+            p1, p2, p3,
+            color=color,
+            edgecolor='black',
+            label=subtype, zorder=2,
+            s=12, linewidths=.5)
 
     ax.axtline(0.5, color='black', linestyle='dashed')
     ax.axlline(0.5, color='black', linestyle='dashed')
@@ -45,8 +50,8 @@ def ternary_plot(data):
     ax.taxis.set_ticks([])
     ax.laxis.set_ticks([])
     ax.raxis.set_ticks([])
-    ax.legend()
-    ax.text(-0.05, 0.5, 0.5, f'individuals outside gray area: {pct_certain}%', va='center', ha='center', size=10)
+    ax.legend(frameon=False)
+    ax.text(-0.05, 0.5, 0.5, f'individuals outside gray area: {pct_certain}%', va='center', ha='center', size=6)
 
     return fig
 
@@ -115,19 +120,19 @@ fig =  ternary_plot(validation)
 plt.tight_layout()
 plt.savefig(os.path.join(odir, 'validation_ternary.svg'), dpi=300)
 
-fig = probability_boxplot()
-plt.tight_layout()
-plt.savefig(os.path.join(odir, 'probability_subtype_boxplot.svg'), dpi=300)
+# fig = probability_boxplot()
+# plt.tight_layout()
+# plt.savefig(os.path.join(odir, 'probability_subtype_boxplot.svg'), dpi=300)
 
-fig = probability_cutoff_plot()
-plt.tight_layout()
-plt.savefig(os.path.join(odir, 'probability_cutoff_plot.svg'), dpi=300)
+# fig = probability_cutoff_plot()
+# plt.tight_layout()
+# plt.savefig(os.path.join(odir, 'probability_cutoff_plot.svg'), dpi=300)
 
-fig = probability_subtype_by_stage(training, 'Training')
-plt.tight_layout()
-plt.savefig(os.path.join(odir, 'psubtype_by_stage_training.svg'), dpi=300)
+# fig = probability_subtype_by_stage(training, 'Training')
+# plt.tight_layout()
+# plt.savefig(os.path.join(odir, 'psubtype_by_stage_training.svg'), dpi=300)
 
-fig = probability_subtype_by_stage(validation, 'Validation')
-plt.tight_layout()
-plt.savefig(os.path.join(odir, 'psubtype_by_stage_validation.svg'), dpi=300)
+# fig = probability_subtype_by_stage(validation, 'Validation')
+# plt.tight_layout()
+# plt.savefig(os.path.join(odir, 'psubtype_by_stage_validation.svg'), dpi=300)
 

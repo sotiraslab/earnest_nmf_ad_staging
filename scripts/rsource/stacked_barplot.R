@@ -5,7 +5,8 @@ library(tidyr)
 stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
                             return.data = F, dropna = F, annotate = F,
                             annotate.color = 'black',
-                            annotate.size = 6, annotation.minsize = 0) {
+                            annotate.size = 6, annotation.minsize = 0,
+                            toptext.size = 6) {
   
   # create data
   if (dropna) {
@@ -72,7 +73,7 @@ stacked.barplot <- function(df, xcol, ycol, levels=NULL, colors=NULL,
   # plot
   p <- ggplot() +
     geom_bar(data = plot.data, aes(fill=!!sym(ycol), y=Percent, x=!!sym(xcol)), stat="identity", color='black') +
-    geom_text(data = group.sums, aes(x=!!sym(xcol), y=105, label=total), size=6) +
+    geom_text(data = group.sums, aes(x=!!sym(xcol), y=105, label=total), size=toptext.size) +
     theme_classic() +
     ylab('Observations (%)') +
     xlab(xcol) +

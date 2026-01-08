@@ -73,8 +73,11 @@ get_geom_sig_y_positions <- function(posthoc.res, ordered.x,
   return (y_position)
 }
 
-anova.plot <- function(x, y, data, colors=NULL, correction='fdr',
-                       sig.y.start = 1, sig.y.gap = 1, y_lab = NULL) {
+anova.plot <- function(x, y, data, colors=NULL, do.anova=TRUE, correction='fdr',
+                       sig.y.start = 1, sig.y.gap = 1, y_lab = NULL,
+                       point.size = 3, point.linewidth = 1,
+                       font.size = 14, stat.textsize = 7,
+                       stat.size = 0.75, mean.linewidth = 1) {
   
   # get anova stats
   anova.result <- my.anova(x = x, y = y, data = data, correction = correction, print = F)
@@ -98,13 +101,14 @@ anova.plot <- function(x, y, data, colors=NULL, correction='fdr',
   
   ylab <- ifelse(is.null(y_lab), y, y_lab)
   p <- ggplot(data = data, aes(x = !!sym(x), y = !!sym(y), fill = !!sym(x))) +
-    geom_point(position = position_jitter(width = 0.2, seed=42, height = 0), shape=21, size=3) +
+    geom_point(position = position_jitter(width = 0.2, seed=42, height = 0),
+               shape=21, size=point.size, stroke=point.linewidth) +
     geom_segment(data=means, aes(x=x, xend=xend, y=Mean, yend=Mean),
                  color='black',
-                 linewidth=1) + 
-    theme_light() +
+                 linewidth=mean.linewidth) + 
+    theme_bw() +
     theme(legend.position = 'none',
-          text = element_text(size=20)) +
+          text = element_text(size=font.size)) +
     xlab(x) +
     ylab(ylab)
   
@@ -112,14 +116,14 @@ anova.plot <- function(x, y, data, colors=NULL, correction='fdr',
     p <- p + scale_fill_manual(values = colors)
   }
     
-  if (! is.null(y_position)) {
+  if (! is.null(y_position) & do.anova) {
     p <- p + geom_signif(
       comparisons=comparisons,
       annotations = posthoc.sig$annotation,
       y_position = y_position,
       tip_length = 0.01,
-      size=.75,
-      textsize = 7,
+      size=stat.size,
+      textsize = stat.textsize,
       vjust = 0.5)
   }
   

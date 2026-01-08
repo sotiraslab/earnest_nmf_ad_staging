@@ -118,4 +118,4 @@ pipeline <- function(split) {
 
 
 result.train <- pipeline('training')
-result.val <- pipeline('validation')
+# result.val <- pipeline('validation')

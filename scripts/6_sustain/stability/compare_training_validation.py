@@ -10,13 +10,12 @@ from scipy.spatial.distance import cdist
 
 from atstaging.config import get, set_config
 from atstaging.plotting import set_font_properties, staging_colors
-from atstaging.outputs import load_subtyped_data
+from atstaging.outputs import load_subtyped_data, load_split
 from atstaging.sustain import SustainManager
 
 # setup
 set_config('main')
 root_output = get('output_directory')
-set_font_properties()
 
 odir = os.path.join(root_output, 'plots', 'sustain', 'stability')
 os.makedirs(odir, exist_ok=True)
@@ -27,6 +26,10 @@ os.makedirs(odir, exist_ok=True)
 # load models
 t_sustain = SustainManager(os.path.join(root_output, 'sustain', 'training'))
 v_sustain = SustainManager(os.path.join(root_output, 'sustain', 'validation'))
+
+# update folders for working off of chpc
+t_sustain.update_output_folder(os.path.join(root_output, 'sustain', 'training'))
+v_sustain.update_output_folder(os.path.join(root_output, 'sustain', 'validation'))
 
 t_sequence, t_freq = t_sustain.sustain.combine_cross_validated_sequences(N_folds=10, N_subtypes=3, plot=False)
 v_sequence, v_freq = v_sustain.sustain.combine_cross_validated_sequences(N_folds=10, N_subtypes=3, plot=False)
@@ -68,7 +71,7 @@ np.random.seed(42)
 
 biomarker_indices = list(range(t_sustain.n_biomarkers))
 repeats = 500
-    
+
 null_similarity = np.zeros((3, 3, t_sustain.n_biomarkers, repeats))
 
 for i in biomarker_indices:
@@ -84,13 +87,15 @@ p_values = (null_similarity_average >= observed_similarity_average.reshape((3, 3
 print('\np-values:')
 print(p_values)
 
-# plot
-fig = plt.figure()
+#%% plot
+set_font_properties(6)
+
+fig = plt.figure(figsize=(3, 2))
 plt.imshow(observed_similarity_average, cmap='Blues', vmin=0, vmax=1)
 plt.xticks([0, 1, 2], ['S1', 'S2', 'S3'])
 plt.yticks([0, 1, 2], ['S1', 'S2', 'S3'])
-plt.ylabel('Training subtypes')
-plt.xlabel('Validation subtypes')
+plt.ylabel('Discovery subtypes')
+plt.xlabel('Replication subtypes')
 
 for i in t_subtype_order:
     for j in v_subtype_order:
@@ -104,13 +109,16 @@ for i in t_subtype_order:
         plt.text(j, i, text, ha='center', va='center', color=color, fontweight=weight)
 
         ptext = f'p={pval}' if pval>= 0.001 else 'p<0.001'
-        plt.text(j, i+0.2, ptext, ha='center', va='center', color=color, fontsize=10)
+        plt.text(j, i+0.2, ptext, ha='center', va='center', color=color, fontsize=5)
 
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Cosine similarity', rotation=270)
 cbar.ax.get_yaxis().labelpad = 15
 
+plt.tight_layout()
 plt.savefig(os.path.join(odir, 'ordering_similarity_heatmap.svg'))
+
+#%%
 
 # SUVR Similarity
 # ===============
@@ -127,7 +135,7 @@ amycmap = LinearSegmentedColormap.from_list('amyloid', [(0., 'white'), (1., scol
 taucmap = LinearSegmentedColormap.from_list('tau', [(0., 'white'), (1., scolors['A2T4'])])
 
 def avg_pathology_similarity(training, validation, cols, cmap='viridis', hicolor='black', locolor='white'):
-        
+
     tdata = training.loc[:, ['TrainingMLSubtype'] + list(cols)]
     vdata = validation.loc[:, ['ValidationMLSubtype'] + list(cols)]
 
@@ -135,7 +143,7 @@ def avg_pathology_similarity(training, validation, cols, cmap='viridis', hicolor
     vmeans = vdata.groupby('ValidationMLSubtype').mean()
 
     corrmat = np.zeros((3, 3))
-    
+
     for i in range(3):
         for j in range(3):
             corr = pearsonr(tmeans.iloc[i, :], vmeans.iloc[j, :])
@@ -157,7 +165,7 @@ def avg_pathology_similarity(training, validation, cols, cmap='viridis', hicolor
     cbar = plt.colorbar()
     cbar.ax.set_ylabel('Pearson correlation', rotation=270)
     cbar.ax.get_yaxis().labelpad = 15
-    
+
     return fig
 
 _ = avg_pathology_similarity(training, validation, wcols, cmap='viridis')
@@ -168,3 +176,56 @@ plt.savefig(os.path.join(odir, 'suvr_similarity_amyloid.svg'))
 
 _ = avg_pathology_similarity(training, validation, wcols_tau, cmap=taucmap, hicolor='white', locolor='black')
 plt.savefig(os.path.join(odir, 'suvr_similarity_tau.svg'))
+
+
+#%%
+
+# Assignment heatmap
+# ===============
+
+from matplotlib.colors import LinearSegmentedColormap
+
+training = load_split('training', omit_control=True, verbose=False)
+training['DiscoverySubtype'] = training['TrainingMLSubtype']
+training.loc[
+    training['TrainingMLStage'].eq(0) |
+    training['TrainingSubtypeValid'].eq(False),
+    'DiscoverySubtype'] = 'NS'
+
+training['ReplicationSubtype'] = training['ValidationMLSubtype']
+training.loc[
+    training['ValidationMLStage'].eq(0) |
+    training['ValidationSubtypeValid'].eq(False),
+    'ReplicationSubtype'] = 'NS'
+
+pdata = pd.crosstab(training['DiscoverySubtype'], training['ReplicationSubtype'])
+
+
+
+# plot
+cmap = LinearSegmentedColormap.from_list(
+    'mycmap',
+    list(zip([0., 1.], ['white', 'orangered']))
+    )
+
+plt.figure(figsize=(3, 2), dpi=300)
+plt.imshow(pdata, cmap=cmap)
+
+rows, cols = pdata.shape
+for i in range(rows):
+    for j in range(cols):
+        value = pdata.iloc[i, j]
+        plt.text(j, i, s=str(value), ha='center', va='center')
+
+plt.yticks(range(rows), pdata.index)
+plt.xticks(range(rows), pdata.columns)
+plt.ylabel('Discovery SuStaIn')
+plt.xlabel('Replication SuStaIn')
+
+
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Count', rotation=270)
+cbar.ax.get_yaxis().labelpad = 15
+
+plt.tight_layout()
+plt.savefig(os.path.join(odir, 'assignment_similarity_matplotlib.svg'))

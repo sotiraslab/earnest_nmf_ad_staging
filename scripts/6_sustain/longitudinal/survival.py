@@ -49,7 +49,7 @@ def survival_analysis(variable='cdr', split='training', autosave=True):
 
     # Model
     kmf = KaplanMeierFitter()
-    fig, ax = plt.subplots(figsize=(9,5))
+    fig, ax = plt.subplots(figsize=(3.5,2))
 
     groups = sorted(survgroup['Subtype'].unique())
     colors = subtype_colors()
@@ -61,19 +61,41 @@ def survival_analysis(variable='cdr', split='training', autosave=True):
         E = survgroup.loc[idx, 'Event']
 
         kmf.fit(T, E, label=group)
-        kmf.plot_survival_function(ax=ax, color=colors[group], label=f'{group} (n={int(idx.sum())})')
+
+        # manual plotting
+        curve = kmf.survival_function_
+        x = curve.index
+        y = curve.iloc[:, 0]
+        plt.plot(
+            x, y,
+            color=colors[group], drawstyle='steps',
+            linewidth=0.75, zorder=3)
+
+        ci = kmf.confidence_interval_
+        x = ci.index
+        y1 = ci.iloc[:, 0]
+        y2 = ci.iloc[:, 1]
+        plt.fill_between(
+            x, y1, y2,
+            color=colors[group], alpha=0.2,
+            edgecolor='none', step='post', zorder=2
+            )
 
     # formatting
     plt.xlabel('Years')
     ylabel = {'cdr': 'P(CDR<1)', 'mmse': 'P(MMSE≥24)'}[variable]
     plt.ylabel(ylabel)
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    plt.grid()
+    plt.grid(zorder=1, alpha=0.3)
 
     # Statistics
     stats_result = pairwise_logrank_test(survgroup['Duration'], survgroup['Subtype'], survgroup['Event'])
     stats = stats_result.summary
+    stats.insert(0, 'contrast', stats.index.get_level_values(0) + '-' + stats.index.get_level_values(1))
+    stats['test_statistic'] = stats['test_statistic'].round(2)
+    stats = stats.drop(columns=['-log2(p)'])
     stats['annot'] = pd.cut(stats['p'], bins=[-np.inf, 0.001, 0.01, 0.05, np.inf], labels=['***', '**', '*', ''])
+    stats['p'] = stats['p'].round(3)
+    stats['p'] = np.where(stats['p'] < 0.001, '<0.001', stats['p'].astype(str))
 
     # saving
     if autosave:
@@ -83,12 +105,12 @@ def survival_analysis(variable='cdr', split='training', autosave=True):
 
         bname = f'var-{variable}_split-{split}_survival'
         plt.tight_layout()
-        fig.savefig(os.path.join(odir, bname + '.png'), dpi=300)
-        stats.to_csv(os.path.join(odir, bname + '.csv'))
+        fig.savefig(os.path.join(odir, bname + '.svg'))
+        stats.to_csv(os.path.join(odir, bname + '.csv'), index=False)
 
     return fig, stats
 
-set_font_properties()
+set_font_properties(6)
 
 # Training
 fig, stats = survival_analysis(variable='mmse', split='training')

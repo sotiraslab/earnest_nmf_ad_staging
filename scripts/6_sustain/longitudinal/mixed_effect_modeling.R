@@ -10,6 +10,8 @@ library(scales)
 library(stringr)
 library(tidyr)
 
+emm_options(pbkrtest.limit = 10000)
+
 # Load the data, which is split out by collect_longitudinal_assessments.py
 ROOT.OUTPUT <- '/Users/earnestt1234/Desktop/atstaging/'
 
@@ -98,9 +100,12 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T)
     )
     
     p <- ggplot(long.data, aes(x=YearsSinceBl, y=Score, color=Subtype, fill=Subtype)) +
-        geom_smooth(alpha=.3, method='lm') +
+        geom_smooth(alpha=.3, method='lm', linewidth=0.5) +
         theme_bw() +
-        theme(text = element_text(size=15)) +
+      theme(text = element_text(size=6, color='black'),
+            axis.text.x = element_text(color='black'),
+            axis.text.y = element_text(color='black'),
+            legend.position = 'none') +
         ylab(YLAB) +
         xlab('Years') +
         scale_color_manual(values = colors) +
@@ -118,7 +123,7 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T)
         dir.create(odir, showWarnings = F, recursive = T)
 
         bname <- sprintf('mem_split-%s_var-%s', split, variable)
-        ggsave(filename = file.path(odir, str_c(bname, '.svg')), width=8, height=6, units='in')
+        ggsave(filename = file.path(odir, str_c(bname, '.svg')), width=3.5, height=2, units='in')
         
         fe <- summary(model)$coefficients
         write.csv(fe, file.path(odir, str_c(bname, '_fixed_effects.csv')))

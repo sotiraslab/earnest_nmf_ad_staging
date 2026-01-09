@@ -134,6 +134,8 @@ pipeline <- function(split, y, sig.y.start = 1, sig.y.gap = 1, y_lab=NULL, save 
     posthoc <- result$posthoc
     write.csv(posthoc, file.path(odir, sname), row.names = F)
   }
+  
+  return (result)
 }
 
 # === Run ======
@@ -195,7 +197,7 @@ ggsave(file.path(odir, 'hase4_training_barplot.svg'), height = 2.5, width = 1.4,
 
 stacked.barplot(training, 'TrainingMLSubtype', 'AAStage',
                 toptext.size=2,
-                colors = c('#BFA9D1', '#C5EBCC', '#64A867', '#006400', 'gray')) +
+                colors = c('#64A867', '#D7C8E3', '#9F7FBF', '#663399', 'gray')) +
   xlab("Subtype") + 
   theme(legend.position = 'none',
         text = element_text(size=6))
@@ -232,7 +234,7 @@ ggsave(file.path(odir, 'hase4_validation_barplot.svg'), height = 2.5, width = 1.
 
 stacked.barplot(validation, 'TrainingMLSubtype', 'AAStage',
                 toptext.size=2,
-                colors = c('#BFA9D1', '#C5EBCC', '#64A867', '#006400', 'gray')) +
+                colors = c('#64A867', '#D7C8E3', '#9F7FBF', '#663399', 'gray')) +
   xlab("Subtype") + 
   theme(legend.position = 'none',
         text = element_text(size=6))

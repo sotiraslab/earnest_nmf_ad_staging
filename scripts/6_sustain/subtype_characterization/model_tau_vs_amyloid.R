@@ -33,6 +33,9 @@ pipeline <- function(split) {
   plots <- vector(mode = 'list', length = length(ptcs))
   tcompare <- as.data.frame(matrix(NA, nrow = 3 * length(ptcs), ncol = 4))
   
+  mfit <- as.data.frame(matrix(NA, nrow = length(ptcs), ncol = 4))
+  colnames(mfit) <- c('PTC', 'Rsq', 'F', 'p')
+  
   colors <- c(
     'NA' = 'gray',
     'S1' = '#db2b39',
@@ -49,7 +52,8 @@ pipeline <- function(split) {
       coord_cartesian(ylim = c(0, 20)) +
       theme_bw() +
       scale_color_manual(values = colors) +
-      theme(text = element_text(size = 12), plot.title = element_text(size = 12)) + 
+      theme(text = element_text(size = 6), plot.title = element_text(size = 6),
+            legend.position = 'none') + 
       ggtitle(title) +
       ylab('W') +
       xlab('Amyloid (SUVR)')
@@ -57,13 +61,22 @@ pipeline <- function(split) {
     
     # save plot
     savename <- sprintf('%s.svg', ptc)
-    ggsave(file.path(odir, savename), width = 8, height = 8, units='in')
+    ggsave(file.path(odir, savename), width = 45, height = 51, units='mm')
     
     # model
     fml <- as.formula(paste(ptc, '~', 'SummarySUVRAmyloid', '*', 'Subtype'))
     m <- lm(fml, data=data)
+    m.summary <- summary(m)
     em <- emmeans(m, 'Subtype')
     em.summary <- summary(pairs(em, adjust='fdr', reverse=T))
+    
+    # pull out info to save
+    mfit[i, 1] <- ptc
+    mfit[i, 2] <- m.summary$r.squared
+    f <- m.summary$fstatistic
+    p <- pf(f[1], f[2], f[3], lower.tail = F)
+    mfit[i, 3] <- f[1]
+    mfit[i, 4] <- p
     
     a <- ((i-1) * 3) + 1
     b <- a + 2
@@ -111,7 +124,8 @@ pipeline <- function(split) {
   # Collect results
   result <- list(
     plot = p,
-    tcompare = tcompare
+    tcompare = tcompare,
+    mfit = mfit
   )
   return (result)
 }

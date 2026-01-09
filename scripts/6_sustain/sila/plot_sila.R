@@ -100,6 +100,8 @@ for (i in 1:length(cols)) {
   output <- my.anova(x = 'Subtype', y = col, data = training.bl)
   posthoc <- output$posthoc
   
+  print(summary(output$anova))
+  
   # save posthoc
   path.stats <- file.path(odir, sprintf('anova_posthoc_%s.csv', col))
   write.csv(posthoc, path.stats, row.names = F)
@@ -193,4 +195,27 @@ for (i in 1:length(subtypes)) {
   }
 }
 
+# ==== Create summaries for each subtype and region ====
 
+eao.sum <- training.bl %>%
+  select(
+    TrainingMLSubtype,
+    EstAgeOnsetPACFrontalWScore,
+    EstAgeOnsetPACParietalWScore,
+    EstAgeOnsetPTCMedialTemporalWScore,
+    EstAgeOnsetPTCOccipitalWScore,
+    DiffEAO
+  ) %>%
+  pivot_longer(-TrainingMLSubtype, names_to = 'Region', values_to = 'EAO') %>%
+  mutate(Region = str_replace_all(Region, 'EstAgeOnset|WScore', '')) %>%
+  group_by(TrainingMLSubtype, Region) %>%
+  summarise(
+    Mean = mean(EAO),
+    SD = sd(EAO),
+    LowerCI95 = Mean - 1.96 * (SD/sqrt(n())),
+    UpperCI95 = Mean + 1.96 * (SD/sqrt(n()))
+      ) %>%
+  arrange(Region)
+
+opath <- file.path(odir, "eao_summary.csv")
+write.csv(eao.sum, opath, row.names = F)

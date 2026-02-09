@@ -55,8 +55,8 @@ pipeline <- function(split) {
       theme(text = element_text(size = 6), plot.title = element_text(size = 6),
             legend.position = 'none') + 
       ggtitle(title) +
-      ylab('W') +
-      xlab('Amyloid (SUVR)')
+      ylab('Regional tau (W-score)') +
+      xlab('Global amyloid (SUVR)')
     plots[[i]] <- p
     
     # save plot

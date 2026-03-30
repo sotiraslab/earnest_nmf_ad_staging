@@ -31,7 +31,13 @@ Code within the `scripts` folder will not be automatically rerunnable by new use
 - Some paths have been hardcoded.
 - All data need to be passed through the preprocessing pipeline and QCed.
 
- It is more intended to document the project and show how analyses were conducted.  That said, anyone is welcome to use/adapt all code from this repository given proper attribution (see "Citation" section).  Additionally, you are welcome to raise an issue or contact the author to discuss specific steps/scripts.   
+ It is more intended to document the project and show how analyses were conducted.  That said, anyone is welcome to use/adapt all code from this repository given proper attribution (see "Citation" section).  Additionally, you are welcome to raise an issue or contact the author to discuss specific steps/scripts.
+
+### Config file
+
+Note that procedures in `scripts` make some use of a configuration file, which should be placed in `atstaging/config`.  An example is provided at `atstaging/config/example.json`.  The crucial key to set is `"output_directory"`, which sets where derivative files/plots are saved to and loaded from.  READMEs in the scripts folder will refer to this directory as `OUTPUTDIRECTORY`.  The other key-values are primarily required when doing preprocessing.
+
+Setting this file is only really needed when doing preprocessing or when trying to directly run code in the `scripts` folder.  For other applications (deriving NMF projections, staging new data) it should not be necessary.
 
 ### Code installation
 

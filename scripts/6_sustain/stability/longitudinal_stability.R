@@ -1,5 +1,6 @@
 # ===== Imports =====
 library(dplyr)
+library(ggsignif)
 library(ggplot2)
 library(lubridate)
 library(stringr)
@@ -14,7 +15,7 @@ odir <- file.path(ROOT.OUTPUT, 'plots', 'sustain', 'stability')
 dir.create(odir, showWarnings = F)
 
 colors <- c(
-  'NA' = 'gray',
+  'NS' = 'gray',
   'S1' = '#db2b39',
   'S2' = '#053c5e',
   'S3' = '#f3a712' 
@@ -135,7 +136,7 @@ subtypes.over.time <- function(data) {
       FollowupValid = last(TrainingSubtypeValid)
       ) %>%
     ungroup() %>%
-    mutate(Followup = ifelse(FollowupStage == 0 | FollowupValid == 'False', 'NA', Followup))
+    mutate(Followup = ifelse(FollowupStage == 0 | FollowupValid == 'False', 'NS', Followup))
   
   stacked.barplot(p.data, xcol='Baseline', ycol='Followup', colors = colors, annotate = T, annotate.color = 'white')
 }
@@ -176,7 +177,7 @@ stages.over.time <- function(data) {
       p_adj = p.adjust(p, method = 'fdr'),
       annotation = cut(p_adj,
                        breaks = c(0, 0.001, 0.01, 0.05, Inf),
-                       labels = c('***', "**", "*", "NS"),
+                       labels = c('***', "**", "*", "n.s."),
                        include.lowest = T),
       xmin = x - .2,
       xmax = x + .2

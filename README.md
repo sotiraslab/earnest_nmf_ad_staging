@@ -50,6 +50,8 @@ pip install -e .
 
 You may want to do so in an isolated Python environment (this project used [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main)).  General requirements for this project are Python>=3.10, and specific packages listed in the pyproject.toml file.
 
+This script also contains R code - the required packages are listed in `r_requirements.txt`
+
 ## Citation
 
 Part of this work is available as a preprint:

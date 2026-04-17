@@ -52,4 +52,8 @@ You may want to do so in an isolated Python environment (this project used [mini
 
 ## Citation
 
-This work is currently being submitted for publication.  Details on appropriate references to cite when using or discussing this research will soon be shared.
+Part of this work is available as a preprint:
+
+- **A unified model for staging amyloid and tau pathology in Alzheimer’s disease** (https://doi.org/10.64898/2026.03.30.26349752)
+
+Additional works are being submitted for publication.  Check back!

@@ -12,6 +12,7 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
+# Define the names of the PACs/PTCs
 PACS = [
     'PACParietal',
     'PACFrontal',
@@ -43,7 +44,41 @@ WPARAMS_DICT = {
     }
 
 def apply_wscore_model(df, model='training', pacs=True, ptcs=True):
+    '''
+    Generate W-scores for data that have been projected onto PACs and/or
+    PTCs.
 
+    The input data must include columns with the explicit names of PACs
+    and/or PTCs - see `atstaging.external.PACS` and `atstaging.external.PTCS`.
+    See the `pacs` and `ptcs` arguments for specifying whether to do
+    amyloid or tau W-scoring.
+
+    Parameters
+    ----------
+    df : pandas.core.frame.DataFrame
+        DataFrame containing the data to be W-scored.
+    model : str, optional
+        W-scoring model to use. The default is 'training', which is the
+        model learned from training data with FBP/FTP.  Other options
+        are models learned in validation data: "validationA" (PIB/FTP),
+        "validationB" (FBB/P26), or "validationC" (FBB/FTP).
+    pacs : bool, optional
+        Generate W-scores for amyloid (PACs). The default is True.
+    ptcs : bool, optional
+        Generate W-scores for tau (PTCs) The default is True.
+
+    Raises
+    ------
+    ValueError
+        Provided value for `model` not recognized.
+        Neither `pacs=True` nor `ptcs=True`.
+
+    Returns
+    -------
+    wdf : pandas.core.frame.DataFrame
+        DataFrame containing W-scores.
+
+    '''
     n = len(df)
     parameters_order = ['Intercept', 'Age', 'SexMale']
 
@@ -92,6 +127,38 @@ def apply_wscore_model(df, model='training', pacs=True, ptcs=True):
     return wdf
 
 def _assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
+    '''
+    Helper function for converting binary positivity measures into stages.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of shape (n, m), containing binary indicators of pathology
+        (1=above threshold, 0=below threshold) across *m* regions for *n* subjects.
+    groupings : list, optional
+        List assigning which regions are part of the same disease stage.
+        Length should be equal to *m*, the number of regions (columns)
+        in the input `data`.  Use ascending integers to group regions into
+        stages.  E.g., for 6 regions, you could provide `[0, 0, 1, 2, 2, 2]`,
+        or `[0, 0, 0, 1, 0, 0]`.  The default is None, in which case it is
+        assumed each region is a unique stage.
+    p : str or int, optional
+        Proprtion of regions part of a stage needed to meet positivty criteria for
+        the stage.  Two string values can be provided: 'any' (Default: positivity
+        in any region indicates stage positivity) or 'all' (positivity for a stage
+        requires positivity for all contained regions).  Otherwise, a float between
+        0 and 1 can be provided, indicating the proportion of regions for which
+        regional positivity indicates stage positivity.
+    atypical : str, optional
+        String to use when labeling cases which do not meet stageable critera.
+        The default is 'NS'.
+
+    Returns
+    -------
+    pandas.Categorical
+        Series indicating the stage assignment for each subject.
+
+    '''
 
     if groupings == None:
         groupings = list(range(data.shape[1]))

@@ -21,23 +21,10 @@ Most of the Python scripts reference a Python package which is contained in the 
 Here are a few ways this repository can be used for external research:
 
 - **Applying the preprocessing pipeline**.  This repo contains code for the neuroimaging preprocessing pipeline which can be used for MRI & PET.  [A document describing how to use it is provided here](https://github.com/sotiraslab/earnest_nmf_ad_staging/blob/main/docs/preprocessing.md).
-- **Projecting new data onto NMF components**.  The four amyloid and seven tau NMF factors are shared in the `nmf` folder as NIFTIs and as HDF5 files.  There is also code for projecting data onto these factors, which allows users to estimate SUVRs for new data.
+- **Projecting new data onto NMF components**.  The four amyloid and seven tau NMF factors are shared in the `nmf_factors` folder as NIFTIs.  The omitted reference, subcortical, and white matter factors are also included.  There is also code for projecting data onto these factors, which allows users to estimate SUVRs for new data.
 - **Staging new data**.  Data which have been projected to NMF components can be staged to derive amyloid/tau biological severity labels for new individuals.
 
-Code within the `scripts` folder will not be automatically rerunnable by new users.   Due to several factors:
-
-- Source data need to be provided (A4, ADNI, GS1, GS2, HABS, HABS-HD, OASIS, SCAN).
-  - *This repository should not contain data from any of these datasets in accordance with data use agreements - please inform the maintainer if you find anything that you think should not be being shared.*
-- Some paths have been hardcoded.
-- All data need to be passed through the preprocessing pipeline and QCed.
-
- It is more intended to document the project and show how analyses were conducted.  That said, anyone is welcome to use/adapt all code from this repository given proper attribution (see "Citation" section).  Additionally, you are welcome to raise an issue or contact the author to discuss specific steps/scripts.
-
-### Config file
-
-Note that procedures in `scripts` make some use of a configuration file, which should be placed in `atstaging/config`.  An example is provided at `atstaging/config/example.json`.  The crucial key to set is `"output_directory"`, which sets where derivative files/plots are saved to and loaded from.  READMEs in the scripts folder will refer to this directory as `OUTPUTDIRECTORY`.  The other key-values are primarily required when doing preprocessing.
-
-Setting this file is only really needed when doing preprocessing or when trying to directly run code in the `scripts` folder.  For other applications (deriving NMF projections, staging new data) it should not be necessary.
+[**For the latter two points, see this readme for more details.**](https://github.com/sotiraslab/earnest_nmf_ad_staging/blob/main/docs/external.md)
 
 ### Code installation
 
@@ -50,7 +37,22 @@ pip install -e .
 
 You may want to do so in an isolated Python environment (this project used [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main)).  General requirements for this project are Python>=3.10, and specific packages listed in the pyproject.toml file.
 
-This script also contains R code - the required packages are listed in `r_requirements.txt`
+This repository also contains R code - the required packages are listed in `r_requirements.txt`.
+
+### Manuscript code (figures, statistical analyses)
+
+Most code used to generate content for the manuscript(s) is contained in the `scripts` folder. Due to several factors, this code will not be easily runnable by new users.
+
+- Source data need to be provided (A4, ADNI, GS1, GS2, HABS, HABS-HD, OASIS, SCAN).
+  - *This repository should not contain data from any of these datasets in accordance with data use agreements - please inform the maintainer if you find anything that you think should not be being shared.*
+- Some paths have been hardcoded.
+- All data need to be passed through the preprocessing pipeline and QCed.
+
+ It is more intended to document the project and show how analyses were conducted.  That said, anyone is welcome to use/adapt all code from this repository given proper attribution (see "Citation" section).  Additionally, you are welcome to raise an issue or contact the author to discuss specific steps/scripts.
+
+Note that procedures in `scripts` make some use of a configuration file, which should be placed in `atstaging/config`.  An example is provided at `atstaging/config/example.json`.  The crucial key to set is `"output_directory"`, which sets where derivative files/plots are saved to and loaded from.  READMEs in the scripts folder will refer to this directory as `OUTPUTDIRECTORY`.  The other key-values are primarily required when doing preprocessing.
+
+Setting this file is only really needed when doing preprocessing or when trying to directly run code in the `scripts` folder.  For other applications (deriving NMF projections, staging new data) it should not be necessary.
 
 ## Citation
 

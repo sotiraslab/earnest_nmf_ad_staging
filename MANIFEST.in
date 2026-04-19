@@ -4,3 +4,4 @@ include atstaging/nmf/NMFVolBin/*
 include atstaging/nmf/NMFVolBinMask
 include atstaging/nmf/NMFVolBinMask/*
 include atstaging/nmf/split_halves.R
+include atstaging/wscore_parameters/*

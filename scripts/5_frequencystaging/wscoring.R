@@ -3,9 +3,10 @@ library(dplyr)
 library(gtools)
 
 # Set paths
-PATH.MASTER <- '/scratch/tom.earnest/atstaging/masterTables/_hardsave.csv' # see hardsave_master.py
-PATH.WSCORE.SCRIPT <- '/home/tom.earnest/code/at_nmf_sustain/scripts/rsource/wscore.R'
-PATH.OUTPUT <- '/scratch/tom.earnest/atstaging/masterTables/FEATURE_WSCORES.csv'
+PATH.MASTER <- '~/Desktop/atstaging/masterTables/_hardsave.csv' # see hardsave_master.py
+PATH.WSCORE.SCRIPT <- '~/Documents/GitHub/at_nmf_sustain/scripts/rsource/wscore.R'
+PATH.OUTPUT <- '~/Desktop/atstaging/masterTables/FEATURE_WSCORES.csv'
+PATH.WMODEL.PARAMS <- '~/Desktop/wmodels/'
 
 # parameters
 covariates <- c('Age', 'SexMale')
@@ -57,8 +58,8 @@ report.sizes('Validation C', valC.all, valC.bl, valC.control)
 # identify W-score columns
 wscore.inputs <- colnames(master)[grepl('PAC.*SUVR|PTC.*SUVR', colnames(master), perl = T)]
 
-# helper function for W-scoring
-wscore.routine <- function(fulldata, control.subset) {
+# helper functions for W-scoring
+wscore.routine <- function(fulldata, control.subset, save.params.dir = NULL) {
     wmodel <- repeated.wscore.train(
       control.data = control.subset,
       y = wscore.inputs,
@@ -69,6 +70,10 @@ wscore.routine <- function(fulldata, control.subset) {
       repeats = repeats,
       seed = seed
     )
+    
+    if (! is.null(save.params.dir)) {
+      save.wscore.params(wmodel, outdir = save.params.dir)
+    }
 
     predicts <- repeated.wscore.predict(wmodel, fulldata)
     cat('\nSum of NAs for predictions:', sum(is.na(predicts)), '\n\n')
@@ -80,11 +85,36 @@ wscore.routine <- function(fulldata, control.subset) {
     
 }
 
+save.wscore.params <- function(wmodel, outdir) {
+  n.fit <- length(wmodel)
+  dir.create(outdir, showWarnings = F, recursive = T)
+  for (i in 1:n.fit) {
+    measure <- names(wmodel)[[i]]
+    w.output <- wmodel[[measure]]
+    models <- w.output$models
+    residuals <- w.output$residuals
+    parameters <- sapply(models, coef)
+    
+    to.save <- data.frame(Intercept = parameters['(Intercept)',],
+                          Age = parameters['Age', ],
+                          SexMale = parameters['SexMale', ],
+                          Residual = residuals)
+    savename <- sprintf("%s.csv", measure)
+    savepath <- file.path(outdir, savename)
+    write.csv(to.save, savepath, row.names = F)
+  }
+}
+
 # W-Scoring
-train.wdf <- wscore.routine(fulldata = train.all, control.subset = train.control)
-valA.wdf <- wscore.routine(fulldata = valA.all, control.subset = valA.control)
-valB.wdf <- wscore.routine(fulldata = valB.all, control.subset = valB.control)
-valC.wdf <- wscore.routine(fulldata = valC.all, control.subset = valC.control)
+params.train <- file.path(PATH.WMODEL.PARAMS, 'training')
+params.valA <- file.path(PATH.WMODEL.PARAMS, 'validationA')
+params.valB <- file.path(PATH.WMODEL.PARAMS, 'validationB')
+params.valC <- file.path(PATH.WMODEL.PARAMS, 'validationC')
+
+train.wdf <- wscore.routine(fulldata = train.all, control.subset = train.control, save.params = params.train)
+valA.wdf <- wscore.routine(fulldata = valA.all, control.subset = valA.control, save.params = params.valA)
+valB.wdf <- wscore.routine(fulldata = valB.all, control.subset = valB.control, save.params = params.valB)
+valC.wdf <- wscore.routine(fulldata = valC.all, control.subset = valC.control, save.params = params.valC)
 
 # save output as features
 wscores <- bind_rows(train.wdf, valA.wdf, valB.wdf, valC.wdf)

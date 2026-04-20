@@ -193,6 +193,26 @@ def _assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
     return pd.Categorical(stage, categories=cats)
 
 def apply_atstaging(factor_positivity_df):
+    '''
+    Determine amyloid-tau stages for a dataset.  
+
+    Parameters
+    ----------
+    factor_positivity_df : pandas.core.frame.DataFrame
+        DataFrame containing positivity (0=below threshold, 1=above threshold)
+        measures for PACs and PTCs.  The DataFrame should at least contain 11
+        columns containing the determination of positivity/negativity in each
+        PAC (4 columns) and PTC (7 columns).  See `atstaging.external.PACS`
+        and `atstaging.external.PTCS` for how these should be named.
+
+    Returns
+    -------
+    stages : pandas.Series
+        Pandas Series containing string data and stage assignments.  Possible 
+        values are A0T0 (no pathology), A1T0, A2T0, A2T1, A2T2, A2T3, A2T4,
+        and NS (non-stageable).
+
+    '''
 
     factor_order = PACS + PTCS
     groupings = [0, 0, 1, 1, 2, 3, 3, 4, 5, 5, 5]
@@ -223,6 +243,48 @@ def apply_atstaging(factor_positivity_df):
 
 def compute_nmf_loadings(images, nmf_factors_directory, pathology,
                          normalize=True, only_gm=True, verbose=True):
+    '''
+    Project new data onto NMF factor.  Basically a weighted
+    avearge of image voxels, with weights determined by voxel
+    intensities in each NMF factor.
+    
+    Input images must be in 1mm MNI space (182, 218, 182).
+
+    Parameters
+    ----------
+    images : str or iterable
+        Paths to images to generate NMF projections for.  Can be a single
+        image (str) or a collection of multiple (iterable).
+    nmf_factors_directory : str
+        Path to the directory containing compressed NIFTI images for 
+        PACs & PTCs.  See https://github.com/sotiraslab/earnest_nmf_ad_staging/tree/main/nmf_factors.
+    pathology : str
+        Either "amyloid" for the projection onto PACs or "tau" for the projection onto PTCs.
+    normalize : bool, optional
+        Normalize components to sum to 1. The default is True.  When True,
+        the projection value will result in values in the original units of the image.
+        E.g., if inputting an SUVR map, SUVR values will be output.  With `normalize=False`,
+        the output values are loadings (in NMF terms, elements of the H matrix) which,
+        when matrix multipled with factors (W matrix) generate the individual image reconstruction.
+    only_gm : bool, optional
+        Only generate the projection for the cortical gray matter factors, namely the
+        PACs and PTCs. The default is True.  When `only_gm=False`, the additional 
+        7 amyloid and 5 tau factors will be loaded and used for projecting the data.
+        These extra factors are mostly white matter, subcortical areas, and reference regions.
+    verbose : bool, optional
+        Print progress while running. The default is True.
+
+    Raises
+    ------
+    ValueError
+        Value for `pathology` is not "amyloid" or "tau".
+
+    Returns
+    -------
+    df : pandas.core.frame.DataFrame
+        DataFrame containing the requested NMF projection value for every image provided.
+
+    '''
 
     vprint = print if verbose else lambda *args, **kwargs: None
 
@@ -269,6 +331,9 @@ def compute_nmf_loadings(images, nmf_factors_directory, pathology,
     return df
 
 def load_nmf_niftis_as_matrix(directory, only_gm=True):
+    '''Load the NMF factors (stored as images) into a numpy array
+    which can be used for matrix multiplication.'''
+    
     files = os.listdir(directory)
     files = [file for file in files if file.endswith('.nii.gz')]
     if only_gm:

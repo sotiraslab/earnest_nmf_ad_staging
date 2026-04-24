@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(ggalluvial)
 library(stringr)
+library(tibble)
 library(tidyr)
 
 ROOT.OUTPUT <-'/Users/earnestt1234/Desktop/atstaging'

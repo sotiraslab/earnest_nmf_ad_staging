@@ -24,7 +24,7 @@ mmse_long['Event'] = mmse_long['MMSE'].le(24)
 
 # Run the survival analyses
 
-def survival_analysis(variable='cdr', split='training', autosave=True):
+def survival_analysis(variable='cdr', split='training', autosave=True, print_n=True):
 
     # Load the data with stages
     ads = load_subtyped_data(split, load_controls=False)
@@ -108,6 +108,22 @@ def survival_analysis(variable='cdr', split='training', autosave=True):
         fig.savefig(os.path.join(odir, bname + '.svg'))
         stats.to_csv(os.path.join(odir, bname + '.csv'), index=False)
 
+    # printout
+    if print_n:
+        tmp_ads = survgroup[survgroup['Subtype'].ne('Control')].copy()
+        n_ads = len(tmp_ads)
+        mu_ads = tmp_ads['Duration'].mean().round(2)
+        sd_ads = tmp_ads['Duration'].std().round(2)
+
+        tmp_nc = survgroup[survgroup['Subtype'].eq('Control')].copy()
+        n_nc = len(tmp_nc)
+        mu_nc = tmp_nc['Duration'].mean().round(2)
+        sd_nc = tmp_nc['Duration'].std().round(2)
+
+        print()
+        print(f'ADS: N={n_ads}, mean duration={mu_ads}, SD duration={sd_ads}')
+        print(f'NC: N={n_nc}, mean duration={mu_nc}, SD duration={sd_nc}')
+
     return fig, stats
 
 set_font_properties(6)
@@ -116,6 +132,6 @@ set_font_properties(6)
 fig, stats = survival_analysis(variable='mmse', split='training')
 fig, stats = survival_analysis(variable='cdr', split='training')
 
-# Validation
+# # Validation
 fig, stats = survival_analysis(variable='mmse', split='validation')
 fig, stats = survival_analysis(variable='cdr', split='validation')

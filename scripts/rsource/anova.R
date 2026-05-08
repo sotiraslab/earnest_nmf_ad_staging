@@ -131,3 +131,51 @@ anova.plot <- function(x, y, data, colors=NULL, do.anova=TRUE, correction='fdr',
   return (output)
     
 }
+
+anova.plot.violin <- function(
+    x, y, data, colors=NULL, do.anova=TRUE, correction='fdr',
+    sig.y.start = 1, sig.y.gap = 1, y_lab = NULL,
+    font.size = 14, stat.textsize = 7,
+    stat.size = 0.75, mean.linewidth = 1) {
+  
+  # get anova stats
+  anova.result <- my.anova(x = x, y = y, data = data, correction = correction, print = F)
+  posthoc.res <- anova.result$posthoc
+  posthoc.sig <- filter(posthoc.res, `p adj` < 0.05)
+  comparisons <- str_split(posthoc.sig$comparison, '-')
+  n.sig <- nrow(posthoc.sig)
+  
+  # plot
+  y_position = get_geom_sig_y_positions(posthoc.res = posthoc.res,
+                                        ordered.x = sort(unique(data[[x]])),
+                                        start.pos = sig.y.start,
+                                        gap = sig.y.gap)
+  
+  ylab <- ifelse(is.null(y_lab), y, y_lab)
+  p <- ggplot(data = data, aes(x = !!sym(x), y = !!sym(y), fill = !!sym(x))) +
+    geom_violin() + 
+    geom_boxplot(width=.1, fill='gray') + 
+    theme_bw() +
+    theme(legend.position = 'none',
+          text = element_text(size=font.size)) +
+    xlab(x) +
+    ylab(ylab)
+  
+  if (! is.null(colors)) {
+    p <- p + scale_fill_manual(values = colors)
+  }
+  
+  if (! is.null(y_position) & do.anova) {
+    p <- p + geom_signif(
+      comparisons=comparisons,
+      annotations = posthoc.sig$annotation,
+      y_position = y_position,
+      tip_length = 0.01,
+      size=stat.size,
+      textsize = stat.textsize,
+      vjust = 0.5)
+  }
+  
+  output <- list(plot = p, anova = anova.result$anova, posthoc = posthoc.res)
+  return (output)
+}

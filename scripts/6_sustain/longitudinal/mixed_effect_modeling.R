@@ -139,7 +139,7 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T)
     }
 
     # return
-    output <- list(plot = p, model = model)
+    output <- list(plot = p, model = model, data=long.data)
     return (output)
 }
 
@@ -147,3 +147,31 @@ output <- mixed.effect.modeling(variable='mmse', split='training', autosave=T)
 output <- mixed.effect.modeling(variable='cdr', split='training', autosave=T)
 output <- mixed.effect.modeling(variable='mmse', split='validation', autosave=T)
 output <- mixed.effect.modeling(variable='cdr', split='validation', autosave=T)
+
+# === Cell for counting the subjects and length of followup ======
+
+tmp <- output$data
+tmp.nc <- tmp %>% filter(Subtype == 'Control')
+tmp.ads <- tmp %>% filter(Subtype != 'Control')
+
+n.subjects <- function(x) length(unique(x$Subject))
+avg.follow <- function(x) {
+  g <- x %>%
+    group_by(Subject) %>%
+    summarise(MaxFollow = max(YearsSinceBl)) %>%
+    ungroup()
+  mu <- mean(g$MaxFollow)
+  sd <- sd(g$MaxFollow)
+  return (c(mu, sd))
+}
+
+print('')
+print(sprintf('# Subjects AD: %s', n.subjects(tmp.ads)))
+print(sprintf('# Subjects NC: %s', n.subjects(tmp.nc)))
+
+print('')
+follow.ads <- round(avg.follow(tmp.ads), 2)
+print(sprintf('Followup AD, mean (SD): %s (%s)', follow.ads[1], follow.ads[2]))
+
+follow.nc <- round(avg.follow(tmp.nc), 2)
+print(sprintf('Followup NC, mean (SD): %s (%s)', follow.nc[1], follow.nc[2]))

@@ -21,6 +21,8 @@ colors <- c(
   'S3' = '#f3a712' 
 )
 
+
+
 # ===== Load Data =====
 
 master.path <- file.path(ROOT.OUTPUT, 'filesForR', 'master_with_sustain.csv')
@@ -136,9 +138,9 @@ subtypes.over.time <- function(data) {
       FollowupValid = last(TrainingSubtypeValid)
       ) %>%
     ungroup() %>%
-    mutate(Followup = ifelse(FollowupStage == 0 | FollowupValid == 'False', 'NS', Followup))
+    mutate(`Follow-up` = ifelse(FollowupStage == 0 | FollowupValid == 'False', 'NS', Followup))
   
-  stacked.barplot(p.data, xcol='Baseline', ycol='Followup', colors = colors, annotate = T, annotate.color = 'white')
+  stacked.barplot(p.data, xcol='Baseline', ycol='Follow-up', colors = colors, annotate = T, annotate.color = 'white')
 }
 
 subtypes.over.time(training)
@@ -154,7 +156,7 @@ stages.over.time <- function(data) {
     group_by(Subject) %>%
     filter(n() >= 2) %>%
     summarise(Baseline = first(TrainingMLStage),
-              Followup = last(TrainingMLStage),
+              `Follow-up` = last(TrainingMLStage),
               Subtype = first(TrainingMLSubtype),
     ) %>%
     ungroup() %>%
@@ -166,7 +168,7 @@ stages.over.time <- function(data) {
   for (i in 1:length(subtypes)) {
     subtype <- subtypes[i]
     x <- unname(unlist(p.data[p.data$Subtype == subtype & p.data$Visit == 'Baseline', 'Stage']))
-    y <- unname(unlist(p.data[p.data$Subtype == subtype & p.data$Visit == 'Followup', 'Stage']))
+    y <- unname(unlist(p.data[p.data$Subtype == subtype & p.data$Visit == 'Follow-up', 'Stage']))
     test <- t.test(x = x, y = y, paired = T)
     tres <- list(Subtype=subtype, t=test$statistic, p=test$p.value, x=i)
     rows[[i]] <- tres
@@ -189,7 +191,7 @@ stages.over.time <- function(data) {
     theme(text = element_text(size = 6),
           legend.key.size = unit(c(.1), 'in'),
           legend.margin = margin(t = 0, r = 0, b = 0, l = -.1, unit = "in")) +
-    scale_fill_manual(values = c('Baseline'='azure2', 'Followup'='azure4')) +
+    scale_fill_manual(values = c('Baseline'='azure2', 'Follow-up'='azure4')) +
     geom_signif(
       y_position = c(11.5, 11.5, 11.5),
       xmin = t.df$xmin,

@@ -152,7 +152,7 @@ def pipeline(df, stage_labels=None, potential_labels=None,\
             f.write(str(obs))
 
 
-def stageflow(df, subject_col='Subject', label_col='StageNumeric'):
+def stageflow(df, subject_col='Subject', label_col='StageNumeric', report=True):
 
     position_col = 'VisitNumber'
 
@@ -167,10 +167,36 @@ def stageflow(df, subject_col='Subject', label_col='StageNumeric'):
                      'pos_to': g[position_col].last(),
                      'label_from': g[label_col].first(),
                      'label_to': g[label_col].last()})
+    if report:
+        report_proportions(flow)
+
     return flow
 
 def stagestat(label_from, label_to):
     return np.mean(label_to >= label_from)
+
+def report_proportions(flow):
+    flow = flow.copy()
+
+    flow['label_from'] = flow['label_from'].replace({'NS':np.nan}).astype(float)
+    flow['label_to'] = flow['label_to'].replace({'NS':np.nan}).astype(float)
+    label_from = flow['label_from'].to_numpy()
+    label_to = flow['label_to'].to_numpy()
+    either_na = np.isnan(label_from) | np.isnan(label_to)
+
+    stable = ((label_to == label_from) & ~either_na).mean()
+    progress = ((label_to > label_from) & ~either_na).mean()
+    revert = ((label_to < label_from) & ~either_na).mean()
+    ns_baseline = np.isnan(label_from).mean()
+    become_ns = (np.isnan(label_to) & ~np.isnan(label_from)).mean()
+
+    print()
+    print(f'Stable: {round(stable, 3)}')
+    print(f'Progressers: {round(progress, 3)}')
+    print(f'Reverters: {round(revert, 3)}')
+    print(f'Starts NS: {round(ns_baseline, 3)}')
+    print(f'Becomes NS: {round(become_ns, 3)}')
+    print(f'Total: {round(stable + progress + revert + ns_baseline + become_ns, 3)}')
 
 # MAIN
 
@@ -201,4 +227,5 @@ pipeline(df, out_histogram=os.path.join(plots_dest, 'validationAll_permutation_t
          out_counts=os.path.join(plots_dest, 'validation_longitudinal_counts.txt'),
          out_transtion_types=os.path.join(plots_dest, 'validatioin_transitions.txt'),
          stage_labels=stage_labels, potential_labels=potential_labels)
+
 

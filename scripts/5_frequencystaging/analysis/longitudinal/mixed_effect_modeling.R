@@ -84,22 +84,33 @@ mixed.effect.modeling <- function(variable='mmse', split='training', autosave=T,
     if (autosave) {
         odir <- file.path(root.output, 'plots', 'mixed_effect_modeling')
         dir.create(odir, showWarnings = F, recursive = T)
-
+        
+        # Plot
         bname <- sprintf('mem_split-%s_var-%s', split, variable)
         ggsave(filename = file.path(odir, str_c(bname, '.svg')), width=3.65, height=2, units='in')
         
+        # Fixed effects
         fe <- summary(model)$coefficients
         write.csv(fe, file.path(odir, str_c(bname, '_fixed_effects.csv')))
-
-        em <- emmeans(model, 'Stage')
-        em.summary <- summary(pairs(em, adjust='tukey')) %>%
+        
+        # EMTrends - slopes by stage
+        em.trends <- emtrends(model, ~ Stage, var = 'YearsSinceBl')
+        
+        slopes <- summary(em.trends, infer = c(TRUE, TRUE), level = 0.95) %>%
+          as.data.frame() %>%
+          rename(slope = YearsSinceBl.trend) %>%
+          mutate(across(where(is.numeric), ~ round(.x, 3)))
+        write.csv(slopes, file.path(odir, str_c(bname, '_stage_slopes.csv')))
+        
+        # EMTrends - posthoc pairwise comparisons
+        em.summary <- summary(pairs(em.trends, adjust = 'fdr')) %>%
             mutate(across(where(is.numeric), round, 3),
                      annotation = cut(p.value,
                                       breaks = c(0, 0.001, 0.01, 0.05, Inf),
                                       labels = c('***', "**", "*", ""),
                                       include.lowest = T),
                    p.value = ifelse(p.value == 0, '<0.001', p.value))
-        write.csv(em.summary, file.path(odir, str_c(bname, '_emmeans.csv')))
+        write.csv(em.summary, file.path(odir, str_c(bname, '_emtrends.csv')))
     }
 
     # return
